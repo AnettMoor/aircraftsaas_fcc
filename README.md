@@ -13,10 +13,13 @@ npm install
 npm run dev
 
 
-Vue frontend: http://localhost:5173
 C# backend (mvc pages will be removed later): http://localhost:5219
+Vue frontend: http://localhost:5173
+
 
 ### Seeded users (username, password, role)
         ("1@3", "3", ["Normal"]),
         ("1@2", "2", ["CompanyOwner"]),
          ("1@4", "4", ["SystemAdmin"])
+
+vue frontend: only normal and companyowner views

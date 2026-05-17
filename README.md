@@ -13,8 +13,8 @@ npm install
 npm run dev
 
 
-C# backend (mvc pages will be removed later): http://localhost:5219
-Vue frontend: http://localhost:5173
+### C# backend (mvc pages will be removed later): http://localhost:5219
+### Vue frontend: http://localhost:5173
 
 
 ### Seeded users (username, password, role)

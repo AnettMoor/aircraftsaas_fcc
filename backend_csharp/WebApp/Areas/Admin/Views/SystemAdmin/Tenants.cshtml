@@ -1,0 +1,296 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminTenantsViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.ManageTenantsTitle;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-building me-2"></i>@App.Resources.Views.Home.ManageTenantsTitle
+            </h1>
+            <p class="text-muted">
+                @Model.ActiveTenants active / @Model.TotalTenants total &mdash;
+                @Model.TotalBookingsAcrossSystem bookings
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateTenant" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Create Tenant
+            </a>
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> @App.Resources.Views.Home.BackToDashboardBtn
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Summary Cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h4 class="text-success">@Model.ActiveTenants</h4>
+                    <p class="text-muted mb-0">@App.Resources.Views.Home.ActiveTenants</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-secondary">
+                <div class="card-body">
+                    <h4 class="text-secondary">@(Model.TotalTenants - Model.ActiveTenants)</h4>
+                    <p class="text-muted mb-0">@App.Resources.Views.Home.InactiveTenants</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h4 class="text-info">@Model.TotalBookingsAcrossSystem</h4>
+                    <p class="text-muted mb-0">@App.Resources.Views.Home.TotalBookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.SearchLabel</label>
+                    <input type="text" name="search" value="@Model.SearchQuery"
+                           class="form-control" placeholder="@App.Resources.Views.Home.SearchCompanyOrSlug" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.StatusLabel</label>
+                    <select name="active" class="form-select">
+                        <option value="" selected="@(Model.FilterActive == null)">@App.Resources.Views.Home.AllFilter</option>
+                        <option value="true" selected="@(Model.FilterActive == true)">@App.Resources.Views.Home.ActiveOnly</option>
+                        <option value="false" selected="@(Model.FilterActive == false)">@App.Resources.Views.Home.InactiveOnly</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i> @App.Resources.Views.Home.Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants"
+                       class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle me-1"></i> @App.Resources.Views.Home.Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tenants Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@App.Resources.Views.Home.AllTenants</h5>
+            <span class="badge bg-secondary">@App.Resources.Views.Home.Page @Model.Pagination.CurrentPage @App.Resources.Views.Home.Of @Model.Pagination.TotalPages</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Tenants.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>@App.Resources.Views.Home.Tenant</th>
+                                <th>Owner</th>
+                                <th>@App.Resources.Views.Home.Users</th>
+                                <th>@App.Resources.Views.Home.Aircraft</th>
+                                <th>@App.Resources.Views.Home.Bookings</th>
+                                <th>@App.Resources.Views.Home.Created</th>
+                                <th>@App.Resources.Views.Home.Status</th>
+                                <th class="text-end">@App.Resources.Views.Home.Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tenant in Model.Tenants)
+                            {
+                                <tr class="@(!tenant.IsActive ? "table-secondary" : "")">
+                                    <td>
+                                        <strong>@tenant.CompanyName</strong>
+                                        <div class="text-muted small">/@tenant.Slug</div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(tenant.OwnerName))
+                                        {
+                                            <span><i class="bi bi-person-fill me-1"></i>@tenant.OwnerName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">No owner</span>
+                                        }
+                                    </td>
+                                    <td>@tenant.UserCount</td>
+                                    <td>@tenant.AircraftCount</td>
+                                    <td><strong>@tenant.BookingCount</strong></td>
+                                    <td class="text-muted small">@tenant.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        @if (tenant.IsActive)
+                                        {
+                                            <span class="badge bg-success">@App.Resources.Views.Home.Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@App.Resources.Views.Home.Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (tenant.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#toggleModal-@tenant.CompanyId"
+                                                    title="@App.Resources.Views.Home.Deactivate">
+                                                <i class="bi bi-pause-circle me-1"></i> @App.Resources.Views.Home.Deactivate
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#toggleModal-@tenant.CompanyId"
+                                                    title="@App.Resources.Views.Home.Activate">
+                                                <i class="bi bi-play-circle me-1"></i> @App.Resources.Views.Home.Activate
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.Pagination.TotalPages > 1)
+                {
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">
+                            @App.Resources.Views.Home.Showing @((Model.Pagination.CurrentPage - 1) * Model.Pagination.PageSize + 1)
+                            –@(Math.Min(Model.Pagination.CurrentPage * Model.Pagination.PageSize, Model.Pagination.TotalItems))
+                            @App.Resources.Views.Home.Of @Model.Pagination.TotalItems
+                        </span>
+                        <nav aria-label="Tenants pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(!Model.Pagination.HasPrevious ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants"
+                                       asp-route-page="@(Model.Pagination.CurrentPage - 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-active="@Model.FilterActive">
+                                        &laquo;
+                                    </a>
+                                </li>
+                                @for (var p = Math.Max(1, Model.Pagination.CurrentPage - 2);
+                                      p <= Math.Min(Model.Pagination.TotalPages, Model.Pagination.CurrentPage + 2);
+                                      p++)
+                                {
+                                    <li class="page-item @(p == Model.Pagination.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants"
+                                           asp-route-page="@p"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-active="@Model.FilterActive">@p</a>
+                                    </li>
+                                }
+                                <li class="page-item @(!Model.Pagination.HasNext ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants"
+                                       asp-route-page="@(Model.Pagination.CurrentPage + 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-active="@Model.FilterActive">
+                                        &raquo;
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-building fs-1"></i>
+                    <p class="mt-2 mb-0">@App.Resources.Views.Home.NoTenantsMatchFilter</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* Toggle active/inactive confirmation modals *@
+@foreach (var tenant in Model.Tenants)
+{
+    var action = tenant.IsActive ? App.Resources.Views.Home.DeactivateTenant : App.Resources.Views.Home.ActivateTenant;
+    var actionClass = tenant.IsActive ? "warning" : "success";
+    var actionIcon = tenant.IsActive ? "pause-circle" : "play-circle";
+
+    <div class="modal fade" id="toggleModal-@tenant.CompanyId" tabindex="-1"
+         aria-labelledby="toggleLabel-@tenant.CompanyId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-@actionClass" id="toggleLabel-@tenant.CompanyId">
+                        <i class="bi bi-@actionIcon me-1"></i> @action @App.Resources.Views.Home.ToggleTenantTitle
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@App.Resources.Views.Home.AreYouSureWantTo <strong>@action.ToLower()</strong> @App.Resources.Views.Home.ThisTenant</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>@App.Resources.Views.Home.Tenant:</strong> @tenant.CompanyName</li>
+                        <li><strong>@App.Resources.Views.Home.Slug:</strong> /@tenant.Slug</li>
+                        <li><strong>@App.Resources.Views.Home.Users:</strong> @tenant.UserCount</li>
+                        <li><strong>@App.Resources.Views.Home.Bookings:</strong> @tenant.BookingCount</li>
+                    </ul>
+                    @if (tenant.IsActive)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0 small">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            @App.Resources.Views.Home.TenantDeactivateWarning
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mt-3 mb-0 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            @App.Resources.Views.Home.TenantActivateInfo
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.Cancel</button>
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="ToggleTenantActive"
+                          asp-route-id="@tenant.CompanyId" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-@actionClass">
+                            <i class="bi bi-@actionIcon me-1"></i> @action
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

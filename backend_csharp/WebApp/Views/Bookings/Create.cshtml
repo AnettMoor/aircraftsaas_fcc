@@ -1,0 +1,185 @@
+@model WebApp.ViewModels.User.BookAircraftViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.Book + " " + Model.Aircraft.Make + " " + Model.Aircraft.Model;
+}
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Aircraft" asp-action="Index">@App.Resources.Views.Home.FindAircraft</a></li>
+            <li class="breadcrumb-item">
+                <a asp-controller="Aircraft" asp-action="Details" asp-route-id="@Model.Aircraft.Id">
+                    @Model.Aircraft.Make @Model.Aircraft.Model
+                </a>
+            </li>
+            <li class="breadcrumb-item active">@App.Resources.Views.Home.Book</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Booking Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-plus me-2"></i>@App.Resources.Views.Home.Book @Model.Aircraft.Make @Model.Aircraft.Model
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (!Model.IsAvailable)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>@App.Resources.Views.Home.NotAvailableAlert</strong> @App.Resources.Views.Home.NotAvailableForDates
+                            @if (Model.AvailableFrom.HasValue)
+                            {
+                                <span class="ms-1">@App.Resources.Views.Home.NextAvailable @Model.AvailableFrom.Value.ToString("MMM dd, yyyy")</span>
+                            }
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post" id="bookingForm">
+                        <input type="hidden" asp-for="BookingModel.AircraftId" />
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger"></div>
+                        }
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="BookingModel.StartDateTime" class="form-label">
+                                    <i class="bi bi-calendar me-1"></i>@App.Resources.Views.Home.StartDateTime
+                                </label>
+                                <input asp-for="BookingModel.StartDateTime" asp-format="{0:yyyy-MM-ddTHH:mm}"
+                                       class="form-control" type="datetime-local" id="startDateTime" />
+                                <span asp-validation-for="BookingModel.StartDateTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="BookingModel.EndDateTime" class="form-label">
+                                    <i class="bi bi-calendar me-1"></i>@App.Resources.Views.Home.EndDateTime
+                                </label>
+                                <input asp-for="BookingModel.EndDateTime" asp-format="{0:yyyy-MM-ddTHH:mm}"
+                                       class="form-control" type="datetime-local" id="endDateTime" />
+                                <span asp-validation-for="BookingModel.EndDateTime" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="BookingModel.Purpose" class="form-label">
+                                <i class="bi bi-pencil me-1"></i>@App.Resources.Views.Home.PurposeOfFlight
+                            </label>
+                            <textarea asp-for="BookingModel.Purpose" class="form-control" rows="3"
+                                      placeholder="@App.Resources.Views.Home.EnterPurpose"></textarea>
+                            <span asp-validation-for="BookingModel.Purpose" class="text-danger"></span>
+                        </div>
+
+                        <!-- Price Estimator -->
+                        <div class="alert alert-info" id="priceEstimate">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-calculator me-2"></i><strong>@App.Resources.Views.Home.EstimatedPrice</strong></span>
+                                <span class="fs-5 fw-bold" id="estimatedPrice">—</span>
+                            </div>
+                            <small class="text-muted" id="priceBreakdown"></small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>@App.Resources.Views.Home.SubmitBookingRequest
+                            </button>
+                            <a asp-controller="Aircraft" asp-action="Details" asp-route-id="@Model.Aircraft.Id"
+                               class="btn btn-secondary">
+                                @App.Resources.Views.Home.Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aircraft Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-airplane me-2"></i>@App.Resources.Views.Home.AircraftDetails</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.Registration</dt>
+                        <dd class="col-sm-7">@Model.Aircraft.RegistrationNumber</dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.Category</dt>
+                        <dd class="col-sm-7"><span class="badge bg-secondary">@Model.Aircraft.Category</span></dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.Base</dt>
+                        <dd class="col-sm-7">@(string.IsNullOrEmpty(Model.Aircraft.BaseAirportName) ? "N/A" : Model.Aircraft.BaseAirportName)</dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.HourlyRate</dt>
+                        <dd class="col-sm-7 fw-bold text-success">$@Model.Aircraft.HourlyRate.ToString("N2") @App.Resources.Views.Home.PerHour</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>@App.Resources.Views.Home.BookingInfo</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            @App.Resources.Views.Home.BookingSubjectToApproval
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            @App.Resources.Views.Home.PaymentAfterApproval
+                        </li>
+                        <li>
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            @App.Resources.Views.Home.PriceCalculatedPerHour
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const hourlyRate = @Model.Aircraft.HourlyRate;
+
+        function updatePrice() {
+            const start = document.getElementById('startDateTime').value;
+            const end = document.getElementById('endDateTime').value;
+            const priceEl = document.getElementById('estimatedPrice');
+            const breakdownEl = document.getElementById('priceBreakdown');
+
+            if (start && end) {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const diffMs = endDate - startDate;
+
+                if (diffMs > 0) {
+                    const hours = diffMs / (1000 * 60 * 60);
+                    const total = hours * hourlyRate;
+                    priceEl.textContent = '$' + total.toFixed(2);
+                    breakdownEl.textContent = hours.toFixed(1) + ' hours × $' + hourlyRate.toFixed(2) + '/hr';
+                } else {
+                    priceEl.textContent = '—';
+                    breakdownEl.textContent = 'End time must be after start time';
+                }
+            } else {
+                priceEl.textContent = '—';
+                breakdownEl.textContent = 'Select start and end times to see estimate';
+            }
+        }
+
+        document.getElementById('startDateTime').addEventListener('change', updatePrice);
+        document.getElementById('endDateTime').addEventListener('change', updatePrice);
+        updatePrice();
+    </script>
+}

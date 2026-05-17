@@ -1,0 +1,131 @@
+@model WebApp.ViewModels.User.ProfileViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.MyProfile;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@App.Resources.Views.Home.MyProfile</h1>
+            <p class="text-muted">@App.Resources.Views.Home.AccountInfoDescription</p>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- User Info Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>@App.Resources.Views.Home.UserInformation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-person fs-1 text-muted"></i>
+                        </div>
+                        <h4 class="mb-0">@Model.Name</h4>
+                        <small class="text-muted">@App.Resources.Views.Home.Pilot</small>
+                    </div>
+                    <hr />
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted"><i class="bi bi-envelope me-1"></i>@App.Resources.Views.Home.Email</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        @if (!string.IsNullOrEmpty(Model.Phone))
+                        {
+                            <dt class="col-sm-4 text-muted"><i class="bi bi-telephone me-1"></i>@App.Resources.Views.Home.Phone</dt>
+                            <dd class="col-sm-8">@Model.Phone</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.LicenseNumber))
+                        {
+                            <dt class="col-sm-4 text-muted"><i class="bi bi-card-text me-1"></i>@App.Resources.Views.Home.LicenseLabel</dt>
+                            <dd class="col-sm-8">@Model.LicenseNumber</dd>
+
+                            @if (Model.LicenseExpiry.HasValue)
+                            {
+                                var expiryDays = (Model.LicenseExpiry.Value - DateTime.Today).TotalDays;
+                                var expiryClass = expiryDays < 0 ? "danger" : (expiryDays <= 30 ? "warning" : "success");
+                                <dt class="col-sm-4 text-muted">@App.Resources.Views.Home.Expires</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-@expiryClass">@Model.LicenseExpiry.Value.ToString("MMM dd, yyyy")</span>
+                                </dd>
+                            }
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Booking Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>@App.Resources.Views.Home.BookingStatistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="p-3">
+                                <h2 class="text-primary">@Model.TotalBookings</h2>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.TotalBookings</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3">
+                                <h2 class="text-success">@Model.CompletedBookings</h2>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.Completed</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3">
+                                <h2 class="text-warning">@(Model.TotalBookings - Model.CompletedBookings)</h2>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.PendingCancelled</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>@App.Resources.Views.Home.QuickActions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a asp-controller="Bookings" asp-action="MyBookings" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-list-check me-2"></i>@App.Resources.Views.Home.ViewMyBookings
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Aircraft" asp-action="Index" class="btn btn-outline-success w-100">
+                                <i class="bi bi-search me-2"></i>@App.Resources.Views.Home.BrowseAircraft
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

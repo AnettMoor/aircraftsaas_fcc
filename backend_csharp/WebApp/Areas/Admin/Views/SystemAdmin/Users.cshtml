@@ -1,0 +1,305 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminUsersViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.ManageUsersTitle;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-people me-2"></i>@App.Resources.Views.Home.ManageUsersTitle
+            </h1>
+            <p class="text-muted">@Model.TotalUsers @App.Resources.Views.Home.UsersFound</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateUser" class="btn btn-primary">
+                <i class="bi bi-person-plus me-1"></i> Create User
+            </a>
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> @App.Resources.Views.Home.BackToDashboardBtn
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Search & Filter -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.SearchLabel</label>
+                    <input type="text" name="search" value="@Model.SearchQuery"
+                           class="form-control" placeholder="@App.Resources.Views.Home.SearchNameOrEmail" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.StatusLabel</label>
+                    <select name="deactivated" class="form-select">
+                        <option value="" selected="@(Model.FilterDeactivated == null)">@App.Resources.Views.Home.AllFilter</option>
+                        <option value="false" selected="@(Model.FilterDeactivated == false)">@App.Resources.Views.Home.ActiveOnly</option>
+                        <option value="true" selected="@(Model.FilterDeactivated == true)">@App.Resources.Views.Home.DeactivatedOnly</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i> @App.Resources.Views.Home.Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                       class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle me-1"></i> @App.Resources.Views.Home.Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@App.Resources.Views.Home.AllUsers</h5>
+            <span class="badge bg-secondary">@App.Resources.Views.Home.Page @Model.Pagination.CurrentPage @App.Resources.Views.Home.Of @Model.Pagination.TotalPages</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Users.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>@App.Resources.Views.Home.NameCol</th>
+                                <th>@App.Resources.Views.Home.EmailCol</th>
+                                <th>@App.Resources.Views.Home.Status</th>
+                                <th>@App.Resources.Views.Home.RolesCol</th>
+                                <th>Company</th>
+                                <th>@App.Resources.Views.Home.Registered</th>
+                                <th>@App.Resources.Views.Home.BookingsCol</th>
+                                <th class="text-end">@App.Resources.Views.Home.Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr class="@(user.IsDeactivated ? "table-secondary" : "")">
+                                    <td><strong>@user.Name</strong></td>
+                                    <td class="text-muted">@user.Email</td>
+                                    <td>
+                                        @if (user.IsDeactivated)
+                                        {
+                                            <span class="badge bg-danger">@App.Resources.Views.Home.Deactivated</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">@App.Resources.Views.Home.Active</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @foreach (var role in user.Roles)
+                                        {
+                                            <span class="badge bg-secondary me-1">@role</span>
+                                        }
+                                        @if (!user.Roles.Any())
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(user.CompanyName))
+                                        {
+                                            <span class="small">@user.CompanyName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td><span class="badge bg-info">@user.BookingCount</span></td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="EditUserRoles"
+                                               asp-route-id="@user.UserId"
+                                               class="btn btn-outline-primary" title="@App.Resources.Views.Home.EditRolesTitle">
+                                                <i class="bi bi-person-gear"></i>
+                                            </a>
+                                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="ChangeUserCompany"
+                                               asp-route-id="@user.UserId"
+                                               class="btn btn-outline-warning" title="Change Company">
+                                                <i class="bi bi-building"></i>
+                                            </a>
+                                            @if (!user.IsDeactivated)
+                                            {
+                                                <button class="btn btn-outline-danger"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#removeModal-@user.UserId"
+                                                        title="@App.Resources.Views.Home.DeactivateUser">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-outline-success"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#reactivateModal-@user.UserId"
+                                                        title="@App.Resources.Views.Home.ReactivateUser">
+                                                    <i class="bi bi-person-check"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.Pagination.TotalPages > 1)
+                {
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">
+                            @App.Resources.Views.Home.Showing @((Model.Pagination.CurrentPage - 1) * Model.Pagination.PageSize + 1)
+                            –@(Math.Min(Model.Pagination.CurrentPage * Model.Pagination.PageSize, Model.Pagination.TotalItems))
+                            @App.Resources.Views.Home.Of @Model.Pagination.TotalItems
+                        </span>
+                        <nav aria-label="Users pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(!Model.Pagination.HasPrevious ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                                       asp-route-page="@(Model.Pagination.CurrentPage - 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-deactivated="@Model.FilterDeactivated">
+                                        &laquo;
+                                    </a>
+                                </li>
+                                @for (var p = Math.Max(1, Model.Pagination.CurrentPage - 2);
+                                      p <= Math.Min(Model.Pagination.TotalPages, Model.Pagination.CurrentPage + 2);
+                                      p++)
+                                {
+                                    <li class="page-item @(p == Model.Pagination.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                                           asp-route-page="@p"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-deactivated="@Model.FilterDeactivated">@p</a>
+                                    </li>
+                                }
+                                <li class="page-item @(!Model.Pagination.HasNext ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                                       asp-route-page="@(Model.Pagination.CurrentPage + 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-deactivated="@Model.FilterDeactivated">
+                                        &raquo;
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-people fs-1"></i>
+                    <p class="mt-2 mb-0">@App.Resources.Views.Home.NoUsersMatchFilter</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* Reactivation confirmation modals *@
+@foreach (var user in Model.Users.Where(u => u.IsDeactivated))
+{
+    <div class="modal fade" id="reactivateModal-@user.UserId" tabindex="-1" aria-labelledby="reactivateLabel-@user.UserId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-success">
+                    <h5 class="modal-title text-success" id="reactivateLabel-@user.UserId">
+                        <i class="bi bi-person-check me-1"></i> @App.Resources.Views.Home.ReactivateUser
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@App.Resources.Views.Home.AreYouSureReactivate</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>@App.Resources.Views.Home.NameCol:</strong> @user.Name</li>
+                        <li><strong>@App.Resources.Views.Home.EmailCol:</strong> @user.Email</li>
+                    </ul>
+                    <div class="alert alert-info mt-3 mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @App.Resources.Views.Home.ReactivateInfo
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.Cancel</button>
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="ReactivateUser"
+                          asp-route-id="@user.UserId" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-person-check me-1"></i> @App.Resources.Views.Home.ReactivateUser
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Deactivation confirmation modals *@
+@foreach (var user in Model.Users.Where(u => !u.IsDeactivated))
+{
+    <div class="modal fade" id="removeModal-@user.UserId" tabindex="-1" aria-labelledby="removeLabel-@user.UserId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title text-danger" id="removeLabel-@user.UserId">
+                        <i class="bi bi-person-x me-1"></i> @App.Resources.Views.Home.DeactivateUser
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@App.Resources.Views.Home.AreYouSureDeactivate</p>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>@App.Resources.Views.Home.NameCol:</strong> @user.Name</li>
+                        <li><strong>@App.Resources.Views.Home.EmailCol:</strong> @user.Email</li>
+                        <li><strong>@App.Resources.Views.Home.BookingsCol:</strong> @user.BookingCount</li>
+                    </ul>
+                    <div class="alert alert-warning mt-3 mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @App.Resources.Views.Home.DeactivateUserWarning
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.Cancel</button>
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="RemoveUser"
+                          asp-route-id="@user.UserId" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-person-x me-1"></i> @App.Resources.Views.Home.DeactivateUser
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

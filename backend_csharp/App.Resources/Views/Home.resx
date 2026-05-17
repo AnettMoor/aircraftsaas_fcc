@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+
+    <!-- Existing keys -->
+    <data name="User" xml:space="preserve">
+        <value>User</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Dashboard</value>
+    </data>
+    <data name="Bookings" xml:space="preserve">
+        <value>Bookings</value>
+    </data>
+    <data name="Maintenance" xml:space="preserve">
+        <value>Maintenance</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Settings</value>
+    </data>
+    <data name="Aircraft" xml:space="preserve">
+        <value>Aircraft</value>
+    </data>
+    <data name="Home" xml:space="preserve">
+        <value>Home</value>
+    </data>
+
+    <!-- Navigation & Layout -->
+    <data name="Login" xml:space="preserve">
+        <value>Login</value>
+    </data>
+    <data name="Logout" xml:space="preserve">
+        <value>Logout</value>
+    </data>
+    <data name="Register" xml:space="preserve">
+        <value>Register</value>
+    </data>
+    <data name="Hello" xml:space="preserve">
+        <value>Hello</value>
+    </data>
+    <data name="Privacy" xml:space="preserve">
+        <value>Privacy</value>
+    </data>
+    <data name="FindAircraft" xml:space="preserve">
+        <value>Find Aircraft</value>
+    </data>
+    <data name="MyBookings" xml:space="preserve">
+        <value>My Bookings</value>
+    </data>
+    <data name="MyProfile" xml:space="preserve">
+        <value>My Profile</value>
+    </data>
+    <data name="CreateCompany" xml:space="preserve">
+        <value>Create Company</value>
+    </data>
+    <data name="AdminPanel" xml:space="preserve">
+        <value>Admin Panel</value>
+    </data>
+    <data name="SystemDashboard" xml:space="preserve">
+        <value>System Dashboard</value>
+    </data>
+    <data name="Users" xml:space="preserve">
+        <value>Users</value>
+    </data>
+    <data name="Tenants" xml:space="preserve">
+        <value>Tenants</value>
+    </data>
+    <data name="ContactMaintenance" xml:space="preserve">
+        <value>Contact Maintenance</value>
+    </data>
+    <data name="SignIn" xml:space="preserve">
+        <value>Sign In</value>
+    </data>
+
+    <!-- CompanyOwner Dashboard -->
+    <data name="WelcomeBack" xml:space="preserve">
+        <value>Welcome back</value>
+    </data>
+    <data name="TotalAircraft" xml:space="preserve">
+        <value>Total Aircraft</value>
+    </data>
+    <data name="ViewAllAircraft" xml:space="preserve">
+        <value>View All Aircraft</value>
+    </data>
+    <data name="Available" xml:space="preserve">
+        <value>Available</value>
+    </data>
+    <data name="Unavailable" xml:space="preserve">
+        <value>Unavailable</value>
+    </data>
+    <data name="PendingApproval" xml:space="preserve">
+        <value>Pending Approval</value>
+    </data>
+    <data name="ReviewPending" xml:space="preserve">
+        <value>Review Pending</value>
+    </data>
+    <data name="MonthlyRevenue" xml:space="preserve">
+        <value>Monthly Revenue</value>
+    </data>
+    <data name="ThisMonth" xml:space="preserve">
+        <value>This month</value>
+    </data>
+    <data name="BookingOverview" xml:space="preserve">
+        <value>Booking Overview</value>
+    </data>
+    <data name="TotalBookings" xml:space="preserve">
+        <value>Total Bookings</value>
+    </data>
+    <data name="Active" xml:space="preserve">
+        <value>Active</value>
+    </data>
+    <data name="Pending" xml:space="preserve">
+        <value>Pending</value>
+    </data>
+    <data name="Completed" xml:space="preserve">
+        <value>Completed</value>
+    </data>
+    <data name="QuickActions" xml:space="preserve">
+        <value>Quick Actions</value>
+    </data>
+    <data name="AddAircraft" xml:space="preserve">
+        <value>Add Aircraft</value>
+    </data>
+    <data name="ManageBookings" xml:space="preserve">
+        <value>Manage Bookings</value>
+    </data>
+    <data name="PendingApprovals" xml:space="preserve">
+        <value>Pending Approvals</value>
+    </data>
+    <data name="ViewAll" xml:space="preserve">
+        <value>View All</value>
+    </data>
+    <data name="RecentAircraft" xml:space="preserve">
+        <value>Recent Aircraft</value>
+    </data>
+    <data name="RecentBookings" xml:space="preserve">
+        <value>Recent Bookings</value>
+    </data>
+    <data name="NoBookingsYet" xml:space="preserve">
+        <value>No bookings yet</value>
+    </data>
+    <data name="NoPendingBookings" xml:space="preserve">
+        <value>No pending bookings</value>
+    </data>
+    <data name="NoAircraftYet" xml:space="preserve">
+        <value>No aircraft yet</value>
+    </data>
+    <data name="AddFirstAircraft" xml:space="preserve">
+        <value>Add First Aircraft</value>
+    </data>
+    <data name="Approve" xml:space="preserve">
+        <value>Approve</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>Reject</value>
+    </data>
+    <data name="RejectBooking" xml:space="preserve">
+        <value>Reject Booking</value>
+    </data>
+    <data name="RejectionReason" xml:space="preserve">
+        <value>Rejection Reason</value>
+    </data>
+    <data name="Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="SaveChanges" xml:space="preserve">
+        <value>Save Changes</value>
+    </data>
+    <data name="Pilot" xml:space="preserve">
+        <value>Pilot</value>
+    </data>
+    <data name="Dates" xml:space="preserve">
+        <value>Dates</value>
+    </data>
+    <data name="Amount" xml:space="preserve">
+        <value>Amount</value>
+    </data>
+    <data name="Status" xml:space="preserve">
+        <value>Status</value>
+    </data>
+
+    <!-- CompanyOwner Settings -->
+    <data name="CompanySettings" xml:space="preserve">
+        <value>Company Settings</value>
+    </data>
+    <data name="ManageCompanyProfile" xml:space="preserve">
+        <value>Manage your company profile</value>
+    </data>
+    <data name="CompanyProfile" xml:space="preserve">
+        <value>Company Profile</value>
+    </data>
+    <data name="UsageLimits" xml:space="preserve">
+        <value>Usage Limits</value>
+    </data>
+    <data name="MonthlyBookings" xml:space="preserve">
+        <value>Monthly Bookings</value>
+    </data>
+
+    <!-- SystemAdmin Dashboard -->
+    <data name="SystemAdminDashboard" xml:space="preserve">
+        <value>System Admin Dashboard</value>
+    </data>
+    <data name="SystemOverview" xml:space="preserve">
+        <value>System-wide overview — all tenants and users</value>
+    </data>
+    <data name="SystemAdmin" xml:space="preserve">
+        <value>System Admin</value>
+    </data>
+    <data name="TotalUsers" xml:space="preserve">
+        <value>Total Users</value>
+    </data>
+    <data name="ManageUsers" xml:space="preserve">
+        <value>Manage Users</value>
+    </data>
+    <data name="ActiveTenants" xml:space="preserve">
+        <value>Active Tenants</value>
+    </data>
+    <data name="ManageTenants" xml:space="preserve">
+        <value>Manage Tenants</value>
+    </data>
+    <data name="AcrossAllTenants" xml:space="preserve">
+        <value>Across all tenants</value>
+    </data>
+    <data name="RegisteredInSystem" xml:space="preserve">
+        <value>Registered in system</value>
+    </data>
+    <data name="TopTenantsByBookings" xml:space="preserve">
+        <value>Top Tenants by Bookings</value>
+    </data>
+    <data name="ViewAllTenants" xml:space="preserve">
+        <value>View All Tenants</value>
+    </data>
+    <data name="Inactive" xml:space="preserve">
+        <value>Inactive</value>
+    </data>
+    <data name="NoTenantsYet" xml:space="preserve">
+        <value>No tenants enrolled yet</value>
+    </data>
+
+    <!-- SystemAdmin Tenants -->
+    <data name="AllTenants" xml:space="preserve">
+        <value>All Tenants</value>
+    </data>
+    <data name="InactiveTenants" xml:space="preserve">
+        <value>Inactive Tenants</value>
+    </data>
+    <data name="Created" xml:space="preserve">
+        <value>Created</value>
+    </data>
+    <data name="Actions" xml:space="preserve">
+        <value>Actions</value>
+    </data>
+    <data name="Activate" xml:space="preserve">
+        <value>Activate</value>
+    </data>
+    <data name="Deactivate" xml:space="preserve">
+        <value>Deactivate</value>
+    </data>
+    <data name="BackToDashboard" xml:space="preserve">
+        <value>Back to Dashboard</value>
+    </data>
+    <data name="NoTenantsFound" xml:space="preserve">
+        <value>No tenants found.</value>
+    </data>
+    <data name="DeactivateWarning" xml:space="preserve">
+        <value>Deactivating this tenant will prevent its users from logging in or accessing the system.</value>
+    </data>
+    <data name="ActivateInfo" xml:space="preserve">
+        <value>Activating this tenant will restore access for all its users.</value>
+    </data>
+    <data name="Tenant" xml:space="preserve">
+        <value>Tenant</value>
+    </data>
+    <data name="Slug" xml:space="preserve">
+        <value>Slug</value>
+    </data>
+
+    <!-- Home/Index page -->
+    <data name="AircraftSaaSPortal" xml:space="preserve">
+        <value>Aircraft SaaS Portal</value>
+    </data>
+    <data name="HeroDescription" xml:space="preserve">
+        <value>Manage your fleet, book aircraft, track maintenance, and more.</value>
+    </data>
+    <data name="BrowseAircraft" xml:space="preserve">
+        <value>Browse Aircraft</value>
+    </data>
+    <data name="SearchFilterDescription" xml:space="preserve">
+        <value>Search and filter available aircraft by type, capacity, and location.</value>
+    </data>
+    <data name="SearchAvailableAircraft" xml:space="preserve">
+        <value>Search available aircraft</value>
+    </data>
+    <data name="BookAircraftForFlights" xml:space="preserve">
+        <value>Book aircraft for flights</value>
+    </data>
+    <data name="ManageYourBookings" xml:space="preserve">
+        <value>Manage your bookings</value>
+    </data>
+    <data name="SignInToBrowse" xml:space="preserve">
+        <value>Sign In to Browse</value>
+    </data>
+    <data name="CompanyDashboard" xml:space="preserve">
+        <value>Company Dashboard</value>
+    </data>
+    <data name="CompanyDashboardDescription" xml:space="preserve">
+        <value>Manage your fleet, approve bookings, and track maintenance schedules.</value>
+    </data>
+    <data name="CompanyFleetManagement" xml:space="preserve">
+        <value>Company fleet management</value>
+    </data>
+    <data name="ApproveRejectBookings" xml:space="preserve">
+        <value>Approve/reject bookings</value>
+    </data>
+    <data name="MaintenanceTracking" xml:space="preserve">
+        <value>Maintenance tracking</value>
+    </data>
+    <data name="SignInAsOwner" xml:space="preserve">
+        <value>Sign In as Owner</value>
+    </data>
+    <data name="NewToPlatform" xml:space="preserve">
+        <value>New to the Platform?</value>
+    </data>
+    <data name="NewToPlatformDescription" xml:space="preserve">
+        <value>Create a free account to get started booking aircraft or managing your company's fleet.</value>
+    </data>
+    <data name="FreeToRegister" xml:space="preserve">
+        <value>Free to register</value>
+    </data>
+    <data name="JoinOrCreateCompany" xml:space="preserve">
+        <value>Join or create a company</value>
+    </data>
+    <data name="StartFlyingToday" xml:space="preserve">
+        <value>Start flying today</value>
+    </data>
+    <data name="CreateAccount" xml:space="preserve">
+        <value>Create Account</value>
+    </data>
+    <data name="QuickAccess" xml:space="preserve">
+        <value>Quick Access</value>
+    </data>
+    <data name="BrowseFleet" xml:space="preserve">
+        <value>Browse Fleet</value>
+    </data>
+    <data name="BrowseFleetDescription" xml:space="preserve">
+        <value>Browse available aircraft from your company's fleet and make a booking.</value>
+    </data>
+    <data name="ViewBookings" xml:space="preserve">
+        <value>View Bookings</value>
+    </data>
+    <data name="ViewBookingsDescription" xml:space="preserve">
+        <value>View and manage all your active and past flight bookings.</value>
+    </data>
+    <data name="ViewProfile" xml:space="preserve">
+        <value>View Profile</value>
+    </data>
+    <data name="ViewProfileDescription" xml:space="preserve">
+        <value>View your pilot profile, licenses, and personal information.</value>
+    </data>
+    <data name="FleetManagement" xml:space="preserve">
+        <value>Fleet Management</value>
+    </data>
+    <data name="FleetManagementDescription" xml:space="preserve">
+        <value>Manage your aircraft fleet, availability, and maintenance records.</value>
+    </data>
+    <data name="ManageFleet" xml:space="preserve">
+        <value>Manage Fleet</value>
+    </data>
+    <data name="GoToDashboard" xml:space="preserve">
+        <value>Go to Dashboard</value>
+    </data>
+    <data name="DashboardDescription" xml:space="preserve">
+        <value>View your company overview, pending bookings, and recent activity.</value>
+    </data>
+    <data name="BookingsCardDescription" xml:space="preserve">
+        <value>Review, approve, and manage all incoming flight booking requests.</value>
+    </data>
+    <data name="CompanyOwner" xml:space="preserve">
+        <value>Company Owner</value>
+    </data>
+    <data name="ConfirmAction" xml:space="preserve">
+        <value>Are you sure you want to</value>
+    </data>
+    <data name="PleaseProvideReason" xml:space="preserve">
+        <value>Please provide a reason for rejection...</value>
+    </data>
+    <data name="Availability" xml:space="preserve">
+        <value>availability</value>
+    </data>
+
+    <!-- User/Index - Aircraft Catalog -->
+    <data name="AircraftCatalog" xml:space="preserve">
+        <value>Aircraft Catalog</value>
+    </data>
+    <data name="FindAndBookDescription" xml:space="preserve">
+        <value>Find and book your perfect aircraft</value>
+    </data>
+    <data name="SearchFilters" xml:space="preserve">
+        <value>Search Filters</value>
+    </data>
+    <data name="Make" xml:space="preserve">
+        <value>Make</value>
+    </data>
+    <data name="Model" xml:space="preserve">
+        <value>Model</value>
+    </data>
+    <data name="Category" xml:space="preserve">
+        <value>Category</value>
+    </data>
+    <data name="AllCategories" xml:space="preserve">
+        <value>All Categories</value>
+    </data>
+    <data name="Location" xml:space="preserve">
+        <value>Location</value>
+    </data>
+    <data name="AirportCode" xml:space="preserve">
+        <value>Airport code</value>
+    </data>
+    <data name="MaxHourlyRate" xml:space="preserve">
+        <value>Max Hourly Rate ($)</value>
+    </data>
+    <data name="StartDate" xml:space="preserve">
+        <value>Start Date</value>
+    </data>
+    <data name="EndDate" xml:space="preserve">
+        <value>End Date</value>
+    </data>
+    <data name="Search" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="ClearFilters" xml:space="preserve">
+        <value>Clear Filters</value>
+    </data>
+    <data name="ShowingAircraft" xml:space="preserve">
+        <value>Showing</value>
+    </data>
+    <data name="AircraftPlural" xml:space="preserve">
+        <value>aircraft</value>
+    </data>
+    <data name="Hours" xml:space="preserve">
+        <value>hrs</value>
+    </data>
+    <data name="PerHour" xml:space="preserve">
+        <value>/hr</value>
+    </data>
+    <data name="ViewDetails" xml:space="preserve">
+        <value>View Details</value>
+    </data>
+    <data name="NoAircraftFound" xml:space="preserve">
+        <value>No Aircraft Found</value>
+    </data>
+    <data name="TryAdjustingFilters" xml:space="preserve">
+        <value>Try adjusting your search filters or check back later.</value>
+    </data>
+    <data name="Reviews" xml:space="preserve">
+        <value>Reviews</value>
+    </data>
+    <data name="ReviewsLower" xml:space="preserve">
+        <value>reviews</value>
+    </data>
+
+    <!-- User/MyBookings -->
+    <data name="ManageFlightBookings" xml:space="preserve">
+        <value>Manage your flight bookings</value>
+    </data>
+    <data name="AllBookings" xml:space="preserve">
+        <value>All Bookings</value>
+    </data>
+    <data name="Cancelled" xml:space="preserve">
+        <value>Cancelled</value>
+    </data>
+    <data name="CancelBooking" xml:space="preserve">
+        <value>Cancel Booking</value>
+    </data>
+    <data name="ConfirmCancelBooking" xml:space="preserve">
+        <value>Are you sure you want to cancel this booking?</value>
+    </data>
+    <data name="KeepBooking" xml:space="preserve">
+        <value>Keep Booking</value>
+    </data>
+
+    <!-- User/Profile -->
+    <data name="AccountInfoDescription" xml:space="preserve">
+        <value>Your account information and booking statistics</value>
+    </data>
+    <data name="UserInformation" xml:space="preserve">
+        <value>User Information</value>
+    </data>
+    <data name="Email" xml:space="preserve">
+        <value>Email</value>
+    </data>
+    <data name="Phone" xml:space="preserve">
+        <value>Phone</value>
+    </data>
+    <data name="LicenseLabel" xml:space="preserve">
+        <value>License</value>
+    </data>
+    <data name="Expires" xml:space="preserve">
+        <value>Expires</value>
+    </data>
+    <data name="BookingStatistics" xml:space="preserve">
+        <value>Booking Statistics</value>
+    </data>
+    <data name="PendingCancelled" xml:space="preserve">
+        <value>Pending / Cancelled</value>
+    </data>
+    <data name="ViewMyBookings" xml:space="preserve">
+        <value>View My Bookings</value>
+    </data>
+
+    <!-- User/AircraftDetails -->
+    <data name="NotAvailable" xml:space="preserve">
+        <value>Not Available</value>
+    </data>
+    <data name="Year" xml:space="preserve">
+        <value>Year</value>
+    </data>
+    <data name="TotalAirspeedHours" xml:space="preserve">
+        <value>Total Airspeed Hours</value>
+    </data>
+    <data name="HourlyRate" xml:space="preserve">
+        <value>Hourly Rate</value>
+    </data>
+    <data name="BaseAirport" xml:space="preserve">
+        <value>Base Airport</value>
+    </data>
+    <data name="Company" xml:space="preserve">
+        <value>Company</value>
+    </data>
+    <data name="NoReviewsYet" xml:space="preserve">
+        <value>No reviews yet. Be the first to review!</value>
+    </data>
+    <data name="BookThisAircraft" xml:space="preserve">
+        <value>Book This Aircraft</value>
+    </data>
+    <data name="ReadyForBooking" xml:space="preserve">
+        <value>Ready for booking</value>
+    </data>
+    <data name="SignInToBook" xml:space="preserve">
+        <value>Sign In to Book</value>
+    </data>
+    <data name="UnavailableDescription" xml:space="preserve">
+        <value>Currently booked or offline</value>
+    </data>
+
+    <!-- User/Book -->
+    <data name="Book" xml:space="preserve">
+        <value>Book</value>
+    </data>
+    <data name="NotAvailableAlert" xml:space="preserve">
+        <value>Not Available!</value>
+    </data>
+    <data name="NotAvailableForDates" xml:space="preserve">
+        <value>This aircraft is not available for the selected dates.</value>
+    </data>
+    <data name="NextAvailable" xml:space="preserve">
+        <value>Next available:</value>
+    </data>
+    <data name="StartDateTime" xml:space="preserve">
+        <value>Start Date &amp; Time</value>
+    </data>
+    <data name="EndDateTime" xml:space="preserve">
+        <value>End Date &amp; Time</value>
+    </data>
+    <data name="PurposeOfFlight" xml:space="preserve">
+        <value>Purpose of Flight</value>
+    </data>
+    <data name="EnterPurpose" xml:space="preserve">
+        <value>Enter the purpose of your flight...</value>
+    </data>
+    <data name="EstimatedPrice" xml:space="preserve">
+        <value>Estimated Price</value>
+    </data>
+    <data name="SubmitBookingRequest" xml:space="preserve">
+        <value>Submit Booking Request</value>
+    </data>
+    <data name="AircraftDetails" xml:space="preserve">
+        <value>Aircraft Details</value>
+    </data>
+    <data name="Registration" xml:space="preserve">
+        <value>Registration</value>
+    </data>
+    <data name="Base" xml:space="preserve">
+        <value>Base</value>
+    </data>
+    <data name="BookingInfo" xml:space="preserve">
+        <value>Booking Info</value>
+    </data>
+    <data name="BookingSubjectToApproval" xml:space="preserve">
+        <value>Booking is subject to company approval</value>
+    </data>
+    <data name="PaymentAfterApproval" xml:space="preserve">
+        <value>Payment required after approval</value>
+    </data>
+    <data name="PriceCalculatedPerHour" xml:space="preserve">
+        <value>Price is calculated per hour</value>
+    </data>
+
+    <!-- User/BookingDetails -->
+    <data name="BookingDetails" xml:space="preserve">
+        <value>Booking Details</value>
+    </data>
+    <data name="TotalAmount" xml:space="preserve">
+        <value>Total Amount</value>
+    </data>
+    <data name="Duration" xml:space="preserve">
+        <value>Duration</value>
+    </data>
+    <data name="PayNow" xml:space="preserve">
+        <value>Pay Now</value>
+    </data>
+    <data name="LeaveReview" xml:space="preserve">
+        <value>Leave a Review</value>
+    </data>
+    <data name="BackToMyBookings" xml:space="preserve">
+        <value>Back to My Bookings</value>
+    </data>
+    <data name="YourReview" xml:space="preserve">
+        <value>Your Review</value>
+    </data>
+    <data name="Verified" xml:space="preserve">
+        <value>Verified</value>
+    </data>
+    <data name="Excellent" xml:space="preserve">
+        <value>Excellent</value>
+    </data>
+    <data name="VeryGood" xml:space="preserve">
+        <value>Very Good</value>
+    </data>
+    <data name="Good" xml:space="preserve">
+        <value>Good</value>
+    </data>
+    <data name="Fair" xml:space="preserve">
+        <value>Fair</value>
+    </data>
+    <data name="Poor" xml:space="preserve">
+        <value>Poor</value>
+    </data>
+    <data name="ReviewedOn" xml:space="preserve">
+        <value>Reviewed on</value>
+    </data>
+    <data name="EditReview" xml:space="preserve">
+        <value>Edit Review</value>
+    </data>
+    <data name="AvailableActions" xml:space="preserve">
+        <value>Available Actions</value>
+    </data>
+    <data name="CancelThisBooking" xml:space="preserve">
+        <value>Cancel this booking</value>
+    </data>
+    <data name="CancellationNotAvailable" xml:space="preserve">
+        <value>Cancellation not available</value>
+    </data>
+    <data name="PaymentRequired" xml:space="preserve">
+        <value>Payment required</value>
+    </data>
+    <data name="PaymentNotNeeded" xml:space="preserve">
+        <value>Payment not needed</value>
+    </data>
+    <data name="ReviewSubmitted" xml:space="preserve">
+        <value>Review submitted</value>
+    </data>
+    <data name="ReviewAfterCompletion" xml:space="preserve">
+        <value>Review available after completion</value>
+    </data>
+    <data name="CompletePayment" xml:space="preserve">
+        <value>Complete Payment</value>
+    </data>
+    <data name="TotalDue" xml:space="preserve">
+        <value>Total Due:</value>
+    </data>
+    <data name="PaymentMethod" xml:space="preserve">
+        <value>Payment Method</value>
+    </data>
+    <data name="CreditCard" xml:space="preserve">
+        <value>Credit Card</value>
+    </data>
+    <data name="DebitCard" xml:space="preserve">
+        <value>Debit Card</value>
+    </data>
+    <data name="BankTransfer" xml:space="preserve">
+        <value>Bank Transfer</value>
+    </data>
+    <data name="ConfirmPayment" xml:space="preserve">
+        <value>Confirm Payment</value>
+    </data>
+    <data name="EditBooking" xml:space="preserve">
+        <value>Edit Booking</value>
+    </data>
+    <data name="EditThisBooking" xml:space="preserve">
+        <value>Edit this booking</value>
+    </data>
+    <data name="EditingNotAvailable" xml:space="preserve">
+        <value>Editing not available</value>
+    </data>
+    <data name="UpdateBooking" xml:space="preserve">
+        <value>Update Booking</value>
+    </data>
+    <data name="EditBookingDescription" xml:space="preserve">
+        <value>Modify your booking details below</value>
+    </data>
+    <data name="BackToBookingDetails" xml:space="preserve">
+        <value>Back to Booking Details</value>
+    </data>
+    <data name="CurrentBookingInfo" xml:space="preserve">
+        <value>Current Booking Info</value>
+    </data>
+    <data name="EditOnlyPendingNote" xml:space="preserve">
+        <value>You can only edit bookings that are pending or requested. Once approved, changes are no longer possible.</value>
+    </data>
+
+    <!-- User/_UserBookingList -->
+    <data name="PaymentDue" xml:space="preserve">
+        <value>Payment Due</value>
+    </data>
+    <data name="Details" xml:space="preserve">
+        <value>Details</value>
+    </data>
+    <data name="NoBookingsLabel" xml:space="preserve">
+        <value>No Bookings</value>
+    </data>
+    <data name="NoBookingsInCategory" xml:space="preserve">
+        <value>You don't have any bookings in this category.</value>
+    </data>
+    <data name="Paid" xml:space="preserve">
+        <value>Paid</value>
+    </data>
+
+    <!-- User/AddReview -->
+    <data name="AddReview" xml:space="preserve">
+        <value>Add Review</value>
+    </data>
+    <data name="UpdateReviewFor" xml:space="preserve">
+        <value>Update your review for</value>
+    </data>
+    <data name="ShareExperienceWith" xml:space="preserve">
+        <value>Share your experience with</value>
+    </data>
+    <data name="BackToBooking" xml:space="preserve">
+        <value>Back to Booking</value>
+    </data>
+    <data name="ReviewSubmittedOnDate" xml:space="preserve">
+        <value>You submitted this review on</value>
+    </data>
+    <data name="UpdateRatingComment" xml:space="preserve">
+        <value>You can update your rating and comment below.</value>
+    </data>
+    <data name="WriteYourReview" xml:space="preserve">
+        <value>Write Your Review</value>
+    </data>
+    <data name="EditYourReview" xml:space="preserve">
+        <value>Edit Your Review</value>
+    </data>
+    <data name="Rating" xml:space="preserve">
+        <value>Rating</value>
+    </data>
+    <data name="SelectRating" xml:space="preserve">
+        <value>Select a rating</value>
+    </data>
+    <data name="YourReviewLabel" xml:space="preserve">
+        <value>Your Review</value>
+    </data>
+    <data name="ReviewPlaceholder" xml:space="preserve">
+        <value>Share your experience — was it easy to book? How was the aircraft condition? Would you recommend it?</value>
+    </data>
+    <data name="UpdateReview" xml:space="preserve">
+        <value>Update Review</value>
+    </data>
+    <data name="SubmitReview" xml:space="preserve">
+        <value>Submit Review</value>
+    </data>
+    <data name="RatingGuide" xml:space="preserve">
+        <value>Rating Guide</value>
+    </data>
+
+    <!-- SystemAdmin - shared table / filter labels -->
+    <data name="Page" xml:space="preserve">
+        <value>Page</value>
+    </data>
+    <data name="Of" xml:space="preserve">
+        <value>of</value>
+    </data>
+    <data name="Showing" xml:space="preserve">
+        <value>Showing</value>
+    </data>
+    <data name="Filter" xml:space="preserve">
+        <value>Filter</value>
+    </data>
+    <data name="Clear" xml:space="preserve">
+        <value>Clear</value>
+    </data>
+    <data name="AllStatuses" xml:space="preserve">
+        <value>All statuses</value>
+    </data>
+    <data name="AllTenantsList" xml:space="preserve">
+        <value>All tenants</value>
+    </data>
+    <data name="AllEntities" xml:space="preserve">
+        <value>All entities</value>
+    </data>
+    <data name="AllActions" xml:space="preserve">
+        <value>All actions</value>
+    </data>
+    <data name="AllFilter" xml:space="preserve">
+        <value>All</value>
+    </data>
+    <data name="ActiveOnly" xml:space="preserve">
+        <value>Active only</value>
+    </data>
+    <data name="InactiveOnly" xml:space="preserve">
+        <value>Inactive only</value>
+    </data>
+    <data name="DeactivatedOnly" xml:space="preserve">
+        <value>Deactivated only</value>
+    </data>
+    <data name="AvailableOnly" xml:space="preserve">
+        <value>Available only</value>
+    </data>
+    <data name="UnavailableOnly" xml:space="preserve">
+        <value>Unavailable only</value>
+    </data>
+    <data name="SearchLabel" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="StatusLabel" xml:space="preserve">
+        <value>Status</value>
+    </data>
+    <data name="TenantLabel" xml:space="preserve">
+        <value>Tenant</value>
+    </data>
+    <data name="EntityLabel" xml:space="preserve">
+        <value>Entity</value>
+    </data>
+    <data name="ActionLabel" xml:space="preserve">
+        <value>Action</value>
+    </data>
+    <data name="AvailabilityLabel" xml:space="preserve">
+        <value>Availability</value>
+    </data>
+    <data name="BackToDashboardBtn" xml:space="preserve">
+        <value>Back to Dashboard</value>
+    </data>
+    <data name="BackToUsers" xml:space="preserve">
+        <value>Back to Users</value>
+    </data>
+
+    <!-- SystemAdmin - Dashboard -->
+    <data name="SystemWideOverview" xml:space="preserve">
+        <value>System-wide overview</value>
+    </data>
+    <data name="QuickActionsLabel" xml:space="preserve">
+        <value>Quick Actions</value>
+    </data>
+    <data name="AllBookingsLink" xml:space="preserve">
+        <value>All Bookings</value>
+    </data>
+    <data name="AllAircraftLink" xml:space="preserve">
+        <value>All Aircraft</value>
+    </data>
+    <data name="AuditLog" xml:space="preserve">
+        <value>Audit Log</value>
+    </data>
+    <data name="NoTenantsYetAdmin" xml:space="preserve">
+        <value>No tenants yet.</value>
+    </data>
+    <data name="ViewAllBookings" xml:space="preserve">
+        <value>View All Bookings</value>
+    </data>
+    <data name="ViewAllAircraftLink" xml:space="preserve">
+        <value>View All Aircraft</value>
+    </data>
+
+    <!-- SystemAdmin - Tenants -->
+    <data name="ManageTenantsTitle" xml:space="preserve">
+        <value>Manage Tenants</value>
+    </data>
+    <data name="SearchCompanyOrSlug" xml:space="preserve">
+        <value>Company name or slug…</value>
+    </data>
+    <data name="NoTenantsMatchFilter" xml:space="preserve">
+        <value>No tenants match your filter.</value>
+    </data>
+    <data name="DeactivateTenant" xml:space="preserve">
+        <value>Deactivate</value>
+    </data>
+    <data name="ActivateTenant" xml:space="preserve">
+        <value>Activate</value>
+    </data>
+    <data name="ToggleTenantTitle" xml:space="preserve">
+        <value>Tenant</value>
+    </data>
+    <data name="TenantDeactivateWarning" xml:space="preserve">
+        <value>Users of this tenant will not be able to log in while the tenant is inactive.</value>
+    </data>
+    <data name="TenantActivateInfo" xml:space="preserve">
+        <value>Activating will allow the tenant's users to log in again.</value>
+    </data>
+    <data name="AreYouSureWantTo" xml:space="preserve">
+        <value>Are you sure you want to</value>
+    </data>
+    <data name="ThisTenant" xml:space="preserve">
+        <value>this tenant?</value>
+    </data>
+
+    <!-- SystemAdmin - Users -->
+    <data name="ManageUsersTitle" xml:space="preserve">
+        <value>Manage Users</value>
+    </data>
+    <data name="UsersFound" xml:space="preserve">
+        <value>user(s) found</value>
+    </data>
+    <data name="SearchNameOrEmail" xml:space="preserve">
+        <value>Name or email…</value>
+    </data>
+    <data name="AllUsers" xml:space="preserve">
+        <value>All Users</value>
+    </data>
+    <data name="NameCol" xml:space="preserve">
+        <value>Name</value>
+    </data>
+    <data name="EmailCol" xml:space="preserve">
+        <value>Email</value>
+    </data>
+    <data name="RolesCol" xml:space="preserve">
+        <value>Roles</value>
+    </data>
+    <data name="Registered" xml:space="preserve">
+        <value>Registered</value>
+    </data>
+    <data name="BookingsCol" xml:space="preserve">
+        <value>Bookings</value>
+    </data>
+    <data name="Deactivated" xml:space="preserve">
+        <value>Deactivated</value>
+    </data>
+    <data name="NoUsersMatchFilter" xml:space="preserve">
+        <value>No users match your filter.</value>
+    </data>
+    <data name="ReactivateUser" xml:space="preserve">
+        <value>Reactivate User</value>
+    </data>
+    <data name="DeactivateUser" xml:space="preserve">
+        <value>Deactivate User</value>
+    </data>
+    <data name="AreYouSureReactivate" xml:space="preserve">
+        <value>Are you sure you want to reactivate this user?</value>
+    </data>
+    <data name="AreYouSureDeactivate" xml:space="preserve">
+        <value>Are you sure you want to deactivate this user?</value>
+    </data>
+    <data name="ReactivateInfo" xml:space="preserve">
+        <value>The account lockout will be removed and the user will be able to sign in again.</value>
+    </data>
+    <data name="DeactivateUserWarning" xml:space="preserve">
+        <value>The user account will be locked. Historical data is preserved. Active bookings will be cancelled and all sessions revoked.</value>
+    </data>
+
+    <!-- SystemAdmin - All Aircraft -->
+    <data name="AllAircraftTitle" xml:space="preserve">
+        <value>All Aircraft (System-wide)</value>
+    </data>
+    <data name="AllAircraftHeading" xml:space="preserve">
+        <value>All Aircraft</value>
+    </data>
+    <data name="AircraftFoundAcrossTenants" xml:space="preserve">
+        <value>aircraft found across all tenants</value>
+    </data>
+    <data name="SearchRegistrationMakeModelTenant" xml:space="preserve">
+        <value>Registration, make, model, tenant…</value>
+    </data>
+    <data name="RegistrationCol" xml:space="preserve">
+        <value>Registration</value>
+    </data>
+    <data name="MakeAndModel" xml:space="preserve">
+        <value>Make &amp; Model</value>
+    </data>
+    <data name="YearCol" xml:space="preserve">
+        <value>Year</value>
+    </data>
+    <data name="HourlyRateCol" xml:space="preserve">
+        <value>Hourly Rate</value>
+    </data>
+    <data name="BaseAirportCol" xml:space="preserve">
+        <value>Base Airport</value>
+    </data>
+    <data name="NoAircraftMatchFilter" xml:space="preserve">
+        <value>No aircraft match your filter.</value>
+    </data>
+
+    <!-- SystemAdmin - All Bookings -->
+    <data name="AllBookingsTitle" xml:space="preserve">
+        <value>All Bookings (System-wide)</value>
+    </data>
+    <data name="AllBookingsHeading" xml:space="preserve">
+        <value>All Bookings</value>
+    </data>
+    <data name="BookingsFoundAcrossTenants" xml:space="preserve">
+        <value>booking(s) found across all tenants</value>
+    </data>
+    <data name="SearchPilotAircraftTenant" xml:space="preserve">
+        <value>Pilot email, aircraft reg, tenant…</value>
+    </data>
+    <data name="PilotCol" xml:space="preserve">
+        <value>Pilot</value>
+    </data>
+    <data name="StartCol" xml:space="preserve">
+        <value>Start</value>
+    </data>
+    <data name="EndCol" xml:space="preserve">
+        <value>End</value>
+    </data>
+    <data name="AmountCol" xml:space="preserve">
+        <value>Amount</value>
+    </data>
+    <data name="CreatedCol" xml:space="preserve">
+        <value>Created</value>
+    </data>
+    <data name="NoBookingsMatchFilter" xml:space="preserve">
+        <value>No bookings match your filter.</value>
+    </data>
+
+    <!-- SystemAdmin - Audit Log -->
+    <data name="AuditLogTitle" xml:space="preserve">
+        <value>Audit Log</value>
+    </data>
+    <data name="TotalEntries" xml:space="preserve">
+        <value>total entries</value>
+    </data>
+    <data name="SearchDetailsEmailIp" xml:space="preserve">
+        <value>Details, email, IP…</value>
+    </data>
+    <data name="LogEntries" xml:space="preserve">
+        <value>Log Entries</value>
+    </data>
+    <data name="TimestampCol" xml:space="preserve">
+        <value>Timestamp</value>
+    </data>
+    <data name="TenantIdCol" xml:space="preserve">
+        <value>Tenant ID</value>
+    </data>
+    <data name="UserCol" xml:space="preserve">
+        <value>User</value>
+    </data>
+    <data name="IpCol" xml:space="preserve">
+        <value>IP</value>
+    </data>
+    <data name="DetailsCol" xml:space="preserve">
+        <value>Details</value>
+    </data>
+    <data name="NoAuditLogMatch" xml:space="preserve">
+        <value>No audit log entries match your filter.</value>
+    </data>
+
+    <!-- SystemAdmin - Edit User Roles -->
+    <data name="EditRolesTitle" xml:space="preserve">
+        <value>Edit Roles</value>
+    </data>
+    <data name="AspNetIdentityRoles" xml:space="preserve">
+        <value>ASP.NET Identity Roles</value>
+    </data>
+    <data name="NoRolesDefined" xml:space="preserve">
+        <value>No roles are defined in the system.</value>
+    </data>
+    <data name="CurrentlyAssigned" xml:space="preserve">
+        <value>Currently assigned</value>
+    </data>
+    <data name="SaveRoles" xml:space="preserve">
+        <value>Save Roles</value>
+    </data>
+    <data name="CompanyMemberships" xml:space="preserve">
+        <value>Company Memberships</value>
+    </data>
+    <data name="NoCompanyMemberships" xml:space="preserve">
+        <value>No company memberships.</value>
+    </data>
+</root>

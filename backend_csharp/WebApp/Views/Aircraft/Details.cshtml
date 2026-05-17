@@ -1,0 +1,196 @@
+@model WebApp.ViewModels.User.AircraftDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Aircraft.Make + " " + Model.Aircraft.Model;
+}
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Aircraft" asp-action="Index">@App.Resources.Views.Home.FindAircraft</a></li>
+            <li class="breadcrumb-item active">@Model.Aircraft.Make @Model.Aircraft.Model</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Aircraft Info Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">@Model.Aircraft.Make @Model.Aircraft.Model</h4>
+                        <small class="text-muted">@Model.Aircraft.RegistrationNumber</small>
+                    </div>
+                    @if (Model.Aircraft.Status == "InsuranceInactive")
+                    {
+                        <span class="badge bg-warning text-dark fs-6">Insurance Inactive</span>
+                    }
+                    else if (Model.Aircraft.Status == "Maintenance")
+                    {
+                        <span class="badge bg-info fs-6">Maintenance</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-@(Model.Aircraft.IsAvailable ? "success" : "danger") fs-6">
+                            @(Model.Aircraft.IsAvailable ? App.Resources.Views.Home.Available : App.Resources.Views.Home.NotAvailable)
+                        </span>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.Category</span>
+                            <p class="mb-0"><span class="badge bg-secondary">@Model.Aircraft.Category</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.Year</span>
+                            <p class="mb-0 fw-bold">@Model.Aircraft.Year</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.TotalAirspeedHours</span>
+                            <p class="mb-0">@Model.Aircraft.TotalAirspeedHours @App.Resources.Views.Home.Hours</p>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.HourlyRate</span>
+                            <p class="mb-0 fw-bold text-success fs-5">$@Model.Aircraft.HourlyRate.ToString("N2") <span class="text-muted fs-6 fw-normal">@App.Resources.Views.Home.PerHour</span></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.BaseAirport</span>
+                            <p class="mb-0">
+                                <i class="bi bi-geo-alt me-1 text-muted"></i>
+                                @(string.IsNullOrEmpty(Model.Aircraft.BaseAirportName) ? "N/A" : Model.Aircraft.BaseAirportName)
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted small">@App.Resources.Views.Home.Company</span>
+                            <p class="mb-0">@Model.Aircraft.CompanyName</p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Aircraft.Description))
+                    {
+                        <hr />
+                        <p class="mb-0">@Model.Aircraft.Description</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star me-2"></i>@App.Resources.Views.Home.Reviews
+                        @if (Model.Reviews.Any())
+                        {
+                            var avg = Model.Reviews.Average(r => r.Rating);
+                            <span class="text-warning ms-2">★ @avg.ToString("F1")</span>
+                            <small class="text-muted">(@Model.Reviews.Count() @App.Resources.Views.Home.ReviewsLower)</small>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Reviews.Any())
+                    {
+                        @foreach (var review in Model.Reviews)
+                        {
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span class="@(i <= review.Rating ? "text-warning" : "text-muted")">★</span>
+                                        }
+                                    </div>
+                                    <small class="text-muted">@review.ReviewedAt.ToString("MMM dd, yyyy")</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(review.Comment))
+                                {
+                                    <p class="mt-2 mb-0 text-muted">@review.Comment</p>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-star fs-1"></i>
+                            <p class="mt-2 mb-0">@App.Resources.Views.Home.NoReviewsYet</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>@App.Resources.Views.Home.BookThisAircraft</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="fw-bold text-success fs-4">$@Model.Aircraft.HourlyRate.ToString("N2")</span>
+                        <span class="text-muted"> @App.Resources.Views.Home.PerHour</span>
+                    </div>
+
+                    @if (Model.Aircraft.Status == "InsuranceInactive")
+                    {
+                        <div class="alert alert-warning py-2">
+                            <i class="bi bi-shield-exclamation me-2"></i><strong>Insurance Inactive</strong> — This aircraft does not have valid insurance coverage and is not available for booking.
+                        </div>
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="bi bi-x-circle me-2"></i>@App.Resources.Views.Home.NotAvailable
+                        </button>
+                    }
+                    else if (Model.Aircraft.IsAvailable || Model.Aircraft.Status == "Maintenance")
+                    {
+                        <div class="alert alert-success py-2">
+                            <i class="bi bi-check-circle me-2"></i><strong>@App.Resources.Views.Home.Available</strong> — @App.Resources.Views.Home.ReadyForBooking
+                        </div>
+
+                        @if (Model.CanBook)
+                        {
+                            <a asp-controller="Bookings" asp-action="Create" asp-route-aircraftId="@Model.Aircraft.Id"
+                               class="btn btn-success w-100">
+                                <i class="bi bi-calendar-plus me-2"></i>@App.Resources.Views.Home.BookThisAircraft
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary w-100">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>@App.Resources.Views.Home.SignInToBook
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning py-2">
+                            <i class="bi bi-exclamation-triangle me-2"></i><strong>@App.Resources.Views.Home.Unavailable</strong> — @App.Resources.Views.Home.UnavailableDescription
+                        </div>
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="bi bi-x-circle me-2"></i>@App.Resources.Views.Home.NotAvailable
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>@App.Resources.Views.Home.Location</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1">
+                        <strong>@App.Resources.Views.Home.BaseAirport:</strong><br/>
+                        @(string.IsNullOrEmpty(Model.Aircraft.BaseAirportName) ? "N/A" : Model.Aircraft.BaseAirportName)
+                    </p>
+                    <p class="mb-0 text-muted">@Model.Aircraft.CompanyName</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+@model IEnumerable<App.Application.DTOs.BookingDto>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Aircraft</th>
+                    <th>Pilot</th>
+                    <th>Dates</th>
+                    <th>Purpose</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@booking.AircraftName</strong>
+                            <br><small class="text-muted">ID: @booking.Id.ToString().Substring(0, 8)</small>
+                        </td>
+                        <td>@booking.PilotName</td>
+                        <td>
+                            <div>@booking.StartDateTime.ToString("MMM dd") - @booking.EndDateTime.ToString("MMM dd, yyyy")</div>
+                            <small class="text-muted">@((booking.EndDateTime - booking.StartDateTime).TotalHours.ToString("F1")) hours</small>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(booking.Purpose))
+                            {
+                                <span>@booking.Purpose</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td>
+                            <strong>$@booking.TotalAmount.ToString("N2")</strong>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <form asp-action="Approve" asp-route-id="@booking.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#rejectModal-@booking.Id">
+                                    <i class="bi bi-x-lg"></i> Reject
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">
+                                    <i class="bi bi-slash-circle"></i> Cancel
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-hourglass-split fs-1"></i>
+        <p class="mb-0">No pending bookings</p>
+    </div>
+}

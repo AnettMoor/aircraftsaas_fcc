@@ -1,0 +1,164 @@
+@model WebApp.ViewModels.User.EditBookingViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.EditBooking;
+}
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Bookings" asp-action="MyBookings">@App.Resources.Views.Home.MyBookings</a></li>
+            <li class="breadcrumb-item">
+                <a asp-controller="Bookings" asp-action="Details" asp-route-id="@Model.Booking.Id">
+                    @App.Resources.Views.Home.Bookings #@Model.Booking.Id.ToString().Substring(0, 8)
+                </a>
+            </li>
+            <li class="breadcrumb-item active">@App.Resources.Views.Home.EditBooking</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Edit Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>@App.Resources.Views.Home.EditBooking
+                    </h4>
+                    <small class="text-muted">@App.Resources.Views.Home.EditBookingDescription</small>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" id="editBookingForm">
+                        <input type="hidden" asp-for="EditModel.Id" />
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger"></div>
+                        }
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="EditModel.StartDateTime" class="form-label">
+                                    <i class="bi bi-calendar me-1"></i>@App.Resources.Views.Home.StartDateTime
+                                </label>
+                                <input asp-for="EditModel.StartDateTime" asp-format="{0:yyyy-MM-ddTHH:mm}"
+                                       class="form-control" type="datetime-local" id="startDateTime" />
+                                <span asp-validation-for="EditModel.StartDateTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="EditModel.EndDateTime" class="form-label">
+                                    <i class="bi bi-calendar me-1"></i>@App.Resources.Views.Home.EndDateTime
+                                </label>
+                                <input asp-for="EditModel.EndDateTime" asp-format="{0:yyyy-MM-ddTHH:mm}"
+                                       class="form-control" type="datetime-local" id="endDateTime" />
+                                <span asp-validation-for="EditModel.EndDateTime" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EditModel.Purpose" class="form-label">
+                                <i class="bi bi-pencil me-1"></i>@App.Resources.Views.Home.PurposeOfFlight
+                            </label>
+                            <textarea asp-for="EditModel.Purpose" class="form-control" rows="3"
+                                      placeholder="@App.Resources.Views.Home.EnterPurpose"></textarea>
+                            <span asp-validation-for="EditModel.Purpose" class="text-danger"></span>
+                        </div>
+
+                        <!-- Price Estimator -->
+                        <div class="alert alert-info" id="priceEstimate">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-calculator me-2"></i><strong>@App.Resources.Views.Home.EstimatedPrice</strong></span>
+                                <span class="fs-5 fw-bold" id="estimatedPrice">—</span>
+                            </div>
+                            <small class="text-muted" id="priceBreakdown"></small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>@App.Resources.Views.Home.UpdateBooking
+                            </button>
+                            <a asp-controller="Bookings" asp-action="Details" asp-route-id="@Model.Booking.Id"
+                               class="btn btn-secondary">
+                                @App.Resources.Views.Home.Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Booking Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>@App.Resources.Views.Home.CurrentBookingInfo</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.Aircraft</dt>
+                        <dd class="col-sm-7">@Model.Booking.AircraftName</dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.Status</dt>
+                        <dd class="col-sm-7"><span class="badge bg-warning">@Model.Booking.Status</span></dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.HourlyRate</dt>
+                        <dd class="col-sm-7 fw-bold text-success">$@Model.HourlyRate.ToString("N2") @App.Resources.Views.Home.PerHour</dd>
+
+                        <dt class="col-sm-5 text-muted">@App.Resources.Views.Home.TotalAmount</dt>
+                        <dd class="col-sm-7 fw-bold">$@Model.Booking.TotalAmount.ToString("N2")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>@App.Resources.Views.Home.BookingInfo</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @App.Resources.Views.Home.EditOnlyPendingNote
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const hourlyRate = @Model.HourlyRate;
+
+        function updatePrice() {
+            const start = document.getElementById('startDateTime').value;
+            const end = document.getElementById('endDateTime').value;
+            const priceEl = document.getElementById('estimatedPrice');
+            const breakdownEl = document.getElementById('priceBreakdown');
+
+            if (start && end) {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const diffMs = endDate - startDate;
+
+                if (diffMs > 0) {
+                    const hours = diffMs / (1000 * 60 * 60);
+                    const total = hours * hourlyRate;
+                    priceEl.textContent = '$' + total.toFixed(2);
+                    breakdownEl.textContent = hours.toFixed(1) + ' hours × $' + hourlyRate.toFixed(2) + '/hr';
+                } else {
+                    priceEl.textContent = '—';
+                    breakdownEl.textContent = 'End time must be after start time';
+                }
+            } else {
+                priceEl.textContent = '—';
+                breakdownEl.textContent = 'Select start and end times to see estimate';
+            }
+        }
+
+        document.getElementById('startDateTime').addEventListener('change', updatePrice);
+        document.getElementById('endDateTime').addEventListener('change', updatePrice);
+        updatePrice();
+    </script>
+}

@@ -1,0 +1,62 @@
+@model WebApp.ViewModels.Reviews.ReviewEditViewModel
+@{
+    ViewData["Title"] = "Edit Review";
+}
+
+<div class="container" style="max-width: 600px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Reviews</a></li>
+            @if (Model.Review != null)
+            {
+                <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.Review.AircraftName</a></li>
+            }
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+
+    <h2 class="mb-4"><i class="bi bi-pencil me-2"></i>Edit Review</h2>
+
+    @if (Model.Review != null)
+    {
+        <div class="alert alert-light mb-3">
+            <strong>Aircraft:</strong> @Model.Review.AircraftName
+            <span class="text-muted ms-2">| <strong>Originally reviewed:</strong> @Model.Review.ReviewedAt.ToString("d")</span>
+        </div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="Rating" class="form-label"></label>
+            <div class="d-flex gap-1" id="star-rating">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" asp-for="Rating" value="@i" id="rating-@i" />
+                        <label class="form-check-label" for="rating-@i">
+                            @i <i class="bi bi-star-fill text-warning"></i>
+                        </label>
+                    </div>
+                }
+            </div>
+            <span asp-validation-for="Rating" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Comment" class="form-label"></label>
+            <textarea asp-for="Comment" class="form-control" rows="5" placeholder="Update your review..."></textarea>
+            <span asp-validation-for="Comment" class="text-danger"></span>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Save Changes
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

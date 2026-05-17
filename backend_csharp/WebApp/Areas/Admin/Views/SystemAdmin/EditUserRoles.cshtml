@@ -1,0 +1,126 @@
+@model WebApp.ViewModels.SystemAdmin.EditUserRolesViewModel
+
+@{
+    ViewData["Title"] = $"{App.Resources.Views.Home.EditRolesTitle} — {Model.UserName}";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-person-gear me-2"></i>@App.Resources.Views.Home.EditRolesTitle
+            </h1>
+            <p class="text-muted mb-0">@Model.UserName &bull; <span class="text-muted">@Model.Email</span></p>
+        </div>
+        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> @App.Resources.Views.Home.BackToUsers
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Role Assignment Form -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>@App.Resources.Views.Home.AspNetIdentityRoles</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="EditUserRoles"
+                          method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="UserId" />
+                        <input type="hidden" asp-for="UserName" />
+                        <input type="hidden" asp-for="Email" />
+
+                        @if (!Model.AllRoles.Any())
+                        {
+                            <div class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                @App.Resources.Views.Home.NoRolesDefined
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted small mb-2">A user can only have one role at a time.</p>
+                            <div class="list-group mb-3">
+                                @foreach (var role in Model.AllRoles)
+                                {
+                                    var isSelected = Model.AssignedRole == role;
+                                    <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                                        <input type="radio"
+                                               name="SelectedRole"
+                                               value="@role"
+                                               class="form-check-input flex-shrink-0"
+                                               @(isSelected ? "checked" : "") />
+                                        <span>
+                                            <strong>@role</strong>
+                                            @if (isSelected)
+                                            {
+                                                <span class="badge bg-success ms-2">@App.Resources.Views.Home.CurrentlyAssigned</span>
+                                            }
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+                        }
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i> @App.Resources.Views.Home.SaveRoles
+                        </button>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                           class="btn btn-outline-secondary ms-2">@App.Resources.Views.Home.Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Memberships (read-only) -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>@App.Resources.Views.Home.CompanyMemberships</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.CompanyMemberships.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var m in Model.CompanyMemberships)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@m.CompanyName</strong>
+                                    </div>
+                                    <span class="badge bg-secondary">@m.Role</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-building fs-2"></i>
+                            <p class="mb-0 mt-2 small">@App.Resources.Views.Home.NoCompanyMemberships</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

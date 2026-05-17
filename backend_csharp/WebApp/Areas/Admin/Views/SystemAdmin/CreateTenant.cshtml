@@ -1,0 +1,122 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminCreateTenantViewModel
+
+@{
+    ViewData["Title"] = "Create Tenant";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>Create Tenant
+                    </h1>
+                    <p class="text-muted">Create a new company / tenant in the system.</p>
+                </div>
+                <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Tenants
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>Tenant Details</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateTenant" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Company Name -->
+                        <div class="mb-3">
+                            <label asp-for="CompanyName" class="form-label fw-semibold"></label>
+                            <input asp-for="CompanyName" class="form-control" placeholder="e.g. Baltic Air Charter" />
+                            <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="mb-3">
+                            <label asp-for="Slug" class="form-label fw-semibold"></label>
+                            <input asp-for="Slug" class="form-control" placeholder="Auto-generated from name (e.g. baltic-air-charter)" />
+                            <span asp-validation-for="Slug" class="text-danger small"></span>
+                            <div class="form-text">Leave blank to auto-generate from the company name. Used as the URL identifier.</div>
+                        </div>
+
+                        <!-- Contact info -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-semibold"></label>
+                                <input asp-for="Email" class="form-control" placeholder="e.g. info@company.com" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Phone" class="form-label fw-semibold"></label>
+                                <input asp-for="Phone" class="form-control" placeholder="e.g. +372 5551234" />
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label fw-semibold"></label>
+                            <input asp-for="Address" class="form-control" placeholder="e.g. 123 Airport Road, Tallinn" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Limits -->
+                        <h6 class="fw-semibold text-muted mt-4 mb-3">
+                            <i class="bi bi-sliders me-1"></i> Usage Limits
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="MaxUsers" class="form-label fw-semibold"></label>
+                                <input asp-for="MaxUsers" type="number" min="1" class="form-control" />
+                                <span asp-validation-for="MaxUsers" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MaxAircraft" class="form-label fw-semibold"></label>
+                                <input asp-for="MaxAircraft" type="number" min="1" class="form-control" />
+                                <span asp-validation-for="MaxAircraft" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MaxBookingsPerMonth" class="form-label fw-semibold"></label>
+                                <input asp-for="MaxBookingsPerMonth" type="number" min="1" class="form-control" />
+                                <span asp-validation-for="MaxBookingsPerMonth" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Owner assignment -->
+                        <h6 class="fw-semibold text-muted mt-4 mb-3">
+                            <i class="bi bi-person-badge me-1"></i> Owner Assignment (optional)
+                        </h6>
+                        <div class="mb-4">
+                            <label asp-for="OwnerUserId" class="form-label fw-semibold"></label>
+                            <select asp-for="OwnerUserId" asp-items="Model.OwnerUserSelectList" class="form-select">
+                                <option value="">— No owner (assign later) —</option>
+                            </select>
+                            <span asp-validation-for="OwnerUserId" class="text-danger small"></span>
+                            <div class="form-text">Optionally assign an existing user as the Company Owner for this tenant.</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Create Tenant
+                            </button>
+                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

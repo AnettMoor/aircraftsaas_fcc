@@ -1,0 +1,168 @@
+@model WebApp.ViewModels.User.ReviewViewModel
+
+@{
+    var isEditing = Model.ExistingReview != null;
+    ViewData["Title"] = isEditing ? App.Resources.Views.Home.EditReview : App.Resources.Views.Home.AddReview;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@(isEditing ? App.Resources.Views.Home.EditReview : App.Resources.Views.Home.AddReview)</h1>
+            <p class="text-muted">
+                @if (isEditing)
+                {
+                    <text>@App.Resources.Views.Home.UpdateReviewFor <strong>@Model.AircraftName</strong></text>
+                }
+                else
+                {
+                    <text>@App.Resources.Views.Home.ShareExperienceWith <strong>@Model.AircraftName</strong></text>
+                }
+            </p>
+        </div>
+        <a asp-controller="Bookings" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> @App.Resources.Views.Home.BackToBooking
+        </a>
+    </div>
+
+    @if (isEditing)
+    {
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-pencil-square me-1"></i>
+            @App.Resources.Views.Home.ReviewSubmittedOnDate <strong>@Model.ExistingReview!.ReviewedAt.ToString("MMMM dd, yyyy 'at' HH:mm")</strong>.
+            @App.Resources.Views.Home.UpdateRatingComment
+        </div>
+    }
+
+    <div class="row">
+        <!-- Review Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star@(isEditing ? "-fill text-warning" : "") me-2"></i>
+                        @(isEditing ? App.Resources.Views.Home.EditYourReview : App.Resources.Views.Home.WriteYourReview) — @Model.AircraftName
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <input type="hidden" asp-for="AircraftId" />
+                        <input type="hidden" asp-for="BookingId" />
+                        <input type="hidden" asp-for="ReviewId" />
+                        <input type="hidden" asp-for="AircraftName" />
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">@App.Resources.Views.Home.Rating</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rating">
+                                    @for (int i = 5; i >= 1; i--)
+                                    {
+                                        <input type="radio" name="Rating" value="@i" id="star@(i)"
+                                               @(Model.Rating == i ? "checked" : "") />
+                                        <label for="star@(i)" title="@i">★</label>
+                                    }
+                                </div>
+                                <span class="text-muted" id="ratingLabel">
+                                    @{
+                                        string ratingText = Model.Rating switch
+                                        {
+                                            5 => App.Resources.Views.Home.Excellent,
+                                            4 => App.Resources.Views.Home.VeryGood,
+                                            3 => App.Resources.Views.Home.Good,
+                                            2 => App.Resources.Views.Home.Fair,
+                                            1 => App.Resources.Views.Home.Poor,
+                                            _ => App.Resources.Views.Home.SelectRating
+                                        };
+                                    }
+                                    @ratingText
+                                </span>
+                            </div>
+                            <span asp-validation-for="Rating" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Comment" class="form-label fw-bold">@App.Resources.Views.Home.YourReviewLabel</label>
+                            <textarea asp-for="Comment" class="form-control" rows="5"
+                                      placeholder="@App.Resources.Views.Home.ReviewPlaceholder"></textarea>
+                            <span asp-validation-for="Comment" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-@(isEditing ? "pencil" : "send") me-1"></i>
+                                @(isEditing ? App.Resources.Views.Home.UpdateReview : App.Resources.Views.Home.SubmitReview)
+                            </button>
+                            <a asp-controller="Bookings" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-secondary">@App.Resources.Views.Home.Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rating Guide Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>@App.Resources.Views.Home.RatingGuide</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <span class="text-warning">★★★★★</span> <span class="text-muted small">@App.Resources.Views.Home.Excellent</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <span class="text-warning">★★★★</span><span class="text-muted">☆</span> <span class="text-muted small">@App.Resources.Views.Home.VeryGood</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <span class="text-warning">★★★</span><span class="text-muted">☆☆</span> <span class="text-muted small">@App.Resources.Views.Home.Good</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <span class="text-warning">★★</span><span class="text-muted">☆☆☆</span> <span class="text-muted small">@App.Resources.Views.Home.Fair</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <span class="text-warning">★</span><span class="text-muted">☆☆☆☆</span> <span class="text-muted small">@App.Resources.Views.Home.Poor</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+.rating input {
+    display: none;
+}
+.rating label {
+    font-size: 2.5rem;
+    color: #ddd;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.15s;
+}
+.rating label:hover,
+.rating label:hover ~ label,
+.rating input:checked ~ label {
+    color: #ffc107;
+}
+</style>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        const labels = ['@App.Resources.Views.Home.Poor', '@App.Resources.Views.Home.Fair', '@App.Resources.Views.Home.Good', '@App.Resources.Views.Home.VeryGood', '@App.Resources.Views.Home.Excellent'];
+        document.querySelectorAll('.rating input').forEach(input => {
+            input.addEventListener('change', () => {
+                const val = parseInt(input.value);
+                document.getElementById('ratingLabel').textContent = labels[val - 1];
+            });
+        });
+    </script>
+}

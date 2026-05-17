@@ -1,0 +1,1086 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+
+    <!-- Existing keys -->
+    <data name="User" xml:space="preserve">
+        <value>Kasutaja</value>
+    </data>
+    <data name="Bookings" xml:space="preserve">
+        <value>Broneeringud</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Töölaud</value>
+    </data>
+    <data name="Maintenance" xml:space="preserve">
+        <value>Hooldus</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Seaded</value>
+    </data>
+    <data name="Aircraft" xml:space="preserve">
+        <value>Lennukid</value>
+    </data>
+    <data name="Home" xml:space="preserve">
+        <value>Kodu</value>
+    </data>
+
+    <!-- Navigation & Layout -->
+    <data name="Login" xml:space="preserve">
+        <value>Logi sisse</value>
+    </data>
+    <data name="Logout" xml:space="preserve">
+        <value>Logi välja</value>
+    </data>
+    <data name="Register" xml:space="preserve">
+        <value>Registreeru</value>
+    </data>
+    <data name="Hello" xml:space="preserve">
+        <value>Tere</value>
+    </data>
+    <data name="Privacy" xml:space="preserve">
+        <value>Privaatsus</value>
+    </data>
+    <data name="FindAircraft" xml:space="preserve">
+        <value>Otsi lennukit</value>
+    </data>
+    <data name="MyBookings" xml:space="preserve">
+        <value>Minu broneeringud</value>
+    </data>
+    <data name="MyProfile" xml:space="preserve">
+        <value>Minu profiil</value>
+    </data>
+    <data name="CreateCompany" xml:space="preserve">
+        <value>Loo ettevõte</value>
+    </data>
+    <data name="AdminPanel" xml:space="preserve">
+        <value>Halduspaneel</value>
+    </data>
+    <data name="SystemDashboard" xml:space="preserve">
+        <value>Süsteemi töölaud</value>
+    </data>
+    <data name="Users" xml:space="preserve">
+        <value>Kasutajad</value>
+    </data>
+    <data name="Tenants" xml:space="preserve">
+        <value>Üürnikud</value>
+    </data>
+    <data name="ContactMaintenance" xml:space="preserve">
+        <value>Võta ühendust hooldusega</value>
+    </data>
+    <data name="SignIn" xml:space="preserve">
+        <value>Logi sisse</value>
+    </data>
+
+    <!-- CompanyOwner Dashboard -->
+    <data name="WelcomeBack" xml:space="preserve">
+        <value>Tere tulemast tagasi</value>
+    </data>
+    <data name="TotalAircraft" xml:space="preserve">
+        <value>Lennukeid kokku</value>
+    </data>
+    <data name="ViewAllAircraft" xml:space="preserve">
+        <value>Vaata kõiki lennukeid</value>
+    </data>
+    <data name="Available" xml:space="preserve">
+        <value>Saadaval</value>
+    </data>
+    <data name="Unavailable" xml:space="preserve">
+        <value>Pole saadaval</value>
+    </data>
+    <data name="PendingApproval" xml:space="preserve">
+        <value>Kinnitamist ootab</value>
+    </data>
+    <data name="ReviewPending" xml:space="preserve">
+        <value>Vaata ootavaid</value>
+    </data>
+    <data name="MonthlyRevenue" xml:space="preserve">
+        <value>Kuu tulu</value>
+    </data>
+    <data name="ThisMonth" xml:space="preserve">
+        <value>See kuu</value>
+    </data>
+    <data name="BookingOverview" xml:space="preserve">
+        <value>Broneeringute ülevaade</value>
+    </data>
+    <data name="TotalBookings" xml:space="preserve">
+        <value>Broneeringuid kokku</value>
+    </data>
+    <data name="Active" xml:space="preserve">
+        <value>Aktiivne</value>
+    </data>
+    <data name="Pending" xml:space="preserve">
+        <value>Ootel</value>
+    </data>
+    <data name="Completed" xml:space="preserve">
+        <value>Lõpetatud</value>
+    </data>
+    <data name="QuickActions" xml:space="preserve">
+        <value>Kiirtoimingud</value>
+    </data>
+    <data name="AddAircraft" xml:space="preserve">
+        <value>Lisa lennuk</value>
+    </data>
+    <data name="ManageBookings" xml:space="preserve">
+        <value>Halda broneeringuid</value>
+    </data>
+    <data name="PendingApprovals" xml:space="preserve">
+        <value>Kinnitamist ootavad</value>
+    </data>
+    <data name="ViewAll" xml:space="preserve">
+        <value>Vaata kõiki</value>
+    </data>
+    <data name="RecentAircraft" xml:space="preserve">
+        <value>Hiljutised lennukid</value>
+    </data>
+    <data name="RecentBookings" xml:space="preserve">
+        <value>Hiljutised broneeringud</value>
+    </data>
+    <data name="NoBookingsYet" xml:space="preserve">
+        <value>Broneeringuid pole veel</value>
+    </data>
+    <data name="NoPendingBookings" xml:space="preserve">
+        <value>Ootavaid broneeringuid pole</value>
+    </data>
+    <data name="NoAircraftYet" xml:space="preserve">
+        <value>Lennukeid pole veel</value>
+    </data>
+    <data name="AddFirstAircraft" xml:space="preserve">
+        <value>Lisa esimene lennuk</value>
+    </data>
+    <data name="Approve" xml:space="preserve">
+        <value>Kinnita</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>Lükka tagasi</value>
+    </data>
+    <data name="RejectBooking" xml:space="preserve">
+        <value>Lükka broneering tagasi</value>
+    </data>
+    <data name="RejectionReason" xml:space="preserve">
+        <value>Tagasilükkamise põhjus</value>
+    </data>
+    <data name="Cancel" xml:space="preserve">
+        <value>Tühista</value>
+    </data>
+    <data name="SaveChanges" xml:space="preserve">
+        <value>Salvesta muudatused</value>
+    </data>
+    <data name="Pilot" xml:space="preserve">
+        <value>Piloot</value>
+    </data>
+    <data name="Dates" xml:space="preserve">
+        <value>Kuupäevad</value>
+    </data>
+    <data name="Amount" xml:space="preserve">
+        <value>Summa</value>
+    </data>
+    <data name="Status" xml:space="preserve">
+        <value>Staatus</value>
+    </data>
+
+    <!-- CompanyOwner Settings -->
+    <data name="CompanySettings" xml:space="preserve">
+        <value>Ettevõtte seaded</value>
+    </data>
+    <data name="ManageCompanyProfile" xml:space="preserve">
+        <value>Halda ettevõtte profiili</value>
+    </data>
+    <data name="CompanyProfile" xml:space="preserve">
+        <value>Ettevõtte profiil</value>
+    </data>
+    <data name="UsageLimits" xml:space="preserve">
+        <value>Kasutuspiirangud</value>
+    </data>
+    <data name="MonthlyBookings" xml:space="preserve">
+        <value>Igakuised broneeringud</value>
+    </data>
+
+    <!-- SystemAdmin Dashboard -->
+    <data name="SystemAdminDashboard" xml:space="preserve">
+        <value>Süsteemiadministraatori töölaud</value>
+    </data>
+    <data name="SystemOverview" xml:space="preserve">
+        <value>Süsteemiülene ülevaade — kõik üürnikud ja kasutajad</value>
+    </data>
+    <data name="SystemAdmin" xml:space="preserve">
+        <value>Süsteemiadministraator</value>
+    </data>
+    <data name="TotalUsers" xml:space="preserve">
+        <value>Kasutajaid kokku</value>
+    </data>
+    <data name="ManageUsers" xml:space="preserve">
+        <value>Halda kasutajaid</value>
+    </data>
+    <data name="ActiveTenants" xml:space="preserve">
+        <value>Aktiivsed üürnikud</value>
+    </data>
+    <data name="ManageTenants" xml:space="preserve">
+        <value>Halda üürnikke</value>
+    </data>
+    <data name="AcrossAllTenants" xml:space="preserve">
+        <value>Kõigis ettevõtetes</value>
+    </data>
+    <data name="RegisteredInSystem" xml:space="preserve">
+        <value>Süsteemis registreeritud</value>
+    </data>
+    <data name="TopTenantsByBookings" xml:space="preserve">
+        <value>Parimad üürnikud broneeringute järgi</value>
+    </data>
+    <data name="ViewAllTenants" xml:space="preserve">
+        <value>Vaata kõiki üürnikke</value>
+    </data>
+    <data name="Inactive" xml:space="preserve">
+        <value>Mitteaktiivne</value>
+    </data>
+    <data name="NoTenantsYet" xml:space="preserve">
+        <value>Üürnikke pole veel registreeritud</value>
+    </data>
+
+    <!-- SystemAdmin Tenants -->
+    <data name="AllTenants" xml:space="preserve">
+        <value>Kõik üürnikud</value>
+    </data>
+    <data name="InactiveTenants" xml:space="preserve">
+        <value>Mitteaktiivsed üürnikud</value>
+    </data>
+    <data name="Created" xml:space="preserve">
+        <value>Loodud</value>
+    </data>
+    <data name="Actions" xml:space="preserve">
+        <value>Toimingud</value>
+    </data>
+    <data name="Activate" xml:space="preserve">
+        <value>Aktiveeri</value>
+    </data>
+    <data name="Deactivate" xml:space="preserve">
+        <value>Deaktiveeri</value>
+    </data>
+    <data name="BackToDashboard" xml:space="preserve">
+        <value>Tagasi töölauale</value>
+    </data>
+    <data name="NoTenantsFound" xml:space="preserve">
+        <value>Üürnikke ei leitud.</value>
+    </data>
+    <data name="DeactivateWarning" xml:space="preserve">
+        <value>Selle üürniku deaktiveerimine takistab tema kasutajatel süsteemile ligipääsu.</value>
+    </data>
+    <data name="ActivateInfo" xml:space="preserve">
+        <value>Selle üürniku aktiveerimine taastab ligipääsu kõigile tema kasutajatele.</value>
+    </data>
+    <data name="Tenant" xml:space="preserve">
+        <value>Üürnik</value>
+    </data>
+    <data name="Slug" xml:space="preserve">
+        <value>Lühinimi</value>
+    </data>
+
+    <!-- Home/Index page -->
+    <data name="AircraftSaaSPortal" xml:space="preserve">
+        <value>Lennukite SaaS portaal</value>
+    </data>
+    <data name="HeroDescription" xml:space="preserve">
+        <value>Halda oma lennukiparki, broneeri lennukeid, jälgi hooldust ja palju muud.</value>
+    </data>
+    <data name="BrowseAircraft" xml:space="preserve">
+        <value>Sirvi lennukeid</value>
+    </data>
+    <data name="SearchFilterDescription" xml:space="preserve">
+        <value>Otsi ja filtreeri saadaolevaid lennukeid tüübi, mahu ja asukoha järgi.</value>
+    </data>
+    <data name="SearchAvailableAircraft" xml:space="preserve">
+        <value>Otsi saadaolevaid lennukeid</value>
+    </data>
+    <data name="BookAircraftForFlights" xml:space="preserve">
+        <value>Broneeri lennukeid lendudeks</value>
+    </data>
+    <data name="ManageYourBookings" xml:space="preserve">
+        <value>Halda oma broneeringuid</value>
+    </data>
+    <data name="SignInToBrowse" xml:space="preserve">
+        <value>Logi sisse sirvimiseks</value>
+    </data>
+    <data name="CompanyDashboard" xml:space="preserve">
+        <value>Ettevõtte töölaud</value>
+    </data>
+    <data name="CompanyDashboardDescription" xml:space="preserve">
+        <value>Halda oma lennukiparki, kinnita broneeringuid ja jälgi hooldusgraafikuid.</value>
+    </data>
+    <data name="CompanyFleetManagement" xml:space="preserve">
+        <value>Ettevõtte lennukipargi haldus</value>
+    </data>
+    <data name="ApproveRejectBookings" xml:space="preserve">
+        <value>Kinnita/lükka tagasi broneeringuid</value>
+    </data>
+    <data name="MaintenanceTracking" xml:space="preserve">
+        <value>Hoolduse jälgimine</value>
+    </data>
+    <data name="SignInAsOwner" xml:space="preserve">
+        <value>Logi sisse omanikuna</value>
+    </data>
+    <data name="NewToPlatform" xml:space="preserve">
+        <value>Uus platvormil?</value>
+    </data>
+    <data name="NewToPlatformDescription" xml:space="preserve">
+        <value>Loo tasuta konto, et alustada lennukite broneerimist või oma ettevõtte lennukipargi haldamist.</value>
+    </data>
+    <data name="FreeToRegister" xml:space="preserve">
+        <value>Tasuta registreerumine</value>
+    </data>
+    <data name="JoinOrCreateCompany" xml:space="preserve">
+        <value>Liitu või loo ettevõte</value>
+    </data>
+    <data name="StartFlyingToday" xml:space="preserve">
+        <value>Alusta lendamist juba täna</value>
+    </data>
+    <data name="CreateAccount" xml:space="preserve">
+        <value>Loo konto</value>
+    </data>
+    <data name="QuickAccess" xml:space="preserve">
+        <value>Kiirpääs</value>
+    </data>
+    <data name="BrowseFleet" xml:space="preserve">
+        <value>Sirvi lennukiparki</value>
+    </data>
+    <data name="BrowseFleetDescription" xml:space="preserve">
+        <value>Sirvi oma ettevõtte lennukipargi saadaolevaid lennukeid ja tee broneering.</value>
+    </data>
+    <data name="ViewBookings" xml:space="preserve">
+        <value>Vaata broneeringuid</value>
+    </data>
+    <data name="ViewBookingsDescription" xml:space="preserve">
+        <value>Vaata ja halda kõiki oma aktiivseid ja varasemaid lennubroneeringuid.</value>
+    </data>
+    <data name="ViewProfile" xml:space="preserve">
+        <value>Vaata profiili</value>
+    </data>
+    <data name="ViewProfileDescription" xml:space="preserve">
+        <value>Vaata oma piloodi profiili, litsentse ja isikuandmeid.</value>
+    </data>
+    <data name="FleetManagement" xml:space="preserve">
+        <value>Lennukipargi haldus</value>
+    </data>
+    <data name="FleetManagementDescription" xml:space="preserve">
+        <value>Halda oma lennukiparki, saadavust ja hooldusandmeid.</value>
+    </data>
+    <data name="ManageFleet" xml:space="preserve">
+        <value>Halda lennukiparki</value>
+    </data>
+    <data name="GoToDashboard" xml:space="preserve">
+        <value>Mine töölauale</value>
+    </data>
+    <data name="DashboardDescription" xml:space="preserve">
+        <value>Vaata ettevõtte ülevaadet, ootavaid broneeringuid ja hiljutist tegevust.</value>
+    </data>
+    <data name="BookingsCardDescription" xml:space="preserve">
+        <value>Vaata üle, kinnita ja halda kõiki sissetulevaid lennubroneeringuid.</value>
+    </data>
+    <data name="CompanyOwner" xml:space="preserve">
+        <value>Ettevõtte omanik</value>
+    </data>
+    <data name="ConfirmAction" xml:space="preserve">
+        <value>Kas olete kindel, et soovite</value>
+    </data>
+    <data name="PleaseProvideReason" xml:space="preserve">
+        <value>Palun esitage tagasilükkamise põhjus...</value>
+    </data>
+    <data name="Availability" xml:space="preserve">
+        <value>saadavus</value>
+    </data>
+
+    <!-- User/Index - Aircraft Catalog -->
+    <data name="AircraftCatalog" xml:space="preserve">
+        <value>Lennukite kataloog</value>
+    </data>
+    <data name="FindAndBookDescription" xml:space="preserve">
+        <value>Leidke ja broneerige endale sobiv lennuk</value>
+    </data>
+    <data name="SearchFilters" xml:space="preserve">
+        <value>Otsingufiltrid</value>
+    </data>
+    <data name="Make" xml:space="preserve">
+        <value>Mark</value>
+    </data>
+    <data name="Model" xml:space="preserve">
+        <value>Mudel</value>
+    </data>
+    <data name="Category" xml:space="preserve">
+        <value>Kategooria</value>
+    </data>
+    <data name="AllCategories" xml:space="preserve">
+        <value>Kõik kategooriad</value>
+    </data>
+    <data name="Location" xml:space="preserve">
+        <value>Asukoht</value>
+    </data>
+    <data name="AirportCode" xml:space="preserve">
+        <value>Lennujaama kood</value>
+    </data>
+    <data name="MaxHourlyRate" xml:space="preserve">
+        <value>Max tunnihind ($)</value>
+    </data>
+    <data name="StartDate" xml:space="preserve">
+        <value>Alguskuupäev</value>
+    </data>
+    <data name="EndDate" xml:space="preserve">
+        <value>Lõppkuupäev</value>
+    </data>
+    <data name="Search" xml:space="preserve">
+        <value>Otsi</value>
+    </data>
+    <data name="ClearFilters" xml:space="preserve">
+        <value>Tühjenda filtrid</value>
+    </data>
+    <data name="ShowingAircraft" xml:space="preserve">
+        <value>Kuvatakse</value>
+    </data>
+    <data name="AircraftPlural" xml:space="preserve">
+        <value>lennukit</value>
+    </data>
+    <data name="Hours" xml:space="preserve">
+        <value>t</value>
+    </data>
+    <data name="PerHour" xml:space="preserve">
+        <value>/t</value>
+    </data>
+    <data name="ViewDetails" xml:space="preserve">
+        <value>Vaata üksikasju</value>
+    </data>
+    <data name="NoAircraftFound" xml:space="preserve">
+        <value>Lennukeid ei leitud</value>
+    </data>
+    <data name="TryAdjustingFilters" xml:space="preserve">
+        <value>Proovige otsingufiltreid kohandada või vaadake hiljem uuesti.</value>
+    </data>
+    <data name="Reviews" xml:space="preserve">
+        <value>Arvustused</value>
+    </data>
+    <data name="ReviewsLower" xml:space="preserve">
+        <value>arvustust</value>
+    </data>
+
+    <!-- User/MyBookings -->
+    <data name="ManageFlightBookings" xml:space="preserve">
+        <value>Halda oma lennubroneeringuid</value>
+    </data>
+    <data name="AllBookings" xml:space="preserve">
+        <value>Kõik broneeringud</value>
+    </data>
+    <data name="Cancelled" xml:space="preserve">
+        <value>Tühistatud</value>
+    </data>
+    <data name="CancelBooking" xml:space="preserve">
+        <value>Tühista broneering</value>
+    </data>
+    <data name="ConfirmCancelBooking" xml:space="preserve">
+        <value>Kas olete kindel, et soovite selle broneeringu tühistada?</value>
+    </data>
+    <data name="KeepBooking" xml:space="preserve">
+        <value>Hoia broneering</value>
+    </data>
+
+    <!-- User/Profile -->
+    <data name="AccountInfoDescription" xml:space="preserve">
+        <value>Teie konto andmed ja broneeringustatistika</value>
+    </data>
+    <data name="UserInformation" xml:space="preserve">
+        <value>Kasutaja andmed</value>
+    </data>
+    <data name="Email" xml:space="preserve">
+        <value>E-post</value>
+    </data>
+    <data name="Phone" xml:space="preserve">
+        <value>Telefon</value>
+    </data>
+    <data name="LicenseLabel" xml:space="preserve">
+        <value>Litsents</value>
+    </data>
+    <data name="Expires" xml:space="preserve">
+        <value>Aegub</value>
+    </data>
+    <data name="BookingStatistics" xml:space="preserve">
+        <value>Broneeringustatistika</value>
+    </data>
+    <data name="PendingCancelled" xml:space="preserve">
+        <value>Ootel / Tühistatud</value>
+    </data>
+    <data name="ViewMyBookings" xml:space="preserve">
+        <value>Vaata minu broneeringuid</value>
+    </data>
+
+    <!-- User/AircraftDetails -->
+    <data name="NotAvailable" xml:space="preserve">
+        <value>Pole saadaval</value>
+    </data>
+    <data name="Year" xml:space="preserve">
+        <value>Aasta</value>
+    </data>
+    <data name="TotalAirspeedHours" xml:space="preserve">
+        <value>Lennutunnid kokku</value>
+    </data>
+    <data name="HourlyRate" xml:space="preserve">
+        <value>Tunnihind</value>
+    </data>
+    <data name="BaseAirport" xml:space="preserve">
+        <value>Kodulennnujaam</value>
+    </data>
+    <data name="Company" xml:space="preserve">
+        <value>Ettevõte</value>
+    </data>
+    <data name="NoReviewsYet" xml:space="preserve">
+        <value>Arvustusi pole veel. Ole esimene arvustaja!</value>
+    </data>
+    <data name="BookThisAircraft" xml:space="preserve">
+        <value>Broneeri see lennuk</value>
+    </data>
+    <data name="ReadyForBooking" xml:space="preserve">
+        <value>Valmis broneerimiseks</value>
+    </data>
+    <data name="SignInToBook" xml:space="preserve">
+        <value>Logi sisse broneerimiseks</value>
+    </data>
+    <data name="UnavailableDescription" xml:space="preserve">
+        <value>Hetkel broneeritud või hoolduses</value>
+    </data>
+
+    <!-- User/Book -->
+    <data name="Book" xml:space="preserve">
+        <value>Broneeri</value>
+    </data>
+    <data name="NotAvailableAlert" xml:space="preserve">
+        <value>Pole saadaval!</value>
+    </data>
+    <data name="NotAvailableForDates" xml:space="preserve">
+        <value>See lennuk ei ole valitud kuupäevadel saadaval.</value>
+    </data>
+    <data name="NextAvailable" xml:space="preserve">
+        <value>Järgmine saadavus:</value>
+    </data>
+    <data name="StartDateTime" xml:space="preserve">
+        <value>Alguskuupäev ja -kellaaeg</value>
+    </data>
+    <data name="EndDateTime" xml:space="preserve">
+        <value>Lõppkuupäev ja -kellaaeg</value>
+    </data>
+    <data name="PurposeOfFlight" xml:space="preserve">
+        <value>Lennu eesmärk</value>
+    </data>
+    <data name="EnterPurpose" xml:space="preserve">
+        <value>Sisestage lennu eesmärk...</value>
+    </data>
+    <data name="EstimatedPrice" xml:space="preserve">
+        <value>Hinnanguline hind</value>
+    </data>
+    <data name="SubmitBookingRequest" xml:space="preserve">
+        <value>Esita broneeringutaotlus</value>
+    </data>
+    <data name="AircraftDetails" xml:space="preserve">
+        <value>Lennuki üksikasjad</value>
+    </data>
+    <data name="Registration" xml:space="preserve">
+        <value>Registreering</value>
+    </data>
+    <data name="Base" xml:space="preserve">
+        <value>Baas</value>
+    </data>
+    <data name="BookingInfo" xml:space="preserve">
+        <value>Broneeringu info</value>
+    </data>
+    <data name="BookingSubjectToApproval" xml:space="preserve">
+        <value>Broneering vajab ettevõtte kinnitust</value>
+    </data>
+    <data name="PaymentAfterApproval" xml:space="preserve">
+        <value>Makse nõutav pärast kinnitust</value>
+    </data>
+    <data name="PriceCalculatedPerHour" xml:space="preserve">
+        <value>Hind arvutatakse tunni kohta</value>
+    </data>
+
+    <!-- User/BookingDetails -->
+    <data name="BookingDetails" xml:space="preserve">
+        <value>Broneeringu üksikasjad</value>
+    </data>
+    <data name="TotalAmount" xml:space="preserve">
+        <value>Kogusumma</value>
+    </data>
+    <data name="Duration" xml:space="preserve">
+        <value>Kestus</value>
+    </data>
+    <data name="PayNow" xml:space="preserve">
+        <value>Maksa kohe</value>
+    </data>
+    <data name="LeaveReview" xml:space="preserve">
+        <value>Jäta arvustus</value>
+    </data>
+    <data name="BackToMyBookings" xml:space="preserve">
+        <value>Tagasi minu broneeringutesse</value>
+    </data>
+    <data name="YourReview" xml:space="preserve">
+        <value>Teie arvustus</value>
+    </data>
+    <data name="Verified" xml:space="preserve">
+        <value>Kinnitatud</value>
+    </data>
+    <data name="Excellent" xml:space="preserve">
+        <value>Suurepärane</value>
+    </data>
+    <data name="VeryGood" xml:space="preserve">
+        <value>Väga hea</value>
+    </data>
+    <data name="Good" xml:space="preserve">
+        <value>Hea</value>
+    </data>
+    <data name="Fair" xml:space="preserve">
+        <value>Rahuldav</value>
+    </data>
+    <data name="Poor" xml:space="preserve">
+        <value>Halb</value>
+    </data>
+    <data name="ReviewedOn" xml:space="preserve">
+        <value>Arvustatud</value>
+    </data>
+    <data name="EditReview" xml:space="preserve">
+        <value>Muuda arvustust</value>
+    </data>
+    <data name="AvailableActions" xml:space="preserve">
+        <value>Saadaolevad toimingud</value>
+    </data>
+    <data name="CancelThisBooking" xml:space="preserve">
+        <value>Tühista see broneering</value>
+    </data>
+    <data name="CancellationNotAvailable" xml:space="preserve">
+        <value>Tühistamine pole saadaval</value>
+    </data>
+    <data name="PaymentRequired" xml:space="preserve">
+        <value>Makse nõutav</value>
+    </data>
+    <data name="PaymentNotNeeded" xml:space="preserve">
+        <value>Makse pole vajalik</value>
+    </data>
+    <data name="ReviewSubmitted" xml:space="preserve">
+        <value>Arvustus esitatud</value>
+    </data>
+    <data name="ReviewAfterCompletion" xml:space="preserve">
+        <value>Arvustus saadaval pärast lõpetamist</value>
+    </data>
+    <data name="CompletePayment" xml:space="preserve">
+        <value>Lõpeta makse</value>
+    </data>
+    <data name="TotalDue" xml:space="preserve">
+        <value>Tasumisele kuuluv:</value>
+    </data>
+    <data name="PaymentMethod" xml:space="preserve">
+        <value>Makseviis</value>
+    </data>
+    <data name="CreditCard" xml:space="preserve">
+        <value>Krediitkaart</value>
+    </data>
+    <data name="DebitCard" xml:space="preserve">
+        <value>Deebetkaart</value>
+    </data>
+    <data name="BankTransfer" xml:space="preserve">
+        <value>Pangaülekanne</value>
+    </data>
+    <data name="ConfirmPayment" xml:space="preserve">
+        <value>Kinnita makse</value>
+    </data>
+    <data name="EditBooking" xml:space="preserve">
+        <value>Muuda broneeringut</value>
+    </data>
+    <data name="EditThisBooking" xml:space="preserve">
+        <value>Muuda seda broneeringut</value>
+    </data>
+    <data name="EditingNotAvailable" xml:space="preserve">
+        <value>Muutmine pole saadaval</value>
+    </data>
+    <data name="UpdateBooking" xml:space="preserve">
+        <value>Uuenda broneeringut</value>
+    </data>
+    <data name="EditBookingDescription" xml:space="preserve">
+        <value>Muutke oma broneeringu üksikasju allpool</value>
+    </data>
+    <data name="BackToBookingDetails" xml:space="preserve">
+        <value>Tagasi broneeringu üksikasjadesse</value>
+    </data>
+    <data name="CurrentBookingInfo" xml:space="preserve">
+        <value>Praegune broneeringu info</value>
+    </data>
+    <data name="EditOnlyPendingNote" xml:space="preserve">
+        <value>Saate muuta ainult ootel või taotletud broneeringuid. Pärast kinnitamist muudatused pole enam võimalikud.</value>
+    </data>
+
+    <!-- User/_UserBookingList -->
+    <data name="PaymentDue" xml:space="preserve">
+        <value>Makse ootab</value>
+    </data>
+    <data name="Details" xml:space="preserve">
+        <value>Üksikasjad</value>
+    </data>
+    <data name="NoBookingsLabel" xml:space="preserve">
+        <value>Broneeringuid pole</value>
+    </data>
+    <data name="NoBookingsInCategory" xml:space="preserve">
+        <value>Teil pole selles kategoorias broneeringuid.</value>
+    </data>
+    <data name="Paid" xml:space="preserve">
+        <value>Makstud</value>
+    </data>
+
+    <!-- User/AddReview -->
+    <data name="AddReview" xml:space="preserve">
+        <value>Lisa arvustus</value>
+    </data>
+    <data name="UpdateReviewFor" xml:space="preserve">
+        <value>Uuenda oma arvustust</value>
+    </data>
+    <data name="ShareExperienceWith" xml:space="preserve">
+        <value>Jagage oma kogemust</value>
+    </data>
+    <data name="BackToBooking" xml:space="preserve">
+        <value>Tagasi broneeringusse</value>
+    </data>
+    <data name="ReviewSubmittedOnDate" xml:space="preserve">
+        <value>Esitasite selle arvustuse</value>
+    </data>
+    <data name="UpdateRatingComment" xml:space="preserve">
+        <value>Saate oma hinnangut ja kommentaari allpool uuendada.</value>
+    </data>
+    <data name="WriteYourReview" xml:space="preserve">
+        <value>Kirjutage oma arvustus</value>
+    </data>
+    <data name="EditYourReview" xml:space="preserve">
+        <value>Muutke oma arvustust</value>
+    </data>
+    <data name="Rating" xml:space="preserve">
+        <value>Hinnang</value>
+    </data>
+    <data name="SelectRating" xml:space="preserve">
+        <value>Valige hinnang</value>
+    </data>
+    <data name="YourReviewLabel" xml:space="preserve">
+        <value>Teie arvustus</value>
+    </data>
+    <data name="ReviewPlaceholder" xml:space="preserve">
+        <value>Jagage oma kogemust — kas broneerimine oli lihtne? Milline oli lennuki seisukord? Kas soovitaksite?</value>
+    </data>
+    <data name="UpdateReview" xml:space="preserve">
+        <value>Uuenda arvustust</value>
+    </data>
+    <data name="SubmitReview" xml:space="preserve">
+        <value>Esita arvustus</value>
+    </data>
+    <data name="RatingGuide" xml:space="preserve">
+        <value>Hindamisjuhend</value>
+    </data>
+
+    <!-- SystemAdmin - shared table / filter labels -->
+    <data name="Page" xml:space="preserve">
+        <value>Leht</value>
+    </data>
+    <data name="Of" xml:space="preserve">
+        <value>/</value>
+    </data>
+    <data name="Showing" xml:space="preserve">
+        <value>Kuvatakse</value>
+    </data>
+    <data name="Filter" xml:space="preserve">
+        <value>Filtreeri</value>
+    </data>
+    <data name="Clear" xml:space="preserve">
+        <value>Tühjenda</value>
+    </data>
+    <data name="AllStatuses" xml:space="preserve">
+        <value>Kõik staatused</value>
+    </data>
+    <data name="AllTenantsList" xml:space="preserve">
+        <value>Kõik üürnikud</value>
+    </data>
+    <data name="AllEntities" xml:space="preserve">
+        <value>Kõik olemid</value>
+    </data>
+    <data name="AllActions" xml:space="preserve">
+        <value>Kõik toimingud</value>
+    </data>
+    <data name="AllFilter" xml:space="preserve">
+        <value>Kõik</value>
+    </data>
+    <data name="ActiveOnly" xml:space="preserve">
+        <value>Ainult aktiivsed</value>
+    </data>
+    <data name="InactiveOnly" xml:space="preserve">
+        <value>Ainult mitteaktiivsed</value>
+    </data>
+    <data name="DeactivatedOnly" xml:space="preserve">
+        <value>Ainult deaktiveeritud</value>
+    </data>
+    <data name="AvailableOnly" xml:space="preserve">
+        <value>Ainult saadaolevad</value>
+    </data>
+    <data name="UnavailableOnly" xml:space="preserve">
+        <value>Ainult mittesaadaolevad</value>
+    </data>
+    <data name="SearchLabel" xml:space="preserve">
+        <value>Otsi</value>
+    </data>
+    <data name="StatusLabel" xml:space="preserve">
+        <value>Staatus</value>
+    </data>
+    <data name="TenantLabel" xml:space="preserve">
+        <value>Üürnik</value>
+    </data>
+    <data name="EntityLabel" xml:space="preserve">
+        <value>Olem</value>
+    </data>
+    <data name="ActionLabel" xml:space="preserve">
+        <value>Toiming</value>
+    </data>
+    <data name="AvailabilityLabel" xml:space="preserve">
+        <value>Saadavus</value>
+    </data>
+    <data name="BackToDashboardBtn" xml:space="preserve">
+        <value>Tagasi töölauale</value>
+    </data>
+    <data name="BackToUsers" xml:space="preserve">
+        <value>Tagasi kasutajate juurde</value>
+    </data>
+
+    <!-- SystemAdmin - Dashboard -->
+    <data name="SystemWideOverview" xml:space="preserve">
+        <value>Süsteemiülene ülevaade</value>
+    </data>
+    <data name="QuickActionsLabel" xml:space="preserve">
+        <value>Kiirtoimingud</value>
+    </data>
+    <data name="AllBookingsLink" xml:space="preserve">
+        <value>Kõik broneeringud</value>
+    </data>
+    <data name="AllAircraftLink" xml:space="preserve">
+        <value>Kõik lennukid</value>
+    </data>
+    <data name="AuditLog" xml:space="preserve">
+        <value>Auditilogi</value>
+    </data>
+    <data name="NoTenantsYetAdmin" xml:space="preserve">
+        <value>Üürnikke pole veel.</value>
+    </data>
+    <data name="ViewAllBookings" xml:space="preserve">
+        <value>Vaata kõiki broneeringuid</value>
+    </data>
+    <data name="ViewAllAircraftLink" xml:space="preserve">
+        <value>Vaata kõiki lennukeid</value>
+    </data>
+
+    <!-- SystemAdmin - Tenants -->
+    <data name="ManageTenantsTitle" xml:space="preserve">
+        <value>Halda üürnikke</value>
+    </data>
+    <data name="SearchCompanyOrSlug" xml:space="preserve">
+        <value>Ettevõtte nimi või lühinimi…</value>
+    </data>
+    <data name="NoTenantsMatchFilter" xml:space="preserve">
+        <value>Ükski üürnik ei vasta filtrile.</value>
+    </data>
+    <data name="DeactivateTenant" xml:space="preserve">
+        <value>Deaktiveeri</value>
+    </data>
+    <data name="ActivateTenant" xml:space="preserve">
+        <value>Aktiveeri</value>
+    </data>
+    <data name="ToggleTenantTitle" xml:space="preserve">
+        <value>Üürnik</value>
+    </data>
+    <data name="TenantDeactivateWarning" xml:space="preserve">
+        <value>Selle üürniku kasutajad ei saa süsteemi siseneda, kui üürnik on mitteaktiivne.</value>
+    </data>
+    <data name="TenantActivateInfo" xml:space="preserve">
+        <value>Aktiveerimine lubab üürniku kasutajatel uuesti sisse logida.</value>
+    </data>
+    <data name="AreYouSureWantTo" xml:space="preserve">
+        <value>Kas olete kindel, et soovite</value>
+    </data>
+    <data name="ThisTenant" xml:space="preserve">
+        <value>seda üürnikku?</value>
+    </data>
+
+    <!-- SystemAdmin - Users -->
+    <data name="ManageUsersTitle" xml:space="preserve">
+        <value>Halda kasutajaid</value>
+    </data>
+    <data name="UsersFound" xml:space="preserve">
+        <value>kasutajat leitud</value>
+    </data>
+    <data name="SearchNameOrEmail" xml:space="preserve">
+        <value>Nimi või e-post…</value>
+    </data>
+    <data name="AllUsers" xml:space="preserve">
+        <value>Kõik kasutajad</value>
+    </data>
+    <data name="NameCol" xml:space="preserve">
+        <value>Nimi</value>
+    </data>
+    <data name="EmailCol" xml:space="preserve">
+        <value>E-post</value>
+    </data>
+    <data name="RolesCol" xml:space="preserve">
+        <value>Rollid</value>
+    </data>
+    <data name="Registered" xml:space="preserve">
+        <value>Registreeritud</value>
+    </data>
+    <data name="BookingsCol" xml:space="preserve">
+        <value>Broneeringud</value>
+    </data>
+    <data name="Deactivated" xml:space="preserve">
+        <value>Deaktiveeritud</value>
+    </data>
+    <data name="NoUsersMatchFilter" xml:space="preserve">
+        <value>Ükski kasutaja ei vasta filtrile.</value>
+    </data>
+    <data name="ReactivateUser" xml:space="preserve">
+        <value>Aktiveeri kasutaja uuesti</value>
+    </data>
+    <data name="DeactivateUser" xml:space="preserve">
+        <value>Deaktiveeri kasutaja</value>
+    </data>
+    <data name="AreYouSureReactivate" xml:space="preserve">
+        <value>Kas olete kindel, et soovite selle kasutaja uuesti aktiveerida?</value>
+    </data>
+    <data name="AreYouSureDeactivate" xml:space="preserve">
+        <value>Kas olete kindel, et soovite selle kasutaja deaktiveerida?</value>
+    </data>
+    <data name="ReactivateInfo" xml:space="preserve">
+        <value>Konto lukustus eemaldatakse ja kasutaja saab uuesti sisse logida.</value>
+    </data>
+    <data name="DeactivateUserWarning" xml:space="preserve">
+        <value>Kasutajakonto lukustatakse. Ajaloolised andmed säilivad. Aktiivsed broneeringud tühistatakse ja kõik seansid lõpetatakse.</value>
+    </data>
+
+    <!-- SystemAdmin - All Aircraft -->
+    <data name="AllAircraftTitle" xml:space="preserve">
+        <value>Kõik lennukid (süsteemiülene)</value>
+    </data>
+    <data name="AllAircraftHeading" xml:space="preserve">
+        <value>Kõik lennukid</value>
+    </data>
+    <data name="AircraftFoundAcrossTenants" xml:space="preserve">
+        <value>lennukit leitud kõigis ettevõtetes</value>
+    </data>
+    <data name="SearchRegistrationMakeModelTenant" xml:space="preserve">
+        <value>Registreering, mark, mudel, üürnik…</value>
+    </data>
+    <data name="RegistrationCol" xml:space="preserve">
+        <value>Registreering</value>
+    </data>
+    <data name="MakeAndModel" xml:space="preserve">
+        <value>Mark ja mudel</value>
+    </data>
+    <data name="YearCol" xml:space="preserve">
+        <value>Aasta</value>
+    </data>
+    <data name="HourlyRateCol" xml:space="preserve">
+        <value>Tunnihind</value>
+    </data>
+    <data name="BaseAirportCol" xml:space="preserve">
+        <value>Kodulennujaam</value>
+    </data>
+    <data name="NoAircraftMatchFilter" xml:space="preserve">
+        <value>Ükski lennuk ei vasta filtrile.</value>
+    </data>
+
+    <!-- SystemAdmin - All Bookings -->
+    <data name="AllBookingsTitle" xml:space="preserve">
+        <value>Kõik broneeringud (süsteemiülene)</value>
+    </data>
+    <data name="AllBookingsHeading" xml:space="preserve">
+        <value>Kõik broneeringud</value>
+    </data>
+    <data name="BookingsFoundAcrossTenants" xml:space="preserve">
+        <value>broneeringut leitud kõigis ettevõtetes</value>
+    </data>
+    <data name="SearchPilotAircraftTenant" xml:space="preserve">
+        <value>Piloodi e-post, lennuki registreering, üürnik…</value>
+    </data>
+    <data name="PilotCol" xml:space="preserve">
+        <value>Piloot</value>
+    </data>
+    <data name="StartCol" xml:space="preserve">
+        <value>Algus</value>
+    </data>
+    <data name="EndCol" xml:space="preserve">
+        <value>Lõpp</value>
+    </data>
+    <data name="AmountCol" xml:space="preserve">
+        <value>Summa</value>
+    </data>
+    <data name="CreatedCol" xml:space="preserve">
+        <value>Loodud</value>
+    </data>
+    <data name="NoBookingsMatchFilter" xml:space="preserve">
+        <value>Ükski broneering ei vasta filtrile.</value>
+    </data>
+
+    <!-- SystemAdmin - Audit Log -->
+    <data name="AuditLogTitle" xml:space="preserve">
+        <value>Auditilogi</value>
+    </data>
+    <data name="TotalEntries" xml:space="preserve">
+        <value>kirjet kokku</value>
+    </data>
+    <data name="SearchDetailsEmailIp" xml:space="preserve">
+        <value>Üksikasjad, e-post, IP…</value>
+    </data>
+    <data name="LogEntries" xml:space="preserve">
+        <value>Logikirjed</value>
+    </data>
+    <data name="TimestampCol" xml:space="preserve">
+        <value>Ajatempel</value>
+    </data>
+    <data name="TenantIdCol" xml:space="preserve">
+        <value>Üürniku ID</value>
+    </data>
+    <data name="UserCol" xml:space="preserve">
+        <value>Kasutaja</value>
+    </data>
+    <data name="IpCol" xml:space="preserve">
+        <value>IP</value>
+    </data>
+    <data name="DetailsCol" xml:space="preserve">
+        <value>Üksikasjad</value>
+    </data>
+    <data name="NoAuditLogMatch" xml:space="preserve">
+        <value>Ükski auditilogi kirje ei vasta filtrile.</value>
+    </data>
+
+    <!-- SystemAdmin - Edit User Roles -->
+    <data name="EditRolesTitle" xml:space="preserve">
+        <value>Muuda rolle</value>
+    </data>
+    <data name="AspNetIdentityRoles" xml:space="preserve">
+        <value>ASP.NET Identity rollid</value>
+    </data>
+    <data name="NoRolesDefined" xml:space="preserve">
+        <value>Süsteemis pole rolle määratud.</value>
+    </data>
+    <data name="CurrentlyAssigned" xml:space="preserve">
+        <value>Praegu määratud</value>
+    </data>
+    <data name="SaveRoles" xml:space="preserve">
+        <value>Salvesta rollid</value>
+    </data>
+    <data name="CompanyMemberships" xml:space="preserve">
+        <value>Ettevõtte liikmelisused</value>
+    </data>
+    <data name="NoCompanyMemberships" xml:space="preserve">
+        <value>Ettevõtte liikmelisusi pole.</value>
+    </data>
+</root>

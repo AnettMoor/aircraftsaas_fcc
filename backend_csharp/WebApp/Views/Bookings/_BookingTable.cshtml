@@ -1,0 +1,78 @@
+@model IEnumerable<App.Application.DTOs.BookingDto>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Aircraft</th>
+                    <th>Pilot</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>
+                            <small class="text-muted">@booking.Id.ToString().Substring(0, 8)</small>
+                        </td>
+                        <td>
+                            <strong>@booking.AircraftName</strong>
+                        </td>
+                        <td>@booking.PilotName</td>
+                        <td>
+                            @booking.StartDateTime.ToString("MMM dd, yyyy")
+                            <br><small class="text-muted">@booking.StartDateTime.ToString("HH:mm")</small>
+                        </td>
+                        <td>
+                            @booking.EndDateTime.ToString("MMM dd, yyyy")
+                            <br><small class="text-muted">@booking.EndDateTime.ToString("HH:mm")</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-@GetStatusBadgeClass(booking.Status)">
+                                @booking.Status
+                            </span>
+                        </td>
+                        <td>
+                            <strong>$@booking.TotalAmount.ToString("N2")</strong>
+                        </td>
+                        <td>
+                            <small>@booking.CreatedAt.ToString("MMM dd")</small>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-calendar-check fs-1"></i>
+        <p class="mb-0">No bookings found</p>
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(App.Domain.Enums.EBookingStatus status)
+    {
+        return status switch
+        {
+            App.Domain.Enums.EBookingStatus.Pending => "warning",
+            App.Domain.Enums.EBookingStatus.Requested => "info",
+            App.Domain.Enums.EBookingStatus.Approved => "primary",
+            App.Domain.Enums.EBookingStatus.Paid => "success",
+            App.Domain.Enums.EBookingStatus.Completed => "secondary",
+            App.Domain.Enums.EBookingStatus.Cancelled => "danger",
+            App.Domain.Enums.EBookingStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+}

@@ -1,0 +1,168 @@
+@model WebApp.ViewModels.User.AircraftCatalogViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.AircraftCatalog;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@App.Resources.Views.Home.AircraftCatalog</h1>
+            <p class="text-muted">@App.Resources.Views.Home.FindAndBookDescription</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Search Filters Sidebar -->
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">@App.Resources.Views.Home.SearchFilters</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Index" method="get">
+                        <div class="mb-3">
+                            <label for="Make" class="form-label">@App.Resources.Views.Home.Make</label>
+                            <input type="text" class="form-control" id="Make" name="Make" 
+                                   value="@Model.SearchModel?.Make" placeholder="e.g., Cessna">
+                        </div>
+                        <div class="mb-3">
+                            <label for="Model" class="form-label">@App.Resources.Views.Home.Model</label>
+                            <input type="text" class="form-control" id="Model" name="Model" 
+                                   value="@Model.SearchModel?.Model" placeholder="e.g., 172">
+                        </div>
+                        <div class="mb-3">
+                            <label for="Category" class="form-label">@App.Resources.Views.Home.Category</label>
+                            <select class="form-select" id="Category" name="Category">
+                                <option value="">@App.Resources.Views.Home.AllCategories</option>
+                                @foreach (var category in Model.Categories)
+                                {
+                                    <option value="@category" selected="@(Model.SearchModel?.Category == category)">
+                                        @category
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="Location" class="form-label">@App.Resources.Views.Home.Location</label>
+                            <input type="text" class="form-control" id="Location" name="Location" 
+                                   value="@Model.SearchModel?.Location" placeholder="@App.Resources.Views.Home.AirportCode">
+                        </div>
+                        <div class="mb-3">
+                            <label for="MaxHourlyRate" class="form-label">@App.Resources.Views.Home.MaxHourlyRate</label>
+                            <input type="number" class="form-control" id="MaxHourlyRate" name="MaxHourlyRate" 
+                                   value="@Model.SearchModel?.MaxHourlyRate" min="0" step="10">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">@App.Resources.Views.Home.StartDate</label>
+                            <input type="date" class="form-control" id="StartDate" name="StartDate" 
+                                   value="@Model.SearchModel?.StartDate?.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">@App.Resources.Views.Home.EndDate</label>
+                            <input type="date" class="form-control" id="EndDate" name="EndDate" 
+                                   value="@Model.SearchModel?.EndDate?.ToString("yyyy-MM-dd")">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i> @App.Resources.Views.Home.Search
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100 mt-2">
+                            @App.Resources.Views.Home.ClearFilters
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aircraft List -->
+        <div class="col-lg-9">
+            <!-- Results Count -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted">@App.Resources.Views.Home.ShowingAircraft @Model.Aircraft.Count() @App.Resources.Views.Home.AircraftPlural</span>
+            </div>
+
+            @if (Model.Aircraft.Any())
+            {
+                <div class="row">
+                    @foreach (var aircraft in Model.Aircraft)
+                    {
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h5 class="card-title mb-0">@aircraft.Make @aircraft.Model</h5>
+                                            <small class="text-muted">@aircraft.RegistrationNumber</small>
+                                        </div>
+                                        @if (aircraft.Status == "InsuranceInactive")
+                                        {
+                                            <span class="badge bg-warning text-dark">Insurance Inactive</span>
+                                        }
+                                        else if (aircraft.Status == "Maintenance")
+                                        {
+                                            <span class="badge bg-info">Maintenance</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-@(aircraft.IsAvailable ? "success" : "danger")">
+                                                @(aircraft.IsAvailable ? App.Resources.Views.Home.Available : App.Resources.Views.Home.Unavailable)
+                                            </span>
+                                        }
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <span class="badge bg-secondary">@aircraft.Category</span>
+                                        <span class="badge bg-secondary">@aircraft.Year</span>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="bi bi-geo-alt me-2"></i>
+                                            @aircraft.BaseAirportName
+                                        </div>
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="bi bi-clock me-2"></i>
+                                            @aircraft.TotalAirspeedHours @App.Resources.Views.Home.Hours
+                                        </div>
+                                    </div>
+
+                                    @if (aircraft.ReviewCount > 0)
+                                    {
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <span class="text-warning me-1">★</span>
+                                                <strong>@aircraft.AverageRating.ToString("F1")</strong>
+                                                <span class="text-muted small">(@aircraft.ReviewCount @App.Resources.Views.Home.ReviewsLower)</span>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="fs-5">$@aircraft.HourlyRate</strong>
+                                            <span class="text-muted">@App.Resources.Views.Home.PerHour</span>
+                                        </div>
+                                        <a asp-controller="Aircraft" asp-action="Details" asp-route-id="@aircraft.Id" 
+                                           class="btn btn-outline-primary">
+                                            @App.Resources.Views.Home.ViewDetails
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-airplane fs-1 text-muted"></i>
+                    <h5 class="mt-3">@App.Resources.Views.Home.NoAircraftFound</h5>
+                    <p class="text-muted">@App.Resources.Views.Home.TryAdjustingFilters</p>
+                    <a asp-action="Index" class="btn btn-primary">@App.Resources.Views.Home.ClearFilters</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,221 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminDashboardViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.SystemAdminDashboard;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-shield-lock me-2 text-danger"></i>@App.Resources.Views.Home.SystemAdminDashboard
+            </h1>
+            <p class="text-muted">@App.Resources.Views.Home.SystemWideOverview</p>
+        </div>
+        <div>
+            <span class="badge bg-danger fs-6">@App.Resources.Views.Home.SystemAdmin</span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stat Cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.TotalUsers</h6>
+                            <h2 class="mb-0">@Model.TotalUsers</h2>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="bi bi-people"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="text-white text-decoration-none small">@App.Resources.Views.Home.ManageUsers →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.ActiveTenants</h6>
+                            <h2 class="mb-0">@Model.ActiveTenants <small class="fs-5 opacity-75">/ @Model.TotalTenants</small></h2>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="bi bi-building"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants" class="text-white text-decoration-none small">@App.Resources.Views.Home.ManageTenants →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.TotalBookings</h6>
+                            <h2 class="mb-0">@Model.TotalBookings</h2>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="bi bi-calendar-check"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AllBookings" class="text-white text-decoration-none small">@App.Resources.Views.Home.ViewAllBookings →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-dark-50">@App.Resources.Views.Home.TotalAircraft</h6>
+                            <h2 class="mb-0">@Model.TotalAircraft</h2>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="bi bi-airplane"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AllAircraft" class="text-dark text-decoration-none small">@App.Resources.Views.Home.ViewAllAircraftLink →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second stats row: Airports -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card bg-teal text-white h-100" style="background-color:#0d6efd22; border-left: 4px solid #0dcaf0;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Active Airports</h6>
+                            <h2 class="mb-0 text-info">@Model.TotalAirports</h2>
+                        </div>
+                        <div class="fs-1 opacity-25 text-info"><i class="bi bi-geo-alt"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports" class="text-info text-decoration-none small">Manage Airports →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">@App.Resources.Views.Home.QuickActionsLabel</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="btn btn-outline-primary">
+                            <i class="bi bi-people me-1"></i> @App.Resources.Views.Home.ManageUsers
+                        </a>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants" class="btn btn-outline-success">
+                            <i class="bi bi-building me-1"></i> @App.Resources.Views.Home.ManageTenants
+                        </a>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AllBookings" class="btn btn-outline-info">
+                            <i class="bi bi-calendar-check me-1"></i> @App.Resources.Views.Home.AllBookingsLink
+                        </a>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AllAircraft" class="btn btn-outline-warning">
+                            <i class="bi bi-airplane me-1"></i> @App.Resources.Views.Home.AllAircraftLink
+                        </a>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog" class="btn btn-outline-secondary">
+                            <i class="bi bi-journal-text me-1"></i> @App.Resources.Views.Home.AuditLog
+                        </a>
+                        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports" class="btn btn-outline-info">
+                            <i class="bi bi-geo-alt me-1"></i> Manage Airports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Tenants by Bookings -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@App.Resources.Views.Home.TopTenantsByBookings</h5>
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants" class="btn btn-sm btn-outline-success">@App.Resources.Views.Home.ViewAllTenants</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.TopTenantsByBookings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>@App.Resources.Views.Home.Tenant</th>
+                                        <th>@App.Resources.Views.Home.Users</th>
+                                        <th>@App.Resources.Views.Home.Aircraft</th>
+                                        <th>@App.Resources.Views.Home.Bookings</th>
+                                        <th>@App.Resources.Views.Home.Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var tenant in Model.TopTenantsByBookings)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@tenant.CompanyName</strong>
+                                                <div class="text-muted small">@tenant.Slug</div>
+                                            </td>
+                                            <td>@tenant.UserCount</td>
+                                            <td>@tenant.AircraftCount</td>
+                                            <td><strong>@tenant.BookingCount</strong></td>
+                                            <td>
+                                                @if (tenant.IsActive)
+                                                {
+                                                    <span class="badge bg-success">@App.Resources.Views.Home.Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@App.Resources.Views.Home.Inactive</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-building fs-1"></i>
+                            <p class="mb-0">@App.Resources.Views.Home.NoTenantsYetAdmin</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

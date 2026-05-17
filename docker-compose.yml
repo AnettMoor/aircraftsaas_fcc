@@ -1,0 +1,68 @@
+services:
+  postgres-dev:
+    container_name: "postgres-aircraft-clean"
+    pull_policy: always
+    image: postgres:16
+    command: postgres -c 'max_connections=1000'
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=aircraft
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - aircraft-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  webapp:
+    build:
+      context: ./backend_csharp
+      dockerfile: Dockerfile
+    container_name: "aircraft-webapp-clean"
+    restart: unless-stopped
+    ports:
+      - "87:8080"
+    volumes:
+      - webapp-uploads:/app/wwwroot/uploads
+    networks:
+      - aircraft-net
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - TenantSlug=${TENANT_SLUG:-c1}
+      - ConnectionStrings__DefaultConnection=Host=postgres-dev;Port=5432;Database=aircraft;Username=postgres;Password=postgres;Timeout=30;Command Timeout=60
+      - DataInitialization__DropDatabase=false
+      - DataInitialization__MigrateDatabase=true
+      - DataInitialization__SeedIdentity=true
+      - DataInitialization__SeedData=true
+      - DataInitialization__SeedAppUserCompanies=true
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+
+  vue-app:
+    build:
+      context: ./frontend_vue
+      dockerfile: Dockerfile
+    container_name: "aircraft-vue"
+    restart: unless-stopped
+    ports:
+      - "85:80"
+    networks:
+      - aircraft-net
+    depends_on:
+      - webapp
+
+volumes:
+  postgres-dev-data:
+  webapp-uploads:
+
+networks:
+  aircraft-net:
+    name: aircraft-net-clean

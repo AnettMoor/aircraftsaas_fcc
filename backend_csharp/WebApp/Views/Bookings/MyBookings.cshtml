@@ -1,0 +1,122 @@
+@model WebApp.ViewModels.User.MyBookingsViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.MyBookings;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@App.Resources.Views.Home.MyBookings</h1>
+            <p class="text-muted">@App.Resources.Views.Home.ManageFlightBookings</p>
+        </div>
+        <a asp-controller="Aircraft" asp-action="Index" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i> @App.Resources.Views.Home.FindAircraft
+        </a>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="bookingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                @App.Resources.Views.Home.AllBookings (@(Model.PendingBookings.Count() + Model.ActiveBookings.Count() + Model.PastBookings.Count() + Model.CancelledBookings.Count()))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                @App.Resources.Views.Home.Pending (@Model.PendingBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+                @App.Resources.Views.Home.Active (@Model.ActiveBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+                @App.Resources.Views.Home.Completed (@Model.PastBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">
+                @App.Resources.Views.Home.Cancelled (@Model.CancelledBookings.Count())
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="bookingTabsContent">
+        <!-- All Bookings -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            @await Html.PartialAsync("_UserBookingList", Model.PendingBookings.Concat(Model.ActiveBookings).Concat(Model.PastBookings).Concat(Model.CancelledBookings))
+        </div>
+
+        <!-- Pending -->
+        <div class="tab-pane fade" id="pending" role="tabpanel">
+            @await Html.PartialAsync("_UserBookingList", Model.PendingBookings)
+        </div>
+        
+        <!-- Active -->
+        <div class="tab-pane fade" id="active" role="tabpanel">
+            @await Html.PartialAsync("_UserBookingList", Model.ActiveBookings)
+        </div>
+        
+        <!-- Past -->
+        <div class="tab-pane fade" id="past" role="tabpanel">
+            @await Html.PartialAsync("_UserBookingList", Model.PastBookings)
+        </div>
+        
+        <!-- Cancelled -->
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            @await Html.PartialAsync("_UserBookingList", Model.CancelledBookings)
+        </div>
+    </div>
+</div>
+
+@* Cancel Modals *@
+@foreach (var booking in Model.PendingBookings.Concat(Model.ActiveBookings))
+{
+    <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@App.Resources.Views.Home.CancelBooking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@App.Resources.Views.Home.ConfirmCancelBooking</p>
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>@booking.AircraftName</h6>
+                            <p class="mb-0 text-muted">
+                                @booking.StartDateTime.ToString("MMM dd, yyyy") - @booking.EndDateTime.ToString("MMM dd, yyyy")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.KeepBooking</button>
+                    <form asp-action="Cancel" asp-route-id="@booking.Id" method="post">
+                        <button type="submit" class="btn btn-danger">@App.Resources.Views.Home.CancelBooking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

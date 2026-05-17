@@ -1,0 +1,243 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminAirportsViewModel
+
+@{
+    ViewData["Title"] = "Manage Airports";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-geo-alt me-2 text-info"></i>Manage Airports
+            </h1>
+            <p class="text-muted">Add, edit or remove airports from the global database.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateAirport" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add Airport
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stats row -->
+    <div class="row mb-3 g-3">
+        <div class="col-sm-4">
+            <div class="card text-center border-0 bg-light">
+                <div class="card-body py-2">
+                    <div class="h4 mb-0 text-info">@Model.TotalAirports</div>
+                    <small class="text-muted">@(Model.ShowDeleted ? "Airports shown" : "Active airports")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-center border-0 bg-light">
+                <div class="card-body py-2">
+                    <div class="h4 mb-0 text-danger">@Model.DeletedAirports</div>
+                    <small class="text-muted">Deleted airports</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="ICAO, IATA, name, city, country…"
+                           value="@Model.SearchQuery" />
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="showDeleted" id="showDeleted"
+                               value="true" @(Model.ShowDeleted ? "checked" : "") />
+                        <label class="form-check-label" for="showDeleted">Show deleted airports</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-search me-1"></i> Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle me-1"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Airports (@Model.TotalAirports)</h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Airports.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ICAO</th>
+                                <th>IATA</th>
+                                <th>Name</th>
+                                <th>City</th>
+                                <th>Country</th>
+                                <th class="text-center">Elevation (ft)</th>
+                                <th class="text-center">Aircraft</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var airport in Model.Airports)
+                            {
+                                <tr class="@(airport.IsDeleted ? "table-danger" : "")">
+                                    <td><strong>@airport.IcaoCode</strong></td>
+                                    <td>@airport.IataCode</td>
+                                    <td>@airport.Name</td>
+                                    <td>@airport.City</td>
+                                    <td>@airport.Country</td>
+                                    <td class="text-center">@airport.Elevation</td>
+                                    <td class="text-center">
+                                        @if (airport.AircraftCount > 0)
+                                        {
+                                            <span class="badge bg-secondary">@airport.AircraftCount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (airport.IsDeleted)
+                                        {
+                                            <span class="badge bg-danger">Deleted</span>
+                                            <div class="text-muted" style="font-size:0.7rem;">
+                                                @airport.DeletedAt?.ToString("yyyy-MM-dd")
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (airport.IsDeleted)
+                                        {
+                                            <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="RestoreAirport"
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@airport.AirportId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success"
+                                                        onclick="return confirm('Restore airport @airport.IcaoCode?')">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="EditAirport"
+                                               asp-route-id="@airport.AirportId" class="btn btn-sm btn-outline-primary me-1">
+                                                <i class="bi bi-pencil me-1"></i> Edit
+                                            </a>
+                                            <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="DeleteAirport"
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@airport.AirportId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        @(airport.AircraftCount > 0 ? "disabled title=\"Cannot delete: aircraft are based here\"" : "")
+                                                        onclick="return confirm('Delete airport @airport.IcaoCode? This action can be undone via Restore.')">
+                                                    <i class="bi bi-trash me-1"></i> Delete
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.Pagination.TotalPages > 1)
+                {
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+                        <small class="text-muted">
+                            Showing @((Model.Pagination.CurrentPage - 1) * Model.Pagination.PageSize + 1)–@(Math.Min(Model.Pagination.CurrentPage * Model.Pagination.PageSize, Model.TotalAirports))
+                            of @Model.TotalAirports airports
+                        </small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                @if (Model.Pagination.HasPrevious)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports"
+                                           asp-route-page="@(Model.Pagination.CurrentPage - 1)"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-showDeleted="@Model.ShowDeleted">Previous</a>
+                                    </li>
+                                }
+                                @for (var p = Math.Max(1, Model.Pagination.CurrentPage - 2);
+                                      p <= Math.Min(Model.Pagination.TotalPages, Model.Pagination.CurrentPage + 2); p++)
+                                {
+                                    <li class="page-item @(p == Model.Pagination.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports"
+                                           asp-route-page="@p"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-showDeleted="@Model.ShowDeleted">@p</a>
+                                    </li>
+                                }
+                                @if (Model.Pagination.HasNext)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports"
+                                           asp-route-page="@(Model.Pagination.CurrentPage + 1)"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-showDeleted="@Model.ShowDeleted">Next</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-geo-alt fs-1"></i>
+                    <p class="mb-2 mt-2">No airports found.</p>
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateAirport" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add First Airport
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

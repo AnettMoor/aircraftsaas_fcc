@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'SFMono-Regular', ui-monospace, 'Cascadia Mono', Menlo, monospace;
+
+  /* ===== Premium Aviation Blue Palette =====
+   * Deeper, richer blues for an enterprise aviation platform.
+   * Lighter shades (50–300) stay default for badges & alerts.
+   * Interactive shades (400–950) shift one stop deeper for a premium feel.
+   *
+   * Primary action:  blue-600  (#1D4ED8)
+   * Hover state:     blue-700  (#1E40AF)
+   * Active/pressed:  blue-800  (#1E3A8A)
+   * Accent/ring:     blue-500  (#2563EB)
+   */
+  --color-blue-400: #5B8DEF;
+  --color-blue-500: #2563EB;
+  --color-blue-600: #1D4ED8;
+  --color-blue-700: #1E40AF;
+  --color-blue-800: #1E3A8A;
+  --color-blue-900: #172554;
+  --color-blue-950: #0F1937;
+
+  /* ===== Premium Button Shadows ===== */
+  --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(29, 78, 216, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-btn-hover: 0 3px 6px rgba(0, 0, 0, 0.12),
+    0 6px 16px rgba(29, 78, 216, 0.22);
+  --shadow-btn-danger: 0 1px 2px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(220, 38, 38, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-btn-danger-hover: 0 3px 6px rgba(0, 0, 0, 0.12),
+    0 6px 16px rgba(185, 28, 28, 0.22);
+
+  /* ===== Premium Card Shadows ===== */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+
+  /* ===== Animation ===== */
+  --animate-modal-enter: modal-enter 200ms ease-out;
+
+  @keyframes modal-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}

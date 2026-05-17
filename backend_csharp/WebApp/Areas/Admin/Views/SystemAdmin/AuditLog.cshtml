@@ -1,0 +1,198 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminAuditLogViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.AuditLogTitle;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-journal-text me-2"></i>@App.Resources.Views.Home.AuditLogTitle
+            </h1>
+            <p class="text-muted mb-0">@Model.TotalLogs @App.Resources.Views.Home.TotalEntries</p>
+        </div>
+        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Dashboard" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> @App.Resources.Views.Home.BackToDashboardBtn
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog"
+                  class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.SearchLabel</label>
+                    <input type="text" name="search" value="@Model.SearchQuery"
+                           class="form-control" placeholder="@App.Resources.Views.Home.SearchDetailsEmailIp" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.EntityLabel</label>
+                    <select name="entity" class="form-select">
+                        <option value="">@App.Resources.Views.Home.AllEntities</option>
+                        @foreach (var e in Model.DistinctEntities)
+                        {
+                            <option value="@e" selected="@(Model.FilterEntity == e)">@e</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.ActionLabel</label>
+                    <select name="action" class="form-select">
+                        <option value="">@App.Resources.Views.Home.AllActions</option>
+                        @foreach (var a in Model.DistinctActions)
+                        {
+                            <option value="@a" selected="@(Model.FilterAction == a)">@a</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">@App.Resources.Views.Home.TenantLabel</label>
+                    <select name="tenantId" class="form-select" asp-items="Model.TenantSelectList">
+                        <option value="">@App.Resources.Views.Home.AllTenantsList</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <div class="col-md-1">
+                    <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog"
+                       class="btn btn-outline-secondary w-100" title="@App.Resources.Views.Home.Clear">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@App.Resources.Views.Home.LogEntries</h5>
+            <span class="badge bg-secondary">@App.Resources.Views.Home.Page @Model.Pagination.CurrentPage @App.Resources.Views.Home.Of @Model.Pagination.TotalPages</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Logs.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>@App.Resources.Views.Home.TimestampCol</th>
+                                <th>@App.Resources.Views.Home.TenantIdCol</th>
+                                <th>@App.Resources.Views.Home.UserCol</th>
+                                <th>@App.Resources.Views.Home.EntityLabel</th>
+                                <th>@App.Resources.Views.Home.ActionLabel</th>
+                                <th>@App.Resources.Views.Home.IpCol</th>
+                                <th>@App.Resources.Views.Home.DetailsCol</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.Logs)
+                            {
+                                <tr>
+                                    <td class="text-muted small text-nowrap">
+                                        @log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+                                    </td>
+                                    <td class="text-muted small">
+                                        <span title="@log.TenantId" class="font-monospace">
+                                            @log.TenantId.ToString()[..8]…
+                                        </span>
+                                    </td>
+                                    <td class="small">@(log.UserName ?? "—")</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">@log.EntityName</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var actionBadge = log.Action switch
+                                            {
+                                                "Created" => "bg-success",
+                                                "Updated" => "bg-warning text-dark",
+                                                "Deleted" => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @actionBadge">@log.Action</span>
+                                    </td>
+                                    <td class="text-muted small font-monospace">@log.IpAddress</td>
+                                    <td class="small text-truncate" style="max-width:220px;" title="@log.Details">
+                                        @(log.Details ?? "—")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.Pagination.TotalPages > 1)
+                {
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">
+                            @App.Resources.Views.Home.Showing @((Model.Pagination.CurrentPage - 1) * Model.Pagination.PageSize + 1)
+                            –@(Math.Min(Model.Pagination.CurrentPage * Model.Pagination.PageSize, Model.Pagination.TotalItems))
+                            @App.Resources.Views.Home.Of @Model.Pagination.TotalItems
+                        </span>
+                        <nav aria-label="Audit log pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(!Model.Pagination.HasPrevious ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog"
+                                       asp-route-page="@(Model.Pagination.CurrentPage - 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-entity="@Model.FilterEntity"
+                                       asp-route-action="@Model.FilterAction"
+                                       asp-route-tenantId="@Model.FilterTenantId">&laquo;</a>
+                                </li>
+                                @for (var p = Math.Max(1, Model.Pagination.CurrentPage - 2);
+                                      p <= Math.Min(Model.Pagination.TotalPages, Model.Pagination.CurrentPage + 2);
+                                      p++)
+                                {
+                                    <li class="page-item @(p == Model.Pagination.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog"
+                                           asp-route-page="@p"
+                                           asp-route-search="@Model.SearchQuery"
+                                           asp-route-entity="@Model.FilterEntity"
+                                           asp-route-action="@Model.FilterAction"
+                                           asp-route-tenantId="@Model.FilterTenantId">@p</a>
+                                    </li>
+                                }
+                                <li class="page-item @(!Model.Pagination.HasNext ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog"
+                                       asp-route-page="@(Model.Pagination.CurrentPage + 1)"
+                                       asp-route-search="@Model.SearchQuery"
+                                       asp-route-entity="@Model.FilterEntity"
+                                       asp-route-action="@Model.FilterAction"
+                                       asp-route-tenantId="@Model.FilterTenantId">&raquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-journal-x fs-1"></i>
+                    <p class="mt-2 mb-0">@App.Resources.Views.Home.NoAuditLogMatch</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

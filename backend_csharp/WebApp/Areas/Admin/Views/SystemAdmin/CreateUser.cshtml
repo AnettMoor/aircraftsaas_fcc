@@ -1,0 +1,234 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminCreateUserViewModel
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-person-plus me-2 text-primary"></i>Create User
+                    </h1>
+                    <p class="text-muted">Create a new user account in the system.</p>
+                </div>
+                <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Users
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>User Details</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateUser" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Name -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="form-label fw-semibold"></label>
+                                <input asp-for="FirstName" class="form-control" placeholder="e.g. John" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="form-label fw-semibold"></label>
+                                <input asp-for="LastName" class="form-control" placeholder="e.g. Smith" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold"></label>
+                            <input asp-for="Email" class="form-control" placeholder="e.g. john.smith@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label fw-semibold"></label>
+                                <input asp-for="Password" class="form-control" placeholder="Min. 6 characters" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ConfirmPassword" class="form-label fw-semibold"></label>
+                                <input asp-for="ConfirmPassword" class="form-control" placeholder="Re-enter password" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Role & Company -->
+                        <h6 class="fw-semibold text-muted mt-4 mb-3">
+                            <i class="bi bi-shield-lock me-1"></i> Role & Company Assignment
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Role" class="form-label fw-semibold"></label>
+                                <select asp-for="Role" class="form-select" id="roleSelect">
+                                    <option value="Normal">Normal (Pilot)</option>
+                                    <option value="CompanyOwner">Company Owner</option>
+                                    <option value="SystemAdmin">System Admin</option>
+                                </select>
+                                <span asp-validation-for="Role" class="text-danger small"></span>
+                                <div class="form-text">Determines the user's permissions in the system.</div>
+                            </div>
+                            <div class="col-md-6" id="existingCompanySection">
+                                <label asp-for="CompanyId" class="form-label fw-semibold"></label>
+                                <select asp-for="CompanyId" asp-items="Model.CompanySelectList" class="form-select" id="companySelect">
+                                    <option value="">— No company (assign later) —</option>
+                                </select>
+                                <span asp-validation-for="CompanyId" class="text-danger small"></span>
+                                <div class="form-text">Assign the user to an existing company.</div>
+                            </div>
+                        </div>
+
+                        <!-- Create New Company (shown only when CompanyOwner role is selected) -->
+                        <div id="newCompanySection" style="display: none;">
+                            <div class="card bg-light border-primary mb-3">
+                                <div class="card-body">
+                                    <div class="form-check mb-3">
+                                        <input asp-for="CreateNewCompany" class="form-check-input" id="createNewCompanyCheck" />
+                                        <label asp-for="CreateNewCompany" class="form-check-label fw-semibold">
+                                            <i class="bi bi-building-add me-1"></i> Create a new company for this owner
+                                        </label>
+                                        <div class="form-text">Check this to create a new company and assign this user as its owner.</div>
+                                    </div>
+
+                                    <div id="newCompanyFields" style="display: none;">
+                                        <!-- Company Name -->
+                                        <div class="mb-3">
+                                            <label asp-for="NewCompanyName" class="form-label fw-semibold"></label>
+                                            <input asp-for="NewCompanyName" class="form-control" placeholder="e.g. Baltic Air Charter" />
+                                            <span asp-validation-for="NewCompanyName" class="text-danger small"></span>
+                                        </div>
+
+                                        <!-- Slug -->
+                                        <div class="mb-3">
+                                            <label asp-for="NewCompanySlug" class="form-label fw-semibold"></label>
+                                            <input asp-for="NewCompanySlug" class="form-control" placeholder="Auto-generated from name (e.g. baltic-air-charter)" />
+                                            <span asp-validation-for="NewCompanySlug" class="text-danger small"></span>
+                                            <div class="form-text">Leave blank to auto-generate from the company name.</div>
+                                        </div>
+
+                                        <!-- Contact info -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-6">
+                                                <label asp-for="NewCompanyEmail" class="form-label fw-semibold"></label>
+                                                <input asp-for="NewCompanyEmail" class="form-control" placeholder="e.g. info@company.com" />
+                                                <span asp-validation-for="NewCompanyEmail" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label asp-for="NewCompanyPhone" class="form-label fw-semibold"></label>
+                                                <input asp-for="NewCompanyPhone" class="form-control" placeholder="e.g. +372 5551234" />
+                                                <span asp-validation-for="NewCompanyPhone" class="text-danger small"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Address -->
+                                        <div class="mb-3">
+                                            <label asp-for="NewCompanyAddress" class="form-label fw-semibold"></label>
+                                            <input asp-for="NewCompanyAddress" class="form-control" placeholder="e.g. 123 Airport Road, Tallinn" />
+                                            <span asp-validation-for="NewCompanyAddress" class="text-danger small"></span>
+                                        </div>
+
+                                        <!-- Limits -->
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label asp-for="NewCompanyMaxUsers" class="form-label fw-semibold"></label>
+                                                <input asp-for="NewCompanyMaxUsers" type="number" min="1" class="form-control" />
+                                                <span asp-validation-for="NewCompanyMaxUsers" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label asp-for="NewCompanyMaxAircraft" class="form-label fw-semibold"></label>
+                                                <input asp-for="NewCompanyMaxAircraft" type="number" min="1" class="form-control" />
+                                                <span asp-validation-for="NewCompanyMaxAircraft" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label asp-for="NewCompanyMaxBookingsPerMonth" class="form-label fw-semibold"></label>
+                                                <input asp-for="NewCompanyMaxBookingsPerMonth" type="number" min="1" class="form-control" />
+                                                <span asp-validation-for="NewCompanyMaxBookingsPerMonth" class="text-danger small"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Create User
+                            </button>
+                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const roleSelect = document.getElementById('roleSelect');
+            const newCompanySection = document.getElementById('newCompanySection');
+            const existingCompanySection = document.getElementById('existingCompanySection');
+            const createNewCompanyCheck = document.getElementById('createNewCompanyCheck');
+            const newCompanyFields = document.getElementById('newCompanyFields');
+            const companySelect = document.getElementById('companySelect');
+
+            function toggleSections() {
+                const isCompanyOwner = roleSelect.value === 'CompanyOwner';
+                const isNormal = roleSelect.value === 'Normal';
+
+                // Show the "Create New Company" section only for CompanyOwner role
+                newCompanySection.style.display = isCompanyOwner ? 'block' : 'none';
+
+                // Normal users are never associated with a company — hide company dropdown
+                if (isNormal) {
+                    existingCompanySection.style.display = 'none';
+                    companySelect.value = '';
+                    createNewCompanyCheck.checked = false;
+                    newCompanyFields.style.display = 'none';
+                } else if (!isCompanyOwner) {
+                    createNewCompanyCheck.checked = false;
+                    newCompanyFields.style.display = 'none';
+                    existingCompanySection.style.display = '';
+                }
+
+                toggleNewCompanyFields();
+            }
+
+            function toggleNewCompanyFields() {
+                const checked = createNewCompanyCheck.checked;
+                newCompanyFields.style.display = checked ? 'block' : 'none';
+
+                // When creating a new company, hide the existing company dropdown
+                if (checked) {
+                    existingCompanySection.style.display = 'none';
+                    companySelect.value = ''; // clear existing selection
+                } else {
+                    existingCompanySection.style.display = '';
+                }
+            }
+
+            roleSelect.addEventListener('change', toggleSections);
+            createNewCompanyCheck.addEventListener('change', toggleNewCompanyFields);
+
+            // Run on page load (in case of validation errors returning to the form)
+            toggleSections();
+        })();
+    </script>
+}

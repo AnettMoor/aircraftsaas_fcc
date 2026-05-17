@@ -1,0 +1,83 @@
+@model IEnumerable<App.Application.DTOs.BookingDto>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Aircraft</th>
+                    <th>Pilot</th>
+                    <th>Dates</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@booking.AircraftName</strong>
+                            <br><small class="text-muted">ID: @booking.Id.ToString().Substring(0, 8)</small>
+                        </td>
+                        <td>@booking.PilotName</td>
+                        <td>
+                            <div>@booking.StartDateTime.ToString("MMM dd") - @booking.EndDateTime.ToString("MMM dd, yyyy")</div>
+                            <small class="text-muted">@((booking.EndDateTime - booking.StartDateTime).TotalHours.ToString("F1")) hours</small>
+                        </td>
+                        <td>
+                            <strong>$@booking.TotalAmount.ToString("N2")</strong>
+                            @if (booking.PaidAt.HasValue)
+                            {
+                                <br><small class="text-success">Paid</small>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-@GetStatusBadgeClass(booking.Status)">
+                                @booking.Status
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <form asp-action="Complete" asp-route-id="@booking.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-lg"></i> Finish
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">
+                                    <i class="bi bi-slash-circle"></i> Cancel
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-check-circle fs-1"></i>
+        <p class="mb-0">No approved bookings to complete</p>
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(App.Domain.Enums.EBookingStatus status)
+    {
+        return status switch
+        {
+            App.Domain.Enums.EBookingStatus.Pending => "warning",
+            App.Domain.Enums.EBookingStatus.Requested => "info",
+            App.Domain.Enums.EBookingStatus.Approved => "primary",
+            App.Domain.Enums.EBookingStatus.Paid => "success",
+            App.Domain.Enums.EBookingStatus.Completed => "secondary",
+            App.Domain.Enums.EBookingStatus.Cancelled => "danger",
+            App.Domain.Enums.EBookingStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+}

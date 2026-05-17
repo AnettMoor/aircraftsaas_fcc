@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Views\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Update="Domain\Person.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Person.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Person.et.resx">
+            <DependentUpon>Person.resx</DependentUpon>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Company.resx">
+          <Generator>ResXFileCodeGenerator</Generator>
+          <LastGenOutput>Company.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Aircraft.resx">
+          <Generator>ResXFileCodeGenerator</Generator>
+          <LastGenOutput>Aircraft.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Aircraft.et.resx">
+          <DependentUpon>Aircraft.resx</DependentUpon>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Airport.resx">
+          <Generator>ResXFileCodeGenerator</Generator>
+          <LastGenOutput>Airport.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Airport.et.resx">
+          <DependentUpon>Airport.resx</DependentUpon>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\MaintenanceRecord.resx">
+          <Generator>ResXFileCodeGenerator</Generator>
+          <LastGenOutput>MaintenanceRecord.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\MaintenanceRecord.et.resx">
+          <DependentUpon>MaintenanceRecord.resx</DependentUpon>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Review.resx">
+          <Generator>ResXFileCodeGenerator</Generator>
+          <LastGenOutput>Review.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Domain\Review.et.resx">
+          <DependentUpon>Review.resx</DependentUpon>
+        </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Domain\Person.Designer.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Person.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Domain\Company.Designer.cs">
+          <DesignTime>True</DesignTime>
+          <AutoGen>True</AutoGen>
+          <DependentUpon>Company.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Domain\Aircraft.Designer.cs">
+          <DesignTime>True</DesignTime>
+          <AutoGen>True</AutoGen>
+          <DependentUpon>Aircraft.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Domain\Airport.Designer.cs">
+          <DesignTime>True</DesignTime>
+          <AutoGen>True</AutoGen>
+          <DependentUpon>Airport.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Domain\MaintenanceRecord.Designer.cs">
+          <DesignTime>True</DesignTime>
+          <AutoGen>True</AutoGen>
+          <DependentUpon>MaintenanceRecord.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Domain\Review.Designer.cs">
+          <DesignTime>True</DesignTime>
+          <AutoGen>True</AutoGen>
+          <DependentUpon>Review.resx</DependentUpon>
+        </Compile>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,209 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Localization
+@using App.Domain.Identity
+@using App.Domain
+@using App.Application.Interfaces
+@using Microsoft.EntityFrameworkCore
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+@inject ITenantService TenantService
+@inject App.Infrastructure.AppDbContext LayoutDbContext
+
+@{
+    var currentCulture = Context.Features.Get<IRequestCultureFeature>()?.RequestCulture.UICulture.TwoLetterISOLanguageName ?? "en";
+    var userId = TenantService.GetCurrentUserId();
+    var currentCompanyId = TenantService.GetCurrentTenantId();
+    var userCompanies = userId.HasValue ? await TenantService.GetUserCompaniesAsync(userId.Value) : new List<AppUserCompany>();
+    
+    // If no current company but user has companies, the middleware should have already set the cookie
+    // But we still use the first one for display purposes
+    // Fall back to first company if the cookie references a company the user no longer belongs to
+    var currentCompany = currentCompanyId.HasValue
+        ? (userCompanies.FirstOrDefault(c => c.CompanyId == currentCompanyId) ?? (userCompanies.Any() ? userCompanies.First() : null))
+        : (userCompanies.Any() ? userCompanies.First() : null);
+    
+    var currentRole = currentCompany?.AppUserRoleInCompany;
+    
+    // Check if user has CompanyOwner role in ANY company
+    var isAnyCompanyOwner = userCompanies.Any(c => c.AppUserRoleInCompany == EAppUserRoleInCompany.CompanyOwner);
+    // Check if user has SystemAdmin role in ANY company
+    var isAnySystemAdmin = userCompanies.Any(c => c.AppUserRoleInCompany == EAppUserRoleInCompany.SystemAdmin);
+    
+    var isCompanyOwner = currentRole == EAppUserRoleInCompany.CompanyOwner;
+    // Show Normal/pilot links if the user's company role is Normal, OR if they have
+    // the Identity role "Normal" without any company associations (platform-level pilot).
+    var isNormal = currentRole == EAppUserRoleInCompany.Normal
+                   || (User.IsInRole("Normal") && !User.IsInRole("CompanyOwner") && !User.IsInRole("SystemAdmin") && !userCompanies.Any());
+    
+    // Check if current company is deactivated
+    var isCompanyDeactivated = false;
+    if (currentCompanyId.HasValue && !isAnySystemAdmin)
+    {
+        var companyForCheck = await LayoutDbContext.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == currentCompanyId.Value);
+        isCompanyDeactivated = companyForCheck != null && !companyForCheck.IsActive;
+    }
+}
+
+<!DOCTYPE html>
+<html lang="@currentCulture">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"] - Aircraft SaaS</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/WebApp.styles.css" asp-append-version="true"/>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <div class="container">
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Aircraft SaaS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <ul class="navbar-nav flex-grow-1">
+                    @if (ViewContext.RouteData.Values["area"]?.ToString() != "Admin")
+                    {
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">@App.Resources.Views.Home.HomeTitle</a>
+                    </li>
+                    }
+                    
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        @if (isCompanyDeactivated)
+                        {
+                            @* Company is deactivated - show only contact maintenance link *@
+                            <li class="nav-item">
+                                <a class="nav-link text-danger fw-semibold" asp-area="" asp-controller="Home" asp-action="CompanyDeactivated">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>@App.Resources.Views.Home.ContactMaintenance
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            @* Company Owner Navigation - show only if user has CompanyOwner role in the CURRENT company (not SystemAdmin) *@
+                            @if (isCompanyOwner && !isAnySystemAdmin)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">@App.Resources.Views.Home.Dashboard</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Aircraft" asp-action="Manage">@App.Resources.Views.Home.Aircraft</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Bookings" asp-action="CompanyBookings">@App.Resources.Views.Home.Bookings</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Maintenance" asp-action="Index">@App.Resources.Views.Home.Maintenance</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Companies" asp-action="Settings">@App.Resources.Views.Home.Settings</a>
+                                </li>
+                            }
+
+                            @* System Admin Navigation - only SystemAdmin links *@
+                            @if (isAnySystemAdmin)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark fw-semibold text-danger" asp-area="Admin" asp-controller="SystemAdmin" asp-action="Dashboard">
+                                        <i class="bi bi-shield-lock me-1"></i>@App.Resources.Views.Home.SystemDashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users">@App.Resources.Views.Home.Users</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="Admin" asp-controller="SystemAdmin" asp-action="Tenants">@App.Resources.Views.Home.Tenants</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="Admin" asp-controller="SystemAdmin" asp-action="AuditLog">
+                                        <i class="bi bi-journal-text me-1"></i>Audit Log
+                                    </a>
+                                </li>
+                            }
+
+                            @* Client Portal Navigation (Normal role - pilots) - show when current company role is Normal *@
+                            @if (isNormal)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Aircraft" asp-action="Index">@App.Resources.Views.Home.FindAircraft</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Bookings" asp-action="MyBookings">@App.Resources.Views.Home.MyBookings</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Profile" asp-action="Index">@App.Resources.Views.Home.MyProfile</a>
+                                </li>
+                            }
+
+                            @* No company yet and not a Normal (pilot) user - prompt to create/join *@
+                            @if (!currentCompanyId.HasValue && !userCompanies.Any() && !isNormal)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Companies" asp-action="Create">@App.Resources.Views.Home.CreateCompany</a>
+                                </li>
+                            }
+                        }
+                    }
+
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i>@currentCulture.ToUpperInvariant()
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="culture" value="en" />
+                                    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                                    <button type="submit" class="dropdown-item @(currentCulture == "en" ? "active" : "")">
+                                        🇬🇧 English
+                                    </button>
+                                </form>
+                            </li>
+                            <li>
+                                <form asp-area="" asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="culture" value="et-EE" />
+                                    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                                    <button type="submit" class="dropdown-item @(currentCulture == "et" ? "active" : "")">
+                                        🇪🇪 Eesti
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <partial name="_LoginPartial"/>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+</div>
+
+<footer class="border-top footer text-muted">
+    <div class="container">
+        &copy; 2026 - Aircraft SaaS - <a asp-area="" asp-controller="Home" asp-action="Privacy">@App.Resources.Views.Home.Privacy</a>
+    </div>
+</footer>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,307 @@
+@model WebApp.ViewModels.User.BookingDetailsViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.BookingDetails;
+}
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Bookings" asp-action="MyBookings">@App.Resources.Views.Home.MyBookings</a></li>
+            <li class="breadcrumb-item active">@App.Resources.Views.Home.Bookings #@Model.Booking.Id.ToString().Substring(0, 8)</li>
+        </ol>
+    </nav>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @{
+        var statusClass = Model.Booking.Status switch
+        {
+            App.Domain.Enums.EBookingStatus.Pending => "warning",
+            App.Domain.Enums.EBookingStatus.Requested => "info",
+            App.Domain.Enums.EBookingStatus.Approved => "primary",
+            App.Domain.Enums.EBookingStatus.Paid => "success",
+            App.Domain.Enums.EBookingStatus.Completed => "dark",
+            App.Domain.Enums.EBookingStatus.Cancelled => "secondary",
+            App.Domain.Enums.EBookingStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+
+    <div class="row">
+        <!-- Main Booking Card -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-check me-2"></i>@App.Resources.Views.Home.Bookings #@Model.Booking.Id.ToString().Substring(0, 8)
+                    </h4>
+                    <span class="badge bg-@statusClass fs-6">@Model.Booking.Status</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.Aircraft</label>
+                            <p class="mb-0 fw-bold">@Model.Booking.AircraftName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.Pilot</label>
+                            <p class="mb-0">@Model.Booking.PilotName</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.StartDateTime</label>
+                            <p class="mb-0">
+                                <i class="bi bi-calendar me-1 text-muted"></i>
+                                @Model.Booking.StartDateTime.ToString("MMM dd, yyyy HH:mm")
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.EndDateTime</label>
+                            <p class="mb-0">
+                                <i class="bi bi-calendar me-1 text-muted"></i>
+                                @Model.Booking.EndDateTime.ToString("MMM dd, yyyy HH:mm")
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.TotalAmount</label>
+                            <p class="mb-0 fw-bold text-success fs-5">$@Model.Booking.TotalAmount.ToString("N2")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">@App.Resources.Views.Home.Duration</label>
+                            <p class="mb-0">@((Model.Booking.EndDateTime - Model.Booking.StartDateTime).TotalHours.ToString("F1")) @App.Resources.Views.Home.Hours</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Booking.Purpose))
+                    {
+                        <hr />
+                        <div class="mb-3">
+                            <label class="text-muted small">@App.Resources.Views.Home.PurposeOfFlight</label>
+                            <p class="mb-0">@Model.Booking.Purpose</p>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Booking.RejectionReason))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <i class="bi bi-x-circle me-2"></i>
+                            <strong>@App.Resources.Views.Home.RejectionReason:</strong> @Model.Booking.RejectionReason
+                        </div>
+                    }
+                </div>
+                <div class="card-footer d-flex gap-2 flex-wrap">
+                    @if (Model.CanEdit)
+                    {
+                        <a asp-controller="Bookings" asp-action="Edit" asp-route-id="@Model.Booking.Id"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil-square me-1"></i>@App.Resources.Views.Home.EditBooking
+                        </a>
+                    }
+                    @if (Model.CanCancel)
+                    {
+                        <form asp-action="Cancel" asp-route-id="@Model.Booking.Id" method="post">
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('@App.Resources.Views.Home.ConfirmCancelBooking')">
+                                <i class="bi bi-x-circle me-1"></i>@App.Resources.Views.Home.CancelBooking
+                            </button>
+                        </form>
+                    }
+                    @if (Model.CanPay)
+                    {
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                            <i class="bi bi-credit-card me-1"></i>@App.Resources.Views.Home.PayNow
+                        </button>
+                    }
+                    @if (Model.CanReview)
+                    {
+                        <a asp-controller="Reviews" asp-action="Create" asp-route-aircraftId="@Model.Booking.AircraftId"
+                           asp-route-bookingId="@Model.Booking.Id"
+                           class="btn btn-warning">
+                            <i class="bi bi-star me-1"></i>@App.Resources.Views.Home.LeaveReview
+                        </a>
+                    }
+                    <a asp-controller="Bookings" asp-action="MyBookings" class="btn btn-secondary ms-auto">
+                        <i class="bi bi-arrow-left me-1"></i>@App.Resources.Views.Home.BackToMyBookings
+                    </a>
+                </div>
+            </div>
+
+            <!-- Existing Review -->
+            @if (Model.ExistingReview != null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-star-fill text-warning me-2"></i>@App.Resources.Views.Home.YourReview</h5>
+                        @if (Model.ExistingReview.IsVerifiedBooking)
+                        {
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>@App.Resources.Views.Home.Verified</span>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span style="font-size: 1.5rem;" class="@(i <= Model.ExistingReview.Rating ? "text-warning" : "text-muted")">★</span>
+                                }
+                                <span class="text-muted ms-2">
+                                    @(Model.ExistingReview.Rating switch
+                                    {
+                                        5 => App.Resources.Views.Home.Excellent,
+                                        4 => App.Resources.Views.Home.VeryGood,
+                                        3 => App.Resources.Views.Home.Good,
+                                        2 => App.Resources.Views.Home.Fair,
+                                        1 => App.Resources.Views.Home.Poor,
+                                        _ => ""
+                                    })
+                                </span>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.ExistingReview.Comment))
+                        {
+                            <p class="mb-2">@Model.ExistingReview.Comment</p>
+                        }
+
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>@App.Resources.Views.Home.ReviewedOn @Model.ExistingReview.ReviewedAt.ToString("MMM dd, yyyy 'at' HH:mm")
+                        </small>
+                    </div>
+                    <div class="card-footer">
+                        <a asp-controller="Reviews" asp-action="Create"
+                           asp-route-aircraftId="@Model.Booking.AircraftId"
+                           asp-route-bookingId="@Model.Booking.Id"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>@App.Resources.Views.Home.EditReview
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>@App.Resources.Views.Home.AvailableActions</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center gap-2">
+                            @if (Model.CanEdit)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>@App.Resources.Views.Home.EditThisBooking</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle text-muted"></i>
+                                <span class="text-muted">@App.Resources.Views.Home.EditingNotAvailable</span>
+                            }
+                        </li>
+                        <li class="list-group-item d-flex align-items-center gap-2">
+                            @if (Model.CanCancel)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>@App.Resources.Views.Home.CancelThisBooking</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle text-muted"></i>
+                                <span class="text-muted">@App.Resources.Views.Home.CancellationNotAvailable</span>
+                            }
+                        </li>
+                        <li class="list-group-item d-flex align-items-center gap-2">
+                            @if (Model.CanPay)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span><strong>@App.Resources.Views.Home.PaymentRequired</strong></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle text-muted"></i>
+                                <span class="text-muted">@App.Resources.Views.Home.PaymentNotNeeded</span>
+                            }
+                        </li>
+                        <li class="list-group-item d-flex align-items-center gap-2">
+                            @if (Model.ExistingReview != null)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>@App.Resources.Views.Home.ReviewSubmitted ★ @Model.ExistingReview.Rating/5</span>
+                            }
+                            else if (Model.CanReview)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>@App.Resources.Views.Home.LeaveReview</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle text-muted"></i>
+                                <span class="text-muted">@App.Resources.Views.Home.ReviewAfterCompletion</span>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+@if (Model.CanPay)
+{
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-credit-card me-2"></i>@App.Resources.Views.Home.CompletePayment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-action="Pay" asp-route-id="@Model.Booking.Id" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>@App.Resources.Views.Home.TotalDue</strong> $@Model.Booking.TotalAmount.ToString("N2")
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">@App.Resources.Views.Home.PaymentMethod</label>
+                            <select name="paymentMethod" class="form-select">
+                                <option value="CreditCard">
+                                    <i class="bi bi-credit-card"></i> @App.Resources.Views.Home.CreditCard
+                                </option>
+                                <option value="DebitCard">@App.Resources.Views.Home.DebitCard</option>
+                                <option value="BankTransfer">@App.Resources.Views.Home.BankTransfer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>@App.Resources.Views.Home.ConfirmPayment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

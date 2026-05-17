@@ -1,0 +1,12 @@
+﻿deploy:
+  stage: deploy
+  only:
+    - main
+  tags:
+    - first
+  script:
+    - docker rm -f aircraft-vue 2>/dev/null || true
+    - docker compose -p aircraft-frontend up --build --remove-orphans --detach
+    - sleep 10
+    - docker logs aircraft-vue --tail=50
+    - docker ps --filter "name=aircraft"

@@ -1,0 +1,112 @@
+@model WebApp.ViewModels.SystemAdmin.SystemAdminCreateAirportViewModel
+
+@{
+    ViewData["Title"] = "Add Airport";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>Add Airport
+                    </h1>
+                    <p class="text-muted">Add a new airport to the global database.</p>
+                </div>
+                <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Airports
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Airport Details</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="CreateAirport" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Codes row -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="IcaoCode" class="form-label fw-semibold"></label>
+                                <input asp-for="IcaoCode" class="form-control text-uppercase" maxlength="4"
+                                       placeholder="e.g. EHAM" style="text-transform:uppercase" />
+                                <span asp-validation-for="IcaoCode" class="text-danger small"></span>
+                                <div class="form-text">4-letter ICAO code (e.g. EHAM, EGLL)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="IataCode" class="form-label fw-semibold"></label>
+                                <input asp-for="IataCode" class="form-control text-uppercase" maxlength="3"
+                                       placeholder="e.g. AMS" style="text-transform:uppercase" />
+                                <span asp-validation-for="IataCode" class="text-danger small"></span>
+                                <div class="form-text">3-letter IATA code (e.g. AMS, LHR)</div>
+                            </div>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold"></label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g. Amsterdam Airport Schiphol" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <!-- City / Country -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="City" class="form-label fw-semibold"></label>
+                                <input asp-for="City" class="form-control" placeholder="e.g. Amsterdam" />
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Country" class="form-label fw-semibold"></label>
+                                <input asp-for="Country" class="form-control" placeholder="e.g. Netherlands" />
+                                <span asp-validation-for="Country" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Coordinates / Elevation -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label asp-for="Latitude" class="form-label fw-semibold"></label>
+                                <input asp-for="Latitude" type="number" step="0.000001" class="form-control"
+                                       placeholder="e.g. 52.3086" />
+                                <span asp-validation-for="Latitude" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Longitude" class="form-label fw-semibold"></label>
+                                <input asp-for="Longitude" type="number" step="0.000001" class="form-control"
+                                       placeholder="e.g. 4.7639" />
+                                <span asp-validation-for="Longitude" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Elevation" class="form-label fw-semibold"></label>
+                                <input asp-for="Elevation" type="number" class="form-control" placeholder="e.g. -11" />
+                                <span asp-validation-for="Elevation" class="text-danger small"></span>
+                                <div class="form-text">Elevation above mean sea level in feet</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Create Airport
+                            </button>
+                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Airports"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

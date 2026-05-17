@@ -1,0 +1,200 @@
+@model WebApp.ViewModels.Maintenance.MaintenanceIndexViewModel
+
+@{
+    ViewData["Title"] = "Maintenance Records";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Maintenance Records</h1>
+            <p class="text-muted">Track and manage aircraft maintenance activities</p>
+        </div>
+        <a asp-controller="Maintenance" asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Add Maintenance Record
+        </a>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form asp-action="Maintenance" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Filter by Aircraft</label>
+                    <select name="aircraftId" class="form-select" asp-items="@(new SelectList(Model.Aircraft, "Id", "RegistrationNumber", Model.FilterAircraftId))">
+                        <option value="">All Aircraft</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="d-grid gap-2 w-100">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-funnel me-1"></i> Filter
+                        </button>
+                    </div>
+                </div>
+                @if (Model.FilterAircraftId.HasValue)
+                {
+                    <div class="col-md-2 d-flex align-items-end">
+                        <a asp-action="Maintenance" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle me-1"></i> Clear
+                        </a>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+
+    <!-- Maintenance Records Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">All Records (@Model.Records.Count())</h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Records.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Aircraft</th>
+                                <th>Type</th>
+                                <th>Performed By</th>
+                                <th>Cost</th>
+                                <th>Next Due</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var record in Model.Records)
+                            {
+                                <tr>
+                                    <td>@record.MaintenanceDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <strong>@record.AircraftName</strong>
+                                    </td>
+                                    <td>@record.MaintenanceType</td>
+                                    <td>@record.PerformedBy</td>
+                                    <td>$@record.Cost.ToString("N2")</td>
+                                    <td>
+                                        @if (record.NextDueDate.HasValue)
+                                        {
+                                            var daysUntil = (record.NextDueDate.Value - DateTime.Today).TotalDays;
+                                            var dueBadge = daysUntil < 0 ? "danger" : (daysUntil <= 30 ? "warning" : "secondary");
+                                            <span class="badge bg-@dueBadge">@record.NextDueDate.Value.ToString("MMM dd, yyyy")</span>
+                                        }
+                                        else if (record.NextDueHours.HasValue)
+                                        {
+                                            <span class="badge bg-secondary">@record.NextDueHours hrs</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (record.IsCompleted)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Completed
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-split me-1"></i>Pending
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-controller="Maintenance" asp-action="Details" asp-route-id="@record.Id"
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-controller="Maintenance" asp-action="Edit" asp-route-id="@record.Id"
+                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal-@record.Id" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-tools fs-1 text-muted"></i>
+                    <h5 class="mt-3">No Maintenance Records Found</h5>
+                    <p class="text-muted">Start tracking your aircraft maintenance activities.</p>
+                    <a asp-controller="Maintenance" asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Add First Record
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* Delete Confirmation Modals *@
+@foreach (var record in Model.Records)
+{
+    <div class="modal fade" id="deleteModal-@record.Id" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Maintenance Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this maintenance record?</p>
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>@record.MaintenanceType</h6>
+                            <p class="mb-0 text-muted">
+                                @record.AircraftName — @record.MaintenanceDate.ToString("MMM dd, yyyy")
+                            </p>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        This action cannot be undone.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form asp-action="Delete" asp-route-id="@record.Id" method="post">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

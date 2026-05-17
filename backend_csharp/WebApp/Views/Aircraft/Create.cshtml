@@ -1,0 +1,190 @@
+@model WebApp.ViewModels.CompanyOwner.AircraftEditViewModel
+
+@{
+    ViewData["Title"] = Model.Id == Guid.Empty ? "Add Aircraft" : "Edit Aircraft";
+    var isEdit = Model.Id != Guid.Empty;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@(isEdit ? "Edit Aircraft" : "Add New Aircraft")</h1>
+            <p class="text-muted">@(isEdit ? "Update aircraft details" : "Add a new aircraft to your fleet")</p>
+        </div>
+        <a asp-action="Aircraft" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Aircraft Details</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id.ToString() : null)" method="post">
+                        @if (isEdit)
+                        {
+                            <input type="hidden" asp-for="Id" />
+                        }
+                        
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            @Html.ValidationSummary(false, "", new { @class = "alert alert-danger" })
+                        }
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="RegistrationNumber" class="form-label"></label>
+                                <input asp-for="RegistrationNumber" class="form-control" placeholder="e.g., N12345" />
+                                <span asp-validation-for="RegistrationNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Category" class="form-label"></label>
+                                <select asp-for="Category" class="form-select">
+                                    <option value="">Select Category</option>
+                                    <option value="Single Engine">Single Engine</option>
+                                    <option value="Multi Engine">Multi Engine</option>
+                                    <option value="TurboProp">TurboProp</option>
+                                    <option value="Helicopter">Helicopter</option>
+                                    <option value="Jet">Jet</option>
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Make" class="form-label"></label>
+                                <input asp-for="Make" class="form-control" placeholder="e.g., Cessna" />
+                                <span asp-validation-for="Make" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Model" class="form-label"></label>
+                                <input asp-for="Model" class="form-control" placeholder="e.g., 172S" />
+                                <span asp-validation-for="Model" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Year" class="form-label"></label>
+                                <input asp-for="Year" type="number" class="form-control" min="1900" max="2100" />
+                                <span asp-validation-for="Year" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="TotalAirspeedHours" class="form-label"></label>
+                                <input asp-for="TotalAirspeedHours" type="number" class="form-control" min="0" />
+                                <span asp-validation-for="TotalAirspeedHours" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="HourlyRate" class="form-label"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="HourlyRate" type="number" class="form-control" min="0" step="0.01" />
+                                </div>
+                                <span asp-validation-for="HourlyRate" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="BaseAirportId" class="form-label"></label>
+                                <select asp-for="BaseAirportId" class="form-select">
+                                    <option value="">Select Airport</option>
+                                    @foreach (var airport in Model.Airports)
+                                    {
+                                        <option value="@airport.Id">@airport.Name (@airport.IcaoCode)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="BaseAirportId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" 
+                                      placeholder="Describe the aircraft's features, equipment, and condition..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        @if (isEdit)
+                        {
+                            <div class="mb-3 form-check">
+                                <input asp-for="IsAvailable" class="form-check-input" />
+                                <label asp-for="IsAvailable" class="form-check-label"></label>
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Aircraft" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>
+                                @(isEdit ? "Update Aircraft" : "Add Aircraft")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Info Card -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Registration number must be unique
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Hourly rate affects booking pricing
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Unavailable aircraft won't appear in searches
+                        </li>
+                        <li>
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Add detailed description for better bookings
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Photo Upload Placeholder -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Photos</h6>
+                </div>
+                <div class="card-body text-center">
+                    <i class="bi bi-camera fs-1 text-muted"></i>
+                    <p class="text-muted mb-2">Aircraft Photos</p>
+                    <button class="btn btn-sm btn-outline-primary" disabled>
+                        <i class="bi bi-upload me-1"></i> Upload Photos
+                    </button>
+                    <p class="text-muted small mt-2 mb-0">Coming soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

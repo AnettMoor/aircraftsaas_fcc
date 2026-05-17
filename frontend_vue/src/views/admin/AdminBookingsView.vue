@@ -58,7 +58,6 @@
                 <button class="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors" @click="router.push({ name: 'admin-booking-detail', params: { id: b.id } })">View</button>
                 <button v-if="b.status === 'Requested' || b.status === 'Pending'" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors" @click="approve(b.id)" :disabled="acting === b.id">Approve</button>
                 <button v-if="b.status === 'Requested' || b.status === 'Pending'" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors" @click="reject(b.id)" :disabled="acting === b.id">Reject</button>
-                <button v-if="b.status === 'Approved'" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors" @click="complete(b.id)" :disabled="acting === b.id">Finish</button>
                 <button v-if="b.status === 'Approved'" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors" @click="cancel(b.id)" :disabled="acting === b.id">Cancel Booking</button>
                 <button v-if="b.status === 'Paid'" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors" @click="complete(b.id)" :disabled="acting === b.id">Complete</button>
                 <button v-if="b.status === 'Paid'" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors" @click="cancel(b.id)" :disabled="acting === b.id">Cancel Booking</button>

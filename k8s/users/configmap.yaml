@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: users-config, namespace: ns-users }
+data:
+  ASPNETCORE_ENVIRONMENT:                       "Production"
+  FleetService__BaseUrl:                        "http://fleet-service.ns-fleet.svc.cluster.local:8080"
+  BookingService__BaseUrl:                      "http://booking-service.ns-booking.svc.cluster.local:8080"
+  RabbitMQ__Host:                               "rabbitmq.ns-infra.svc.cluster.local"
+  RabbitMQ__Port:                               "5672"
+  JWT__Issuer:                                  "itcollege.taltech.ee"
+  JWT__Audience:                                "itcollege.taltech.ee"
+  # Schema migrations + seeding are owned by the one-shot Migration Job
+  # (k8s/users/migration-job.yaml) so that the two runtime Pod replicas do
+  # not race each other on EF Core Migrate() / Identity seeding on cold start.
+  DataInitialization__MigrateDatabase:          "false"
+  DataInitialization__SeedIdentity:             "false"
+  DataInitialization__SeedData:                 "false"
+  DataInitialization__SeedAppUserCompanies:     "false"

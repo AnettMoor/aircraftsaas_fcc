@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-booking-ingress, namespace: ns-booking }
+spec:
+  podSelector: { matchLabels: { app: booking-service } }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector: { matchLabels: { name: ns-gateway } }
+    - namespaceSelector: { matchLabels: { name: ns-users } }
+    - namespaceSelector: { matchLabels: { name: ns-fleet } }
+    ports: [{ protocol: TCP, port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-booking-egress, namespace: ns-booking }
+spec:
+  podSelector: { matchLabels: { app: booking-service } }
+  policyTypes: [Egress]
+  egress:
+  # DNS (CoreDNS) — must use the auto-injected
+  # kubernetes.io/metadata.name label, because kube-system does NOT have a
+  # `name=kube-system` label by default on stock Kubernetes / kubeadm clusters.
+  - to:
+    - namespaceSelector:
+        matchLabels: { kubernetes.io/metadata.name: kube-system }
+      podSelector:
+        matchLabels: { k8s-app: kube-dns }
+    ports:
+    - { protocol: UDP, port: 53 }
+    - { protocol: TCP, port: 53 }
+  - to:
+    - namespaceSelector: { matchLabels: { name: ns-fleet } }
+      podSelector:       { matchLabels: { app: fleet-service } }
+    ports: [{ protocol: TCP, port: 8080 }]
+  - to:
+    - namespaceSelector: { matchLabels: { name: ns-users } }
+      podSelector:       { matchLabels: { app: users-service } }
+    ports: [{ protocol: TCP, port: 8080 }]
+  - to:
+    - namespaceSelector: { matchLabels: { name: ns-infra } }
+    ports:
+    - { protocol: TCP, port: 5432 }
+    - { protocol: TCP, port: 5672 }

@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: users-migrate
+  namespace: ns-users
+  annotations:
+    description: "Runs EF Core Migrate() exactly once before users-service rollout."
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: users-service:dev
+        imagePullPolicy: IfNotPresent
+        env:
+        # These flags override whatever the runtime ConfigMap defaults to.
+        # They are evaluated by Users.WebHost/Program.cs SetupAppData() and
+        # the ExitAfterMigrate gate added below it.
+        - { name: DataInitialization__MigrateDatabase,      value: "true" }
+        - { name: DataInitialization__SeedIdentity,         value: "true" }
+        - { name: DataInitialization__SeedData,             value: "true" }
+        - { name: DataInitialization__SeedAppUserCompanies, value: "true" }
+        - { name: DataInitialization__ExitAfterMigrate,     value: "true" }
+        envFrom:
+        # Pull ASPNETCORE_ENVIRONMENT, JWT__*, RabbitMQ__*, FleetService__BaseUrl,
+        # BookingService__BaseUrl from the runtime ConfigMap so the seeder can
+        # reach sibling services if needed.
+        - configMapRef: { name: users-config }
+        - secretRef:    { name: users-secret }

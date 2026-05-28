@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: booking-migrate
+  namespace: ns-booking
+  annotations:
+    description: "Runs EF Core Migrate() exactly once before booking-service rollout."
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: booking-service:dev
+        imagePullPolicy: IfNotPresent
+        env:
+        # Override the runtime ConfigMap so this one-shot Job actually migrates
+        # and seeds. Evaluated by Booking.WebHost/Program.cs SetupAppData() and
+        # the ExitAfterMigrate gate added immediately after it.
+        - { name: DataInitialization__MigrateDatabase,   value: "true" }
+        - { name: DataInitialization__SeedData,          value: "true" }
+        - { name: DataInitialization__ExitAfterMigrate,  value: "true" }
+        envFrom:
+        # Provides ASPNETCORE_ENVIRONMENT, FleetService__BaseUrl,
+        # UsersService__BaseUrl, RabbitMQ__* etc. — the seeder may resolve
+        # cross-service data, so it needs the full runtime config.
+        - configMapRef: { name: booking-config }
+        - secretRef:    { name: booking-secret }

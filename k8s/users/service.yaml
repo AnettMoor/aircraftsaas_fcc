@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Service
+metadata: { name: users-service, namespace: ns-users }
+spec:
+  selector: { app: users-service }
+  ports: [{ port: 8080, targetPort: 8080 }]

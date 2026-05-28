@@ -1,0 +1,47 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-postgres-ingress, namespace: ns-infra }
+spec:
+  podSelector: { matchLabels: { app: postgres } }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector: { matchLabels: { name: ns-users } }
+    - namespaceSelector: { matchLabels: { name: ns-fleet } }
+    - namespaceSelector: { matchLabels: { name: ns-booking } }
+    ports: [{ protocol: TCP, port: 5432 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-rabbitmq-ingress, namespace: ns-infra }
+spec:
+  podSelector: { matchLabels: { app: rabbitmq } }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector: { matchLabels: { name: ns-users } }
+    - namespaceSelector: { matchLabels: { name: ns-fleet } }
+    - namespaceSelector: { matchLabels: { name: ns-booking } }
+    ports:
+    - { protocol: TCP, port: 5672 }
+    - { protocol: TCP, port: 15672 }
+---
+# Both Postgres and RabbitMQ still need DNS egress (peer/cluster name resolution).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-infra-dns-egress, namespace: ns-infra }
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+  # DNS (CoreDNS) — must use the auto-injected
+  # kubernetes.io/metadata.name label, because kube-system does NOT have a
+  # `name=kube-system` label by default on stock Kubernetes / kubeadm clusters.
+  - to:
+    - namespaceSelector:
+        matchLabels: { kubernetes.io/metadata.name: kube-system }
+      podSelector:
+        matchLabels: { k8s-app: kube-dns }
+    ports:
+    - { protocol: UDP, port: 53 }
+    - { protocol: TCP, port: 53 }

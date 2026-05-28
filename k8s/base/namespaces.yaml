@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-users,   labels: { name: ns-users } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-fleet,   labels: { name: ns-fleet } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-booking, labels: { name: ns-booking } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-infra,   labels: { name: ns-infra } }

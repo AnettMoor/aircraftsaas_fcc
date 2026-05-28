@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fleet-migrate
+  namespace: ns-fleet
+  annotations:
+    description: "Runs EF Core Migrate() exactly once before fleet-service rollout."
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: fleet-service:dev
+        imagePullPolicy: IfNotPresent
+        env:
+        # Override the runtime ConfigMap so this one-shot Job actually migrates
+        # and seeds. Evaluated by Fleet.WebHost/Program.cs SetupAppData() and
+        # the ExitAfterMigrate gate added immediately after it.
+        - { name: DataInitialization__MigrateDatabase,   value: "true" }
+        - { name: DataInitialization__SeedData,          value: "true" }
+        - { name: DataInitialization__ExitAfterMigrate,  value: "true" }
+        envFrom:
+        # The Fleet seeder calls Users to resolve a company-slug -> Guid map
+        # (see Fleet.WebHost/Program.cs FetchCompanySlugMapping). Without the
+        # ConfigMap, UsersService__BaseUrl falls back to localhost and seeding
+        # silently produces an empty mapping.
+        - configMapRef: { name: fleet-config }
+        - secretRef:    { name: fleet-secret }

@@ -120,6 +120,17 @@ var app = builder.Build();
 app.MapGet("/health", () => Results.Ok("healthy"));
 SetupAppData(app, app.Configuration);
 
+// ── Migration-Job exit hook ─────────────────────────────────────────
+// When the Kubernetes Migration Job runs this image it sets
+// DataInitialization:ExitAfterMigrate=true so the process terminates
+// cleanly once migrations + seeding are done, instead of starting the
+// HTTP listener and turning the Job into a perpetual Pod.
+if (app.Configuration.GetValue<bool>("DataInitialization:ExitAfterMigrate"))
+{
+    app.Logger.LogInformation("ExitAfterMigrate=true; shutting down after migrate/seed.");
+    return;
+}
+
 app.UseCors("CorsAllowAll");
 app.UseAuthentication();
 app.UseAuthorization();

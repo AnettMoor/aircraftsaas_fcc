@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: pg-init, namespace: ns-infra }
+data:
+  init.sql: |
+    CREATE DATABASE "aircraft-users";
+    CREATE DATABASE "aircraft-fleet";
+    CREATE DATABASE "aircraft-booking";
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: ns-infra }
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres, namespace: ns-infra }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16
+        env:
+        - { name: POSTGRES_USER,     value: postgres }
+        - { name: POSTGRES_PASSWORD, value: postgres }
+        ports: [{ containerPort: 5432 }]
+        readinessProbe:
+          exec: { command: [pg_isready, -U, postgres] }
+          periodSeconds: 5
+        volumeMounts:
+        - { name: data, mountPath: /var/lib/postgresql/data }
+        - { name: init, mountPath: /docker-entrypoint-initdb.d }
+      volumes:
+      - name: init
+        configMap: { name: pg-init }
+  volumeClaimTemplates:
+  - metadata: { name: data }
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: { requests: { storage: 1Gi } }

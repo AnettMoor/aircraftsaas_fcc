@@ -1,0 +1,80 @@
+# =====================================================================
+# Aircraft SaaS — Ingress routing.
+#
+# Each service gets its own subdomain instead of a path prefix.
+# Rationale:
+#   * The previous design used `path: /api/users(/|$)(.*)` with
+#     `nginx.ingress.kubernetes.io/rewrite-target: /$2`, but the .NET
+#     controllers are mounted at `api/v{version}/...`, so a request to
+#     `/api/users/v1/identity/account/login` was being rewritten to
+#     `/v1/identity/account/login` and returned 404 from the upstream.
+#   * Host-based routing requires zero rewrites: the request that
+#     arrives at the upstream is byte-for-byte the request the .NET
+#     app already knows how to route.
+#   * `*.localtest.me` resolves to 127.0.0.1 by RFC, so the same
+#     manifest works on Minikube via `minikube tunnel` AND can be
+#     swapped to `*.aircraft.example.com` in a production overlay.
+#
+# Each Ingress object lives in the SAME namespace as its backend
+# Service, because Kubernetes Ingress backends cannot reference a
+# Service in another namespace.
+# =====================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: users-ingress
+  namespace: ns-users
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: users.aircraft.localtest.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: users-service
+            port: { number: 8080 }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleet-ingress
+  namespace: ns-fleet
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fleet.aircraft.localtest.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fleet-service
+            port: { number: 8080 }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: booking-ingress
+  namespace: ns-booking
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: booking.aircraft.localtest.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: booking-service
+            port: { number: 8080 }

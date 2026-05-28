@@ -1,0 +1,30 @@
+version: "3.9"
+
+# Development overrides — enables debugging, drops/re-seeds databases
+services:
+  users-service:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DataInitialization__DropDatabase=true
+    volumes:
+      - ./Services/Users.WebHost:/src/Services/Users.WebHost:ro
+
+  fleet-service:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DataInitialization__DropDatabase=true
+    volumes:
+      - ./Services/Fleet.WebHost:/src/Services/Fleet.WebHost:ro
+
+  booking-service:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DataInitialization__DropDatabase=true
+    volumes:
+      - ./Services/Booking.WebHost:/src/Services/Booking.WebHost:ro
+
+  webapp:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ./WebApp:/src/WebApp:ro

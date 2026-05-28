@@ -1,0 +1,270 @@
+@using Microsoft.AspNetCore.Identity
+@using Users.Domain.Identity
+@using Shared.Contracts.Common
+@inject SignInManager<AppUser> SignInManager
+@inject ITenantContext TenantContext
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.AircraftSaaSPortal;
+
+    var isSignedIn = SignInManager.IsSignedIn(User);
+
+    // Replicate the same logic as _Layout.cshtml
+    var userId = TenantContext.GetCurrentUserId();
+    var currentCompanyId = TenantContext.GetCurrentTenantId();
+    var userCompanies = userId.HasValue
+        ? (await TenantContext.GetUserCompanySummariesAsync(userId.Value)).ToList()
+        : new List<UserCompanySummary>();
+
+    var currentCompany = currentCompanyId.HasValue
+        ? userCompanies.FirstOrDefault(c => c.CompanyId == currentCompanyId)
+        : (userCompanies.Any() ? userCompanies.First() : null);
+
+    var currentRole = currentCompany?.Role;
+    // Normal users have no AppUserCompany records, so fall back to ASP.NET Identity role
+    var isNormal = isSignedIn && (currentRole == "Normal"
+                   || (!userCompanies.Any() && User.IsInRole("Normal") && !User.IsInRole("SystemAdmin")));
+    var isOwner = isSignedIn && currentRole == "CompanyOwner" && currentCompany != null;
+}
+
+<!-- Hero Section -->
+<div class="py-5 mb-4 bg-body-tertiary rounded-3">
+    <div class="px-4 py-3">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-airplane me-2 text-primary"></i>@App.Resources.Views.Home.AircraftSaaSPortal
+        </h1>
+        <p class="col-md-8 fs-5 text-muted">@App.Resources.Views.Home.HeroDescription</p>
+        @if (!isSignedIn)
+        {
+            <div class="d-flex gap-2 mt-4">
+                <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>@App.Resources.Views.Home.SignIn
+                </a>
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-person-plus me-2"></i>@App.Resources.Views.Home.Register
+                </a>
+            </div>
+        }
+        else if (currentCompany != null || isNormal)
+        {
+            <div class="mt-3 d-flex align-items-center gap-2">
+                @if (currentCompany != null)
+                {
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-building me-1"></i>@(currentCompany.CompanyName ?? "Company")
+                    </span>
+                }
+                @if (isNormal)
+                {
+                    <span class="badge bg-primary">
+                        <i class="bi bi-person-check me-1"></i>@App.Resources.Views.Home.Pilot
+                    </span>
+                }
+                else if (isOwner)
+                {
+                    <span class="badge bg-success">
+                        <i class="bi bi-shield-check me-1"></i>@App.Resources.Views.Home.CompanyOwner
+                    </span>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (!isSignedIn)
+{
+    <!-- Anonymous: feature overview with sign-in CTAs -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-search text-primary fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.BrowseAircraft</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.SearchFilterDescription</p>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.SearchAvailableAircraft</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.BookAircraftForFlights</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.ManageYourBookings</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>@App.Resources.Views.Home.SignInToBrowse
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-building text-success fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.CompanyDashboard</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.CompanyDashboardDescription</p>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.CompanyFleetManagement</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.ApproveRejectBookings</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.MaintenanceTracking</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-success w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>@App.Resources.Views.Home.SignInAsOwner
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-calendar-check text-warning fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.NewToPlatform</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.NewToPlatformDescription</p>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.FreeToRegister</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.JoinOrCreateCompany</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>@App.Resources.Views.Home.StartFlyingToday</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-person-plus me-2"></i>@App.Resources.Views.Home.CreateAccount
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (isNormal)
+{
+    <!-- Pilot / Normal role portal -->
+    <h4 class="mb-3 fw-semibold">@App.Resources.Views.Home.QuickAccess</h4>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-search text-primary fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.FindAircraft</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.BrowseFleetDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Aircraft" asp-action="Index" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-2"></i>@App.Resources.Views.Home.BrowseFleet
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-calendar2-week text-info fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.MyBookings</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.ViewBookingsDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Bookings" asp-action="MyBookings" class="btn btn-outline-info w-100">
+                        <i class="bi bi-list-check me-2"></i>@App.Resources.Views.Home.ViewBookings
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-person-circle text-secondary fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.MyProfile</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.ViewProfileDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-person me-2"></i>@App.Resources.Views.Home.ViewProfile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (isOwner)
+{
+    <!-- Company Owner portal -->
+    <h4 class="mb-3 fw-semibold">@App.Resources.Views.Home.CompanyDashboard</h4>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-speedometer2 text-success fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.Dashboard</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.DashboardDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-success w-100">
+                        <i class="bi bi-speedometer2 me-2"></i>@App.Resources.Views.Home.GoToDashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-airplane text-primary fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.FleetManagement</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.FleetManagementDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Aircraft" asp-action="Manage" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-airplane me-2"></i>@App.Resources.Views.Home.ManageFleet
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-calendar-check text-warning fs-4"></i>
+                        </div>
+                        <h5 class="card-title mb-0">@App.Resources.Views.Home.Bookings</h5>
+                    </div>
+                    <p class="card-text text-muted">@App.Resources.Views.Home.BookingsCardDescription</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a asp-controller="Bookings" asp-action="CompanyBookings" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-list-check me-2"></i>@App.Resources.Views.Home.ManageBookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,174 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── RabbitMQ ────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # ── Users Microservice (port 5001) ──────────────────────────────
+  users-service:
+    build:
+      context: .
+      dockerfile: Services/Users.WebHost/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__UsersConnection=Host=postgres;Port=5432;Database=aircraft-users;Username=postgres;Password=postgres
+      - FleetService__BaseUrl=http://fleet-service:8080
+      - BookingService__BaseUrl=http://booking-service:8080
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - JWT__Key=some_secret_password_dont_share.at.iausdhviushviusdhuisdhgiusdfhliuhdiufvhidufvhidufhviudsfh
+      - JWT__Issuer=itcollege.taltech.ee
+      - JWT__Audience=itcollege.taltech.ee
+      - DataInitialization__MigrateDatabase=true
+      - DataInitialization__SeedIdentity=true
+      - DataInitialization__SeedData=true
+      - DataInitialization__SeedAppUserCompanies=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # NOTE: No Docker HEALTHCHECK - the runtime image is chiseled (no shell,
+    # no curl). Health is enforced by Kubernetes readiness/liveness probes
+    # against /health (see k8s/users/deployment.yaml in §3.2.3).
+
+  # ── Fleet Microservice (port 5002) ──────────────────────────────
+  fleet-service:
+    build:
+      context: .
+      dockerfile: Services/Fleet.WebHost/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__FleetConnection=Host=postgres;Port=5432;Database=aircraft-fleet;Username=postgres;Password=postgres
+      - BookingService__BaseUrl=http://booking-service:8080
+      - UsersService__BaseUrl=http://users-service:8080
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - JWT__Key=some_secret_password_dont_share.at.iausdhviushviusdhuisdhgiusdfhliuhdiufvhidufvhidufhviudsfh
+      - JWT__Issuer=itcollege.taltech.ee
+      - JWT__Audience=itcollege.taltech.ee
+      - DataInitialization__MigrateDatabase=true
+      - DataInitialization__SeedData=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      users-service:
+        condition: service_started
+    # NOTE: No Docker HEALTHCHECK - chiseled runtime image (no shell/curl).
+    # Health enforced by Kubernetes probes in production; inter-service HTTP
+    # clients use Polly retry policies to handle startup races locally.
+
+  # ── Booking Microservice (port 5003) ────────────────────────────
+  booking-service:
+    build:
+      context: .
+      dockerfile: Services/Booking.WebHost/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__BookingConnection=Host=postgres;Port=5432;Database=aircraft-booking;Username=postgres;Password=postgres
+      - FleetService__BaseUrl=http://fleet-service:8080
+      - UsersService__BaseUrl=http://users-service:8080
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - JWT__Key=some_secret_password_dont_share.at.iausdhviushviusdhuisdhgiusdfhliuhdiufvhidufvhidufhviudsfh
+      - JWT__Issuer=itcollege.taltech.ee
+      - JWT__Audience=itcollege.taltech.ee
+      - DataInitialization__MigrateDatabase=true
+      - DataInitialization__SeedData=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      users-service:
+        condition: service_started
+      fleet-service:
+        condition: service_started
+    # NOTE: No Docker HEALTHCHECK - chiseled runtime image (no shell/curl).
+    # Health enforced by Kubernetes probes in production; inter-service HTTP
+    # clients use Polly retry policies to handle startup races locally.
+
+  # ── WebApp - SystemAdmin Panel (port 5010) ──────────────────────
+  # NOTE: host port is 5010 (not 5000) because on macOS port 5000 is
+  # occupied by ControlCenter / AirPlay Receiver, causing
+  # "address already in use" when binding 0.0.0.0:5000.
+  webapp:
+    build:
+      context: .
+      dockerfile: WebApp/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5010:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__UsersConnection=Host=postgres;Port=5432;Database=aircraft-users;Username=postgres;Password=postgres
+      - UsersService__BaseUrl=http://users-service:8080
+      - FleetService__BaseUrl=http://fleet-service:8080
+      - BookingService__BaseUrl=http://booking-service:8080
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      - JWT__Key=some_secret_password_dont_share.at.iausdhviushviusdhuisdhgiusdfhliuhdiufvhidufvhidufhviudsfh
+      - JWT__Issuer=itcollege.taltech.ee
+      - JWT__Audience=itcollege.taltech.ee
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      users-service:
+        condition: service_started
+      fleet-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+
+volumes:
+  postgres_data:

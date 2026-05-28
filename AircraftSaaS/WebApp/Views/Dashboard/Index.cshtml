@@ -1,0 +1,380 @@
+@model WebApp.ViewModels.CompanyOwner.DashboardViewModel
+
+@{
+    ViewData["Title"] = App.Resources.Views.Home.Dashboard;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@App.Resources.Views.Home.Dashboard</h1>
+            <p class="text-muted">@App.Resources.Views.Home.WelcomeBack, @(User.Identity?.Name ?? App.Resources.Views.Home.User)!</p>
+        </div>
+        <div>
+            @if (Model.Company != null)
+            {
+                <span class="badge bg-primary fs-6">@Model.Company.CompanyName</span>
+            }
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.TotalAircraft</h6>
+                            <h2 class="mb-0">@Model.TotalAircraft</h2>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="bi bi-airplane"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-controller="Aircraft" asp-action="Manage" class="text-white text-decoration-none small">@App.Resources.Views.Home.ViewAllAircraft →</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.Available</h6>
+                            <h2 class="mb-0">@Model.AvailableAircraft</h2>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <span class="text-white small">@((Model.TotalAircraft > 0) ? (Model.AvailableAircraft * 100 / Model.TotalAircraft) : 0)% @App.Resources.Views.Home.Availability</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-dark-50">@App.Resources.Views.Home.PendingApproval</h6>
+                            <h2 class="mb-0">@Model.PendingBookings</h2>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a asp-controller="Bookings" asp-action="CompanyBookings" class="text-dark text-decoration-none small">@App.Resources.Views.Home.ReviewPending →</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">@App.Resources.Views.Home.MonthlyRevenue</h6>
+                            <h2 class="mb-0">$@Model.MonthlyRevenue.ToString("N0")</h2>
+                        </div>
+                        <div class="fs-1 opacity-50">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <span class="text-white small">@App.Resources.Views.Home.ThisMonth</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">@App.Resources.Views.Home.BookingOverview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="p-3">
+                                <h4 class="text-primary">@Model.TotalBookings</h4>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.TotalBookings</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3">
+                                <h4 class="text-success">@Model.ActiveBookings</h4>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.Active</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3">
+                                <h4 class="text-warning">@Model.PendingBookings</h4>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.Pending</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3">
+                                <h4 class="text-secondary">@Model.CompletedBookings</h4>
+                                <p class="text-muted mb-0">@App.Resources.Views.Home.Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">@App.Resources.Views.Home.QuickActions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a asp-controller="Aircraft" asp-action="Create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> @App.Resources.Views.Home.AddAircraft
+                        </a>
+                        <a asp-controller="Bookings" asp-action="CompanyBookings" class="btn btn-outline-primary">
+                            <i class="bi bi-list-check me-1"></i> @App.Resources.Views.Home.ManageBookings
+                        </a>
+                        <a asp-controller="Maintenance" asp-action="Index" class="btn btn-outline-primary">
+                            <i class="bi bi-tools me-1"></i> @App.Resources.Views.Home.Maintenance
+                        </a>
+                        <a asp-controller="Companies" asp-action="Settings" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear me-1"></i> @App.Resources.Views.Home.Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <!-- Pending Approvals -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@App.Resources.Views.Home.PendingApprovals</h5>
+                    <a asp-controller="Bookings" asp-action="CompanyBookings" class="btn btn-sm btn-outline-primary">@App.Resources.Views.Home.ViewAll</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.PendingApprovalBookings.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var booking in Model.PendingApprovalBookings)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">@booking.AircraftName</h6>
+                                            <p class="mb-1 text-muted small">
+                                                <i class="bi bi-person me-1"></i>@booking.PilotName
+                                            </p>
+                                            <p class="mb-0 small">
+                                                <i class="bi bi-calendar me-1"></i>
+                                                @booking.StartDateTime.ToString("MMM dd") - @booking.EndDateTime.ToString("MMM dd, yyyy")
+                                            </p>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-warning">@booking.Status</span>
+                                            <p class="mb-0 small text-muted">$@booking.TotalAmount</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <form asp-controller="Bookings" asp-action="Approve" asp-route-id="@booking.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-success">@App.Resources.Views.Home.Approve</button>
+                                        </form>
+                                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-@booking.Id">
+                                            @App.Resources.Views.Home.Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-check-circle fs-1"></i>
+                            <p class="mb-0">@App.Resources.Views.Home.NoPendingBookings</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Aircraft -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@App.Resources.Views.Home.RecentAircraft</h5>
+                    <a asp-controller="Aircraft" asp-action="Manage" class="btn btn-sm btn-outline-primary">@App.Resources.Views.Home.ViewAll</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.RecentAircraft.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var aircraft in Model.RecentAircraft)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">@aircraft.RegistrationNumber</h6>
+                                            <p class="mb-0 text-muted small">@aircraft.Make @aircraft.Model</p>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-@(aircraft.IsAvailable ? "success" : "danger")">
+                                                @(aircraft.IsAvailable ? App.Resources.Views.Home.Available : App.Resources.Views.Home.Unavailable)
+                                            </span>
+                                            <p class="mb-0 small text-muted">$@aircraft.HourlyRate/hr</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-airplane fs-1"></i>
+                            <p class="mb-0">@App.Resources.Views.Home.NoAircraftYet</p>
+                            <a asp-controller="Aircraft" asp-action="Create" class="btn btn-sm btn-primary mt-2">@App.Resources.Views.Home.AddFirstAircraft</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@App.Resources.Views.Home.RecentBookings</h5>
+                    <a asp-controller="Bookings" asp-action="CompanyBookings" class="btn btn-sm btn-outline-primary">@App.Resources.Views.Home.ViewAll</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.RecentBookings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>@App.Resources.Views.Home.Aircraft</th>
+                                        <th>@App.Resources.Views.Home.Pilot</th>
+                                        <th>@App.Resources.Views.Home.Dates</th>
+                                        <th>@App.Resources.Views.Home.Status</th>
+                                        <th>@App.Resources.Views.Home.Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var booking in Model.RecentBookings)
+                                    {
+                                        <tr>
+                                            <td>@booking.AircraftName</td>
+                                            <td>@booking.PilotName</td>
+                                            <td>
+                                                @booking.StartDateTime.ToString("MMM dd") - @booking.EndDateTime.ToString("MMM dd")
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@GetStatusBadgeClass(booking.Status)">
+                                                    @booking.Status
+                                                </span>
+                                            </td>
+                                            <td>$@booking.TotalAmount</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-calendar-check fs-1"></i>
+                            <p class="mb-0">@App.Resources.Views.Home.NoBookingsYet</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Reject Modals *@
+@foreach (var booking in Model.PendingApprovalBookings)
+{
+    <div class="modal fade" id="rejectModal-@booking.Id" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@App.Resources.Views.Home.RejectBooking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-controller="Bookings" asp-action="Reject" asp-route-id="@booking.Id" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">@App.Resources.Views.Home.RejectionReason</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" required 
+                                      placeholder="@App.Resources.Views.Home.PleaseProvideReason"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@App.Resources.Views.Home.Cancel</button>
+                        <button type="submit" class="btn btn-danger">@App.Resources.Views.Home.RejectBooking</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(Booking.Domain.Enums.EBookingStatus status)
+    {
+        return status switch
+        {
+            Booking.Domain.Enums.EBookingStatus.Pending => "warning",
+            Booking.Domain.Enums.EBookingStatus.Requested => "info",
+            Booking.Domain.Enums.EBookingStatus.Approved => "primary",
+            Booking.Domain.Enums.EBookingStatus.Paid => "success",
+            Booking.Domain.Enums.EBookingStatus.Completed => "secondary",
+            Booking.Domain.Enums.EBookingStatus.Cancelled => "danger",
+            Booking.Domain.Enums.EBookingStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+}

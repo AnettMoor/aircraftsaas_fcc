@@ -1,6 +1,6 @@
-services:
-  postgres-dev:
-    container_name: "postgres-aircraft-clean"
+﻿services:
+  postgres-aircraft-modular:
+    container_name: "postgres-aircraft-modular"
     pull_policy: always
     image: postgres:16
     command: postgres -c 'max_connections=1000'
@@ -8,11 +8,12 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=aircraft
-    ports:
-      - "7891:5432"
+      - POSTGRES_DB=aircraft-users
     volumes:
-      - postgres-dev-data:/var/lib/postgresql/data
+      - postgres-aircraft-modular-data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    ports:
+      - "7892:5432"
     networks:
       - aircraft-net
     healthcheck:
@@ -24,12 +25,12 @@ services:
 
   webapp:
     build:
-      context: ./backend_csharp
+      context: .
       dockerfile: Dockerfile
-    container_name: "aircraft-webapp-clean"
+    container_name: "aircraft-webapp-modular"
     restart: unless-stopped
     ports:
-      - "87:8080"
+      - "88:8080"
     volumes:
       - webapp-uploads:/app/wwwroot/uploads
     networks:
@@ -38,33 +39,22 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - TenantSlug=${TENANT_SLUG:-c1}
-      - ConnectionStrings__DefaultConnection=Host=postgres-dev;Port=5432;Database=aircraft;Username=postgres;Password=postgres;Timeout=30;Command Timeout=60
+      - ConnectionStrings__UsersConnection=Host=postgres-aircraft-modular;Port=5432;Database=aircraft-users;Username=postgres;Password=postgres;Timeout=30;Command Timeout=60
+      - ConnectionStrings__FleetConnection=Host=postgres-aircraft-modular;Port=5432;Database=aircraft-fleet;Username=postgres;Password=postgres;Timeout=30;Command Timeout=60
+      - ConnectionStrings__BookingConnection=Host=postgres-aircraft-modular;Port=5432;Database=aircraft-booking;Username=postgres;Password=postgres;Timeout=30;Command Timeout=60
       - DataInitialization__DropDatabase=false
       - DataInitialization__MigrateDatabase=true
       - DataInitialization__SeedIdentity=true
       - DataInitialization__SeedData=true
       - DataInitialization__SeedAppUserCompanies=true
     depends_on:
-      postgres-dev:
+      postgres-aircraft-modular:
         condition: service_healthy
 
-  vue-app:
-    build:
-      context: ./frontend_vue
-      dockerfile: Dockerfile
-    container_name: "aircraft-vue"
-    restart: unless-stopped
-    ports:
-      - "85:80"
-    networks:
-      - aircraft-net
-    depends_on:
-      - webapp
-
 volumes:
-  postgres-dev-data:
+  postgres-aircraft-modular-data:
   webapp-uploads:
 
 networks:
   aircraft-net:
-    name: aircraft-net-clean
+    name: aircraft-net-modular

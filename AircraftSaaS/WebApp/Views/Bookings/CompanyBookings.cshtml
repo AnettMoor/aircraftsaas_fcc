@@ -1,0 +1,252 @@
+@model WebApp.ViewModels.CompanyOwner.BookingManagementViewModel
+
+@{
+    ViewData["Title"] = "Booking Management";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Booking Management</h1>
+            <p class="text-muted">Manage all bookings for your company</p>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <h2 class="mb-0">@Model.PendingBookings.Count()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Approved</h5>
+                    <h2 class="mb-0">@Model.ApprovedBookings.Count()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Paid</h5>
+                    <h2 class="mb-0">@Model.PaidBookings.Count()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h2 class="mb-0">@Model.CompletedBookings.Count()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Cancelled</h5>
+                    <h2 class="mb-0">@Model.CancelledBookings.Count()</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="bookingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                All Bookings (@Model.AllBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                Pending (@Model.PendingBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab">
+                Approved (@Model.ApprovedBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="paid-tab" data-bs-toggle="tab" data-bs-target="#paid" type="button" role="tab">
+                Paid (@Model.PaidBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                Completed (@Model.CompletedBookings.Count())
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">
+                Cancelled (@Model.CancelledBookings.Count())
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="bookingTabsContent">
+        <!-- All Bookings -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            @await Html.PartialAsync("_BookingTable", Model.AllBookings)
+        </div>
+        
+        <!-- Pending -->
+        <div class="tab-pane fade" id="pending" role="tabpanel">
+            @await Html.PartialAsync("_BookingTableWithActions", Model.PendingBookings)
+        </div>
+        
+        <!-- Approved -->
+        <div class="tab-pane fade" id="approved" role="tabpanel">
+            @await Html.PartialAsync("_BookingTableWithComplete", Model.ApprovedBookings)
+        </div>
+        
+        <!-- Paid -->
+        <div class="tab-pane fade" id="paid" role="tabpanel">
+            @await Html.PartialAsync("_BookingTableWithComplete", Model.PaidBookings)
+        </div>
+        
+        <!-- Completed -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            @await Html.PartialAsync("_BookingTable", Model.CompletedBookings)
+        </div>
+        
+        <!-- Cancelled -->
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            @await Html.PartialAsync("_BookingTable", Model.CancelledBookings)
+        </div>
+    </div>
+</div>
+
+@if (Model.PendingBookings.Any())
+{
+    @* Reject and Cancel Modals for Pending Bookings *@
+    foreach (var booking in Model.PendingBookings)
+    {
+        <div class="modal fade" id="rejectModal-@booking.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject Booking</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form asp-action="Reject" asp-route-id="@booking.Id" method="post">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Rejection Reason</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3" required 
+                                          placeholder="Please provide a reason for rejection..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-warning">Reject Booking</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cancel Booking</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel the booking for <strong>@booking.AircraftName</strong> by <strong>@booking.PilotName</strong>?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form asp-action="Cancel" asp-route-id="@booking.Id" method="post" class="d-inline">
+                            <input type="hidden" name="returnTo" value="CompanyBookings" />
+                            <button type="submit" class="btn btn-danger">Cancel Booking</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.PaidBookings.Any())
+{
+    @* Cancel Modals for Paid Bookings *@
+    foreach (var booking in Model.PaidBookings)
+    {
+        <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cancel Booking</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel the booking for <strong>@booking.AircraftName</strong> by <strong>@booking.PilotName</strong>?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form asp-action="Cancel" asp-route-id="@booking.Id" method="post" class="d-inline">
+                            <input type="hidden" name="returnTo" value="CompanyBookings" />
+                            <button type="submit" class="btn btn-danger">Cancel Booking</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.ApprovedBookings.Any())
+{
+    @* Cancel Modals for Approved Bookings *@
+    foreach (var booking in Model.ApprovedBookings)
+    {
+        <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cancel Booking</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel the booking for <strong>@booking.AircraftName</strong> by <strong>@booking.PilotName</strong>?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form asp-action="Cancel" asp-route-id="@booking.Id" method="post" class="d-inline">
+                            <input type="hidden" name="returnTo" value="CompanyBookings" />
+                            <button type="submit" class="btn btn-danger">Cancel Booking</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

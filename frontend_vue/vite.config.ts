@@ -6,6 +6,11 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
+  // Microservice endpoints (override via env vars if needed)
+  const USERS_URL = env.VITE_USERS_URL || 'http://localhost:5001'
+  const FLEET_URL = env.VITE_FLEET_URL || 'http://localhost:5002'
+  const BOOKING_URL = env.VITE_BOOKING_URL || 'http://localhost:5003'
+
   return {
     plugins: [vue()],
     resolve: {
@@ -16,12 +21,20 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       proxy: {
-        // Proxy API calls to backend during development
-        '/api': {
-          target: env.VITE_API_BASE_URL || 'http://localhost:5219',
-          changeOrigin: true,
-          secure: false,
-        },
+        // ── Users microservice ─────────────────────────────────────────
+        '/api/v1/identity':  { target: USERS_URL,   changeOrigin: true, secure: false },
+        '/api/v1/companies': { target: USERS_URL,   changeOrigin: true, secure: false },
+        '/api/v1/licenses':  { target: USERS_URL,   changeOrigin: true, secure: false },
+        '/api/v1/admin':     { target: USERS_URL,   changeOrigin: true, secure: false },
+
+        // ── Fleet microservice ─────────────────────────────────────────
+        '/api/v1/aircraft':    { target: FLEET_URL, changeOrigin: true, secure: false },
+        '/api/v1/airports':    { target: FLEET_URL, changeOrigin: true, secure: false },
+        '/api/v1/maintenance': { target: FLEET_URL, changeOrigin: true, secure: false },
+
+        // ── Booking microservice ───────────────────────────────────────
+        '/api/v1/bookings': { target: BOOKING_URL, changeOrigin: true, secure: false },
+        '/api/v1/reviews':  { target: BOOKING_URL, changeOrigin: true, secure: false },
       },
     },
     build: {
@@ -32,7 +45,6 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'vendor-vue': ['vue', 'vue-router', 'pinia'],
             'vendor-http': ['axios'],
-            'vendor-i18n': ['vue-i18n'],
           },
         },
       },

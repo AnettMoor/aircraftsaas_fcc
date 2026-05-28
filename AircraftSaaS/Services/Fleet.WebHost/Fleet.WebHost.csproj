@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+  </ItemGroup>
+
+  <!-- ── Shared ──────────────────────────────────────────────────────── -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Contracts\Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Messaging\Shared.Messaging.csproj" />
+  </ItemGroup>
+
+  <!-- ── Fleet Module ─────────────────────────────────────────────────── -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Fleet\Fleet.Domain\Fleet.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Fleet\Fleet.Application\Fleet.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Fleet\Fleet.Api\Fleet.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Fleet\Fleet.Infrastructure\Fleet.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

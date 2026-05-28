@@ -254,25 +254,31 @@ function mapToApiError(error: AxiosError): ApiError {
     // Plain-text error response
     message = data
   } else if (data && typeof data === 'object') {
-    // Custom RestApiErrorResponse → { error: "..." }
-    if (typeof data.error === 'string' && data.error) {
-      message = data.error
-    }
-    // ASP.NET ProblemDetails → { detail: "..." }
-    else if (typeof data.detail === 'string' && data.detail) {
-      message = data.detail
-    }
-    // ASP.NET ProblemDetails → { title: "..." }
-    else if (typeof data.title === 'string' && data.title) {
-      message = data.title
-    }
     // ASP.NET ValidationProblemDetails → { errors: { field: ["msg"] } }
-    if (!message && data.errors && typeof data.errors === 'object') {
-      const entries = Object.values(data.errors as Record<string, string[]>)
-      const msgs = entries.flat().filter(Boolean)
+    // Check this FIRST: it carries the actual field-level reasons, which are
+    // far more useful than the generic ProblemDetails title
+    // ("One or more validation errors occurred.").
+    if (data.errors && typeof data.errors === 'object') {
+      const errorsObj = data.errors as Record<string, string[]>
+      const entries = Object.entries(errorsObj)
+      const msgs = entries.flatMap(([field, errs]) =>
+        (errs ?? []).filter(Boolean).map(msg => (field && field !== '$' ? `${field}: ${msg}` : msg))
+      )
       if (msgs.length > 0) {
         message = msgs.join('; ')
       }
+    }
+    // Custom RestApiErrorResponse → { error: "..." }
+    if (!message && typeof data.error === 'string' && data.error) {
+      message = data.error
+    }
+    // ASP.NET ProblemDetails → { detail: "..." }
+    else if (!message && typeof data.detail === 'string' && data.detail) {
+      message = data.detail
+    }
+    // ASP.NET ProblemDetails → { title: "..." } — fallback only
+    else if (!message && typeof data.title === 'string' && data.title) {
+      message = data.title
     }
   }
 

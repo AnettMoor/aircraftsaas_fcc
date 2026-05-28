@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+        <PackageReference Include="xunit" Version="2.*" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.*">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="FluentAssertions" Version="7.*" />
+        <PackageReference Include="Moq" Version="4.*" />
+        <PackageReference Include="coverlet.collector" Version="6.*">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Testcontainers.PostgreSql" Version="4.*" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Reference all module Infrastructure projects (notification handlers + repositories) -->
+        <ProjectReference Include="..\..\Modules\Users\Users.Infrastructure\Users.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\Modules\Fleet\Fleet.Infrastructure\Fleet.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\Modules\Booking\Booking.Infrastructure\Booking.Infrastructure.csproj" />
+        <!-- Reference all module Application projects (for service interfaces / contracts) -->
+        <ProjectReference Include="..\..\Modules\Users\Users.Application\Users.Application.csproj" />
+        <ProjectReference Include="..\..\Modules\Fleet\Fleet.Application\Fleet.Application.csproj" />
+        <ProjectReference Include="..\..\Modules\Booking\Booking.Application\Booking.Application.csproj" />
+        <!-- Shared contracts with MediatR query/command/event definitions -->
+        <ProjectReference Include="..\..\Shared\Shared.Contracts\Shared.Contracts.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,141 @@
+@model WebApp.ViewModels.SystemAdmin.ChangeUserCompanyViewModel
+
+@{
+    ViewData["Title"] = $"Change Company — {Model.UserName}";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-building me-2"></i>Change Company Assignment
+            </h1>
+            <p class="text-muted mb-0">@Model.UserName &bull; <span class="text-muted">@Model.Email</span></p>
+        </div>
+        <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Users
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Company Assignment Form -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>Assign Company</h5>
+                </div>
+                <div class="card-body">
+                    <!-- User Info Summary -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-person-circle fs-3 text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-0">@Model.UserName</h6>
+                                <small class="text-muted">@Model.Email</small>
+                            </div>
+                        </div>
+                        <div>
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge bg-secondary me-1">@role</span>
+                            }
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <form asp-area="Admin" asp-controller="SystemAdmin" asp-action="ChangeUserCompany"
+                          asp-route-id="@Model.UserId" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="SelectedCompanyId" class="form-label fw-semibold">
+                                <i class="bi bi-building me-1"></i>Select Company
+                            </label>
+                            <select asp-for="SelectedCompanyId" asp-items="Model.CompanySelectList"
+                                    class="form-select">
+                                <option value="">— Select a company —</option>
+                            </select>
+                            <div class="form-text">
+                                Choose the company this user should be assigned to. This will update all existing company memberships.
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i> Save Company Assignment
+                            </button>
+                            <a asp-area="Admin" asp-controller="SystemAdmin" asp-action="Users"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Memberships (read-only) -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Current Memberships</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.CurrentMemberships.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var m in Model.CurrentMemberships)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-building me-1 text-muted"></i>
+                                        <strong>@m.CompanyName</strong>
+                                    </div>
+                                    <span class="badge bg-@(m.Role.ToString() == "CompanyOwner" ? "warning text-dark" : m.Role.ToString() == "SystemAdmin" ? "danger" : "secondary")">
+                                        @m.Role
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-building fs-2"></i>
+                            <p class="mb-0 mt-2 small">No company memberships found.</p>
+                            <p class="small text-muted">Assigning a company will create a new membership.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle me-1 text-info"></i> About Company Assignment</h6>
+                    <p class="card-text small text-muted mb-0">
+                        Changing a user's company assignment will move all their existing company memberships
+                        to the selected company. This is particularly useful for CompanyOwner users who need
+                        to be reassigned to a different tenant/company.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

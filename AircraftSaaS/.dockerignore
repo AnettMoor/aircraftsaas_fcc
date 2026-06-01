@@ -1,15 +1,67 @@
-.dockerignore
-.env
+# =====================================================================
+# .dockerignore for the AircraftSaaS solution (used by every .WebHost
+# Dockerfile under Services/*/Dockerfile, build context = AircraftSaaS/).
+#
+# Goal: keep the build context tight and prevent secrets / dev artefacts
+# from ever entering an image layer. Anything matched here is invisible
+# to `docker build`, including the build stage's `COPY . .`.
+# =====================================================================
+
+# --- Source control & IDE noise ----------------------------------------
 .git
 .gitignore
+.gitattributes
+.gitlab-ci.yml
+.github
 .vs
 .vscode
-docker-compose.yml
-docker-compose.*.yml
+.idea
+*.user
+*.suo
+*.DS_Store
+
+# --- Build outputs (must be rebuilt inside the build stage) ------------
 **/bin
 **/obj
-**/bin\Debug
+**/bin/Debug
+**/bin/Release
+**/obj/Debug
+**/obj/Release
 bin/
 obj/
-node_modules/
 dist/
+out/
+publish/
+**/TestResults
+
+# --- Node / frontend artefacts (not in this context but defensive) -----
+node_modules/
+
+# --- Test projects (we don't run tests inside the runtime image build) -
+**/*Tests/**
+**/*.Tests/**
+**/*Test.csproj
+**/*Tests.csproj
+
+# --- Compose / local dev configs we never want baked into images -------
+docker-compose.yml
+docker-compose.*.yml
+docker-compose.override.yml
+.dockerignore
+Dockerfile
+
+# --- Secrets & local environment files ---------------------------------
+.env
+.env.*
+*.env
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# --- Misc ---------------------------------------------------------------
+*.log
+*.tmp
+*.swp
+README.md
+README_LOCAL.md
+*.md

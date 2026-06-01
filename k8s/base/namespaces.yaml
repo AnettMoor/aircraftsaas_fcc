@@ -1,15 +1,36 @@
+# =====================================================================
+# Application namespaces.
+#
+# Every namespace carries a `name: ns-xxx` label. This is NOT cosmetic:
+# every NetworkPolicy in k8s/network-policies/ selects peer namespaces
+# by `namespaceSelector: matchLabels: { name: ns-xxx }`. Without this
+# label, default-deny silently isolates the namespace.
+# =====================================================================
 apiVersion: v1
 kind: Namespace
-metadata: { name: ns-users,   labels: { name: ns-users } }
+metadata: { name: ns-users,    labels: { name: ns-users } }
 ---
 apiVersion: v1
 kind: Namespace
-metadata: { name: ns-fleet,   labels: { name: ns-fleet } }
+metadata: { name: ns-fleet,    labels: { name: ns-fleet } }
 ---
 apiVersion: v1
 kind: Namespace
-metadata: { name: ns-booking, labels: { name: ns-booking } }
+metadata: { name: ns-booking,  labels: { name: ns-booking } }
 ---
 apiVersion: v1
 kind: Namespace
-metadata: { name: ns-infra,   labels: { name: ns-infra } }
+metadata: { name: ns-infra,    labels: { name: ns-infra } }
+---
+# ns-frontend hosts the Vue SPA pods. The browser (not the pod) calls
+# the backend services via the Ingress, so this namespace only needs
+# ingress on :80 from ingress-nginx and DNS egress.
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-frontend, labels: { name: ns-frontend } }
+---
+# ns-registry hosts the in-cluster Docker Registry v2. App namespaces
+# pull images from registry.ns-registry.svc.cluster.local:5000.
+apiVersion: v1
+kind: Namespace
+metadata: { name: ns-registry, labels: { name: ns-registry } }

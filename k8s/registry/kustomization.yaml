@@ -1,0 +1,10 @@
+# Component kustomization for the in-cluster Docker Registry v2 stack.
+# Referenced as a directory by k8s/base/kustomization.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace-pull-secret.yaml
+  - auth-secret.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml

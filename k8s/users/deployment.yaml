@@ -1,32 +1,65 @@
+# =====================================================================
+# users-service Deployment.
+#
+# Image tag `users-service:dev` matches the local Minikube workflow
+# (`eval $(minikube docker-env)` + `docker build -t users-service:dev`)
+# documented in local.md. The opennebula overlay rewrites this image
+# reference to the in-cluster registry FQDN at deploy time
+# (k8s/overlays/opennebula/kustomization.yaml).
+# =====================================================================
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: users-service, namespace: ns-users }
+metadata:
+  name: users-service
+  namespace: ns-users
+  labels: { app: users-service }
 spec:
   replicas: 2
   selector: { matchLabels: { app: users-service } }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
-    metadata: { labels: { app: users-service } }
+    metadata:
+      labels: { app: users-service }
     spec:
+      # Phase C will flip this to false and ship a dedicated runtime SA;
+      # for Phase A we keep the default SA so the manifests apply cleanly
+      # on a fresh cluster without RBAC prep.
+      automountServiceAccountToken: true
       containers:
-      - name: users-service
-        image: users-service:dev
-        imagePullPolicy: IfNotPresent
-        ports: [{ containerPort: 8080 }]
-        envFrom:
-        - configMapRef: { name: users-config }
-        - secretRef:    { name: users-secret }
-        readinessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 45
-          periodSeconds: 15
-        resources:
-          requests: { cpu: 100m, memory: 256Mi }
-          limits:   { cpu: 500m, memory: 512Mi }
-        securityContext:
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+        - name: users-service
+          image: users-service:dev
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: users-config }
+            - secretRef:    { name: users-secret }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            # readOnlyRootFilesystem is added in Phase C together with
+            # the matching emptyDir mounts for /tmp + dotnet diagnostics.
+      # Spread replicas across nodes so a single worker loss doesn't
+      # take the service offline. Soft constraint (ScheduleAnyway) so
+      # single-node clusters (e.g. dev Minikube) still schedule.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: users-service }

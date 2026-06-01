@@ -1,8 +1,25 @@
+# =====================================================================
+# .dockerignore for the Vue SPA build context (frontend_vue/).
+# Keeps node_modules, build outputs, secrets, IDE noise, and source-
+# control history out of the Docker build context.
+# =====================================================================
 node_modules
 dist
 .git
+.gitignore
+.gitattributes
+.gitlab-ci.yml
+.github
 .idea
 .vscode
+.vs
+.DS_Store
 *.log
 .env
 .env.*
+coverage
+*.local
+Dockerfile
+.dockerignore
+README.md
+*.md

@@ -1,0 +1,21 @@
+# =====================================================================
+# vue-frontend ConfigMap.
+#
+# The Vue SPA bakes VITE_* env vars at *build* time (Vite static-replaces
+# them into the bundle). This ConfigMap therefore does NOT inject the
+# API URL — the build-time arg is set in CI via Docker BuildKit's
+# --build-arg. The ConfigMap exists for nginx runtime knobs that we
+# might want to tweak without rebuilding the image (gzip level, log
+# format, etc.).
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vue-frontend-config
+  namespace: ns-frontend
+data:
+  # Currently unused at runtime — the Dockerfile's nginx.conf is
+  # baked into the image. Kept here as the canonical extension point
+  # for future env-driven configuration without breaking the manifest
+  # surface of the Deployment.
+  NGINX_WORKER_PROCESSES: "auto"

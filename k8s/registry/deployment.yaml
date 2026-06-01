@@ -1,0 +1,68 @@
+# =====================================================================
+# In-cluster Docker Registry v2.
+#
+# Implements deploy.md §3.2:
+#   * Single-replica Deployment (HA registry is out of scope).
+#   * htpasswd basic-auth (Secret: registry-auth).
+#   * 20 GiB PVC mounted at /var/lib/registry.
+#   * Pulled by FQDN: registry.ns-registry.svc.cluster.local:5000.
+#   * No public Ingress: only the in-cluster Service exposes :5000;
+#     the corresponding NetworkPolicy (allow-registry.yaml) permits
+#     ingress only from app namespaces.
+# =====================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: ns-registry
+  labels: { app: registry }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # single PVC -> avoid two pods on the same volume
+  selector:
+    matchLabels: { app: registry }
+  template:
+    metadata:
+      labels: { app: registry }
+    spec:
+      # Registry itself runs as root inside the image; we relax the
+      # securityContext only here (and only here) because the upstream
+      # image has hard-coded paths it owns. App workloads stay non-root.
+      securityContext:
+        runAsNonRoot: false
+      containers:
+        - name: registry
+          # registry:2 is the canonical Docker Distribution image.
+          image: registry:2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { containerPort: 5000, name: http }
+          env:
+            # Storage layout
+            - { name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY, value: /var/lib/registry }
+            # htpasswd auth (mounted below at /auth/htpasswd)
+            - { name: REGISTRY_AUTH,                  value: htpasswd }
+            - { name: REGISTRY_AUTH_HTPASSWD_REALM,   value: "Aircraft Registry" }
+            - { name: REGISTRY_AUTH_HTPASSWD_PATH,    value: /auth/htpasswd }
+            # Allow image deletion via the API (useful for CI cleanup).
+            - { name: REGISTRY_STORAGE_DELETE_ENABLED, value: "true" }
+          readinessProbe:
+            httpGet: { path: /, port: 5000 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: 5000 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 50m,  memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/registry }
+            - { name: auth, mountPath: /auth, readOnly: true }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: registry-data }
+        - name: auth
+          secret:
+            secretName: registry-auth

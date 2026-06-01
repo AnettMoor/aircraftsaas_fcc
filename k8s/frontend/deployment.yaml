@@ -1,0 +1,76 @@
+# =====================================================================
+# vue-frontend Deployment (ns-frontend).
+#
+# Static SPA, served by the hardened nginx image built from
+# frontend_vue/Dockerfile (runs as UID 1000, listens on :8080).
+#
+# Key Phase A constraints:
+#   * runAsNonRoot:true (matches the Dockerfile USER 1000:1000).
+#   * readOnlyRootFilesystem:true — nginx needs writable scratch space,
+#     so the Dockerfile relocates cache/pid/tmp under /tmp/nginx and an
+#     emptyDir is mounted at /tmp/nginx and /var/cache/nginx.
+#   * automountServiceAccountToken:false — the SPA pod never calls the
+#     Kubernetes API.
+# =====================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vue-frontend
+  namespace: ns-frontend
+  labels: { app: vue-frontend }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: vue-frontend } }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels: { app: vue-frontend }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: vue-frontend
+          image: vue-frontend:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { containerPort: 8080, name: http }
+          envFrom:
+            - configMapRef: { name: vue-frontend-config }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 25m,  memory: 32Mi }
+            limits:   { cpu: 200m, memory: 128Mi }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            # Writable scratch dirs that nginx needs even on a
+            # read-only root filesystem. The Dockerfile re-points
+            # nginx's pid file into /tmp/nginx/nginx.pid.
+            - { name: nginx-cache, mountPath: /var/cache/nginx }
+            - { name: nginx-tmp,   mountPath: /tmp/nginx }
+            - { name: nginx-run,   mountPath: /var/run }
+      volumes:
+        - { name: nginx-cache, emptyDir: {} }
+        - { name: nginx-tmp,   emptyDir: {} }
+        - { name: nginx-run,   emptyDir: {} }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: vue-frontend }

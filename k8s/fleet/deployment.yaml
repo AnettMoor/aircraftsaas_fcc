@@ -1,32 +1,53 @@
+# =====================================================================
+# fleet-service Deployment. See k8s/users/deployment.yaml for the full
+# rationale of every directive — this file mirrors that template with
+# the fleet-specific names.
+# =====================================================================
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: fleet-service, namespace: ns-fleet }
+metadata:
+  name: fleet-service
+  namespace: ns-fleet
+  labels: { app: fleet-service }
 spec:
   replicas: 2
   selector: { matchLabels: { app: fleet-service } }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
-    metadata: { labels: { app: fleet-service } }
+    metadata:
+      labels: { app: fleet-service }
     spec:
+      automountServiceAccountToken: true
       containers:
-      - name: fleet-service
-        image: fleet-service:dev
-        imagePullPolicy: IfNotPresent
-        ports: [{ containerPort: 8080 }]
-        envFrom:
-        - configMapRef: { name: fleet-config }
-        - secretRef:    { name: fleet-secret }
-        readinessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 45
-          periodSeconds: 15
-        resources:
-          requests: { cpu: 100m, memory: 256Mi }
-          limits:   { cpu: 500m, memory: 512Mi }
-        securityContext:
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+        - name: fleet-service
+          image: fleet-service:dev
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: fleet-config }
+            - secretRef:    { name: fleet-secret }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: fleet-service }

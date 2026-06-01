@@ -1,32 +1,57 @@
+# =====================================================================
+# booking-service Deployment. See k8s/users/deployment.yaml for the full
+# rationale of every directive — this file mirrors that template with
+# the booking-specific names.
+#
+# Booking has the heaviest fan-out (calls Fleet + Users + RabbitMQ on
+# every create), which is why the scaling-validation acceptance check
+# in deploy.md §6 targets *this* service specifically.
+# =====================================================================
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: booking-service, namespace: ns-booking }
+metadata:
+  name: booking-service
+  namespace: ns-booking
+  labels: { app: booking-service }
 spec:
   replicas: 2
   selector: { matchLabels: { app: booking-service } }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
-    metadata: { labels: { app: booking-service } }
+    metadata:
+      labels: { app: booking-service }
     spec:
+      automountServiceAccountToken: true
       containers:
-      - name: booking-service
-        image: booking-service:dev
-        imagePullPolicy: IfNotPresent
-        ports: [{ containerPort: 8080 }]
-        envFrom:
-        - configMapRef: { name: booking-config }
-        - secretRef:    { name: booking-secret }
-        readinessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet: { path: /health, port: 8080 }
-          initialDelaySeconds: 45
-          periodSeconds: 15
-        resources:
-          requests: { cpu: 100m, memory: 256Mi }
-          limits:   { cpu: 500m, memory: 512Mi }
-        securityContext:
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+        - name: booking-service
+          image: booking-service:dev
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: booking-config }
+            - secretRef:    { name: booking-secret }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: booking-service }

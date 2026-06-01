@@ -1,30 +1,82 @@
+# =====================================================================
+# RabbitMQ (ns-infra) — single-replica StatefulSet with persistent data.
+#
+# Phase A additions on top of the original scaffold:
+#   * Plain Deployment promoted to a StatefulSet + PVC so message
+#     queues survive a Pod restart (deploy.md §3.5).
+#   * Credentials moved out of plaintext env into the `rabbitmq-secret`
+#     Secret (Phase C swaps it for a SealedSecret).
+#   * Erlang cookie pinned via the same Secret so a future cluster
+#     expansion doesn't reshuffle node identity on restart.
+# =====================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secret
+  namespace: ns-infra
+type: Opaque
+stringData:
+  RABBITMQ_DEFAULT_USER:   guest
+  RABBITMQ_DEFAULT_PASS:   guest
+  RABBITMQ_ERLANG_COOKIE:  aircraft-rmq-dev-cookie
+---
 apiVersion: v1
 kind: Service
-metadata: { name: rabbitmq, namespace: ns-infra }
+metadata:
+  name: rabbitmq
+  namespace: ns-infra
 spec:
   selector: { app: rabbitmq }
   ports:
-  - { name: amqp, port: 5672,  targetPort: 5672 }
-  - { name: mgmt, port: 15672, targetPort: 15672 }
+    - { name: amqp, port: 5672,  targetPort: 5672 }
+    - { name: mgmt, port: 15672, targetPort: 15672 }
 ---
 apiVersion: apps/v1
-kind: Deployment
-metadata: { name: rabbitmq, namespace: ns-infra }
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: ns-infra
 spec:
+  serviceName: rabbitmq
   replicas: 1
   selector: { matchLabels: { app: rabbitmq } }
   template:
     metadata: { labels: { app: rabbitmq } }
     spec:
       containers:
-      - name: rabbitmq
-        image: rabbitmq:3-management
-        env:
-        - { name: RABBITMQ_DEFAULT_USER, value: guest }
-        - { name: RABBITMQ_DEFAULT_PASS, value: guest }
-        ports:
-        - { containerPort: 5672 }
-        - { containerPort: 15672 }
-        readinessProbe:
-          tcpSocket: { port: 5672 }
-          initialDelaySeconds: 15
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          envFrom:
+            - secretRef: { name: rabbitmq-secret }
+          ports:
+            - { containerPort: 5672 }
+            - { containerPort: 15672 }
+          readinessProbe:
+            tcpSocket: { port: 5672 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: 5672 }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 1,    memory: 1Gi   }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/rabbitmq }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 2Gi } }
+---
+# Node-drain protection: keep at least one broker alive.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+  namespace: ns-infra
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: rabbitmq }

@@ -1,0 +1,24 @@
+# =====================================================================
+# In-cluster Service for the Docker Registry v2.
+#
+# DNS name from any app namespace:
+#   registry.ns-registry.svc.cluster.local:5000
+#
+# This is referenced verbatim by:
+#   * k8s/overlays/opennebula/kustomization.yaml (image rewrites)
+#   * the in-cluster CI pipeline's `docker login` / `docker push` steps
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: ns-registry
+  labels: { app: registry }
+spec:
+  type: ClusterIP
+  selector: { app: registry }
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      protocol: TCP

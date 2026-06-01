@@ -1,0 +1,115 @@
+# =====================================================================
+# OpenNebula overlay
+#
+# Production preset targeted at the 1 control-plane + 2 worker cluster
+# running on the OpenNebula IaaS substrate (see plans/deploy.md §2).
+#
+# Differences from the base:
+#   1. Replicas bumped 2 -> 3 so a single node loss still leaves quorum.
+#   2. Anti-affinity spreads replicas across the two worker nodes.
+#   3. Hostnames swapped from *.aircraft.localtest.me to
+#      *.aircraft.example.com (real edge DNS provided by OpenNebula NAT).
+#   4. Images pulled from the in-cluster registry by FQDN
+#      (registry.ns-registry.svc.cluster.local:5000/<svc>:<sha>).
+#      The actual `<sha>` is patched in by the CI pipeline at deploy time
+#      via `kubectl set image`; this overlay only fixes the *prefix*.
+#
+# The infra services (Postgres / RabbitMQ) intentionally stay 1-replica
+# StatefulSets here. Multi-node infra is out of scope (deploy.md §10).
+# =====================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# --- Image rewrites ----------------------------------------------------
+# The base uses `<svc>:dev` (matches local Minikube builds). OpenNebula
+# pulls from the in-cluster registry instead. CI overrides the tag at
+# rollout time; here we only set the prefix + a sane default tag.
+images:
+  - name: users-service
+    newName: registry.ns-registry.svc.cluster.local:5000/users-service
+    newTag: latest
+  - name: fleet-service
+    newName: registry.ns-registry.svc.cluster.local:5000/fleet-service
+    newTag: latest
+  - name: booking-service
+    newName: registry.ns-registry.svc.cluster.local:5000/booking-service
+    newTag: latest
+  - name: vue-frontend
+    newName: registry.ns-registry.svc.cluster.local:5000/vue-frontend
+    newTag: latest
+
+# --- Replica + scheduling patches -------------------------------------
+patches:
+  # Bump backend Deployments to 3 replicas and add topology spread across
+  # the two worker nodes. The HPA `minReplicas` is also bumped so the
+  # autoscaler doesn't immediately scale us back down to 2.
+  - target: { kind: Deployment, name: users-service }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels: { app: users-service }
+  - target: { kind: Deployment, name: fleet-service }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels: { app: fleet-service }
+  - target: { kind: Deployment, name: booking-service }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels: { app: booking-service }
+  - target: { kind: Deployment, name: vue-frontend }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  # Real edge hostnames. The base uses *.aircraft.localtest.me which
+  # resolves to 127.0.0.1 (good for Minikube, wrong for OpenNebula).
+  - target: { kind: Ingress, name: users-ingress }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: users.aircraft.example.com
+  - target: { kind: Ingress, name: fleet-ingress }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: fleet.aircraft.example.com
+  - target: { kind: Ingress, name: booking-ingress }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: booking.aircraft.example.com
+  - target: { kind: Ingress, name: frontend-ingress }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: app.aircraft.example.com

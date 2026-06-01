@@ -1,6 +1,37 @@
+# =====================================================================
+# Postgres (ns-infra) — single-replica StatefulSet.
+#
+# Production-grade Postgres (HA, PITR, managed backups) is explicitly
+# out of scope (deploy.md §10). This StatefulSet is the validation
+# substrate for Phases A–E; replace with a managed DB before going
+# live with real traffic.
+#
+# Phase A additions on top of the original scaffold:
+#   * Credentials moved out of plaintext env into the `postgres-secret`
+#     Secret (Phase C swaps it for a SealedSecret, deploy.md §5.2).
+#   * PodDisruptionBudget with `minAvailable: 1` so node drains don't
+#     take the database offline.
+#   * Init databases (`aircraft-users`, `aircraft-fleet`,
+#     `aircraft-booking`) still created via the `pg-init` ConfigMap
+#     mounted into /docker-entrypoint-initdb.d.
+# =====================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: ns-infra
+type: Opaque
+stringData:
+  POSTGRES_USER:     postgres
+  POSTGRES_PASSWORD: postgres
+  # The connection strings consumed by the app Secrets reference the same
+  # password; Phase C rotates them in lock-step via SealedSecrets.
+---
 apiVersion: v1
 kind: ConfigMap
-metadata: { name: pg-init, namespace: ns-infra }
+metadata:
+  name: pg-init
+  namespace: ns-infra
 data:
   init.sql: |
     CREATE DATABASE "aircraft-users";
@@ -9,14 +40,20 @@ data:
 ---
 apiVersion: v1
 kind: Service
-metadata: { name: postgres, namespace: ns-infra }
+metadata:
+  name: postgres
+  namespace: ns-infra
 spec:
   selector: { app: postgres }
-  ports: [{ port: 5432, targetPort: 5432 }]
+  ports:
+    - { port: 5432, targetPort: 5432 }
+  # ClusterIP. Direct external access is forbidden by allow-infra.yaml.
 ---
 apiVersion: apps/v1
 kind: StatefulSet
-metadata: { name: postgres, namespace: ns-infra }
+metadata:
+  name: postgres
+  namespace: ns-infra
 spec:
   serviceName: postgres
   replicas: 1
@@ -25,23 +62,42 @@ spec:
     metadata: { labels: { app: postgres } }
     spec:
       containers:
-      - name: postgres
-        image: postgres:16
-        env:
-        - { name: POSTGRES_USER,     value: postgres }
-        - { name: POSTGRES_PASSWORD, value: postgres }
-        ports: [{ containerPort: 5432 }]
-        readinessProbe:
-          exec: { command: [pg_isready, -U, postgres] }
-          periodSeconds: 5
-        volumeMounts:
-        - { name: data, mountPath: /var/lib/postgresql/data }
-        - { name: init, mountPath: /docker-entrypoint-initdb.d }
+        - name: postgres
+          image: postgres:16
+          envFrom:
+            - secretRef: { name: postgres-secret }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: [pg_isready, -U, postgres] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: [pg_isready, -U, postgres] }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 1,    memory: 1Gi   }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d }
       volumes:
-      - name: init
-        configMap: { name: pg-init }
+        - name: init
+          configMap: { name: pg-init }
   volumeClaimTemplates:
-  - metadata: { name: data }
-    spec:
-      accessModes: [ReadWriteOnce]
-      resources: { requests: { storage: 1Gi } }
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 5Gi } }
+---
+# Node-drain protection: at least one Postgres pod must stay up.
+# With replicas=1 this effectively pins the database to a single node
+# until a drain operation can find another schedulable node.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: ns-infra
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: postgres }

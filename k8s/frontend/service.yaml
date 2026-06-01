@@ -1,0 +1,22 @@
+# =====================================================================
+# vue-frontend Service.
+#
+# The pod listens on :8080 (unprivileged) because nginx runs as
+# non-root inside the container. The Service exposes the conventional
+# :80 to the Ingress so consumers (the Ingress controller, intra-cluster
+# probes) speak the standard port.
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: vue-frontend
+  namespace: ns-frontend
+  labels: { app: vue-frontend }
+spec:
+  type: ClusterIP
+  selector: { app: vue-frontend }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

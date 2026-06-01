@@ -1,0 +1,50 @@
+# =====================================================================
+# Base Kustomization
+#
+# This is the "Minikube-equivalent" baseline: replica counts, hostnames
+# (*.aircraft.localtest.me), and image tags (`<svc>:dev`) match the manual
+# walkthrough in local.md. Overlays under k8s/overlays/* patch this for
+# different environments:
+#   * overlays/minikube   — explicit Minikube preset (defaults already match)
+#   * overlays/opennebula — production hostnames, in-cluster registry images,
+#                           replicas=3, anti-affinity
+#
+# Resources are pulled in via per-component `kustomization.yaml` files
+# (not raw paths) so that Kustomize's "no traversal outside root" rule
+# is satisfied — every referenced directory IS a Kustomization root.
+#
+# Apply order matters but Kustomize itself does NOT order resources by
+# the `resources:` list. The order below is documentary; runtime
+# ordering on the cluster is guaranteed by readiness probes
+# (services wait for Postgres/RabbitMQ DNS to resolve and respond).
+# =====================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # 1. Namespaces with the `name: ns-xxx` labels NetworkPolicies need.
+  - namespaces.yaml
+
+  # 2. In-cluster Docker Registry v2 + imagePullSecret patching of the
+  #    default ServiceAccount in every app namespace.
+  - ../registry
+
+  # 3. Cluster infrastructure (ns-infra): Postgres + RabbitMQ.
+  - ../infra
+
+  # 4. Application workloads.
+  - ../users
+  - ../fleet
+  - ../booking
+  - ../frontend
+
+  # 5. Gateway (Ingress objects, one per app namespace).
+  - ../gateway
+
+  # 6. NetworkPolicies for the existing app namespaces.
+  #    The ns-frontend and ns-registry policies are produced in Phase C
+  #    (deploy.md §C.12); they are intentionally NOT applied here so
+  #    that Phase A can bring the cluster up end-to-end without the
+  #    chaos-test surface depending on policies that haven't been
+  #    authored yet.
+  - ../network-policies

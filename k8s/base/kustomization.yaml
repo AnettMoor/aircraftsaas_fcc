@@ -41,7 +41,13 @@ resources:
   # 5. Gateway (Ingress objects, one per app namespace).
   - ../gateway
 
-  # 6. NetworkPolicies for the existing app namespaces.
+  # 6. CI namespace (self-hosted GitHub Actions runner + ci-deployer RBAC).
+  #    Required from Phase B onwards; wired here so a single
+  #    `kubectl apply -k k8s/base` (or any overlay) brings up the
+  #    runner alongside the workload it deploys.
+  - ../ci
+
+  # 7. NetworkPolicies for the existing app namespaces.
   #    The ns-frontend and ns-registry policies are produced in Phase C
   #    (deploy.md §C.12); they are intentionally NOT applied here so
   #    that Phase A can bring the cluster up end-to-end without the

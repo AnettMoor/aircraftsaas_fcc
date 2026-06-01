@@ -1,0 +1,158 @@
+# =====================================================================
+# Composite action — build + push a service image to the in-cluster
+# Docker Registry v2.
+#
+# Implements deploy.md §B.9:
+#   Reusable composite action `.github/actions/build-and-push/`
+#   encapsulating: login to local registry, `docker buildx build --push`,
+#   image tag = `${git_sha}` + `latest`.
+#
+# Consumed by every per-service workflow under .github/workflows/ci-*.yaml.
+# Centralising the build/push primitives here means a change to the
+# registry hostname, buildx flags, or tagging convention is one edit,
+# not five.
+#
+# Contract:
+#   inputs:
+#     service          - logical service name. Used as the image
+#                        repository under the registry FQDN, e.g.
+#                        "users-service" -> registry.../users-service.
+#     context          - docker build context (defaults to .).
+#     dockerfile       - relative path to the Dockerfile inside `context`.
+#     registry-host    - registry hostname:port. Default matches the
+#                        in-cluster Service FQDN.
+#     registry-user    - htpasswd username (matches k8s/registry/auth-secret.yaml).
+#     registry-pass    - htpasswd password (passed in from the workflow
+#                        as a GitHub secret).
+#     extra-tags       - newline-separated additional tags to push.
+#   outputs:
+#     image            - the `<registry>/<service>:<sha>` reference that
+#                        the workflow then feeds into `kubectl set image`.
+#
+# All tags are pushed: the SHA-pinned tag (immutable, used by the
+# rolling update) AND `latest` (mutable, used by humans poking around
+# with `kubectl describe`).
+# =====================================================================
+name: build-and-push
+description: Build a service Docker image and push it to the in-cluster registry under both `<sha>` and `latest` tags.
+
+inputs:
+  service:
+    description: "Logical service name (becomes the image repository under the registry)."
+    required: true
+  context:
+    description: "Docker build context."
+    required: false
+    default: "."
+  dockerfile:
+    description: "Dockerfile path, relative to `context`."
+    required: false
+    default: "Dockerfile"
+  registry-host:
+    description: "Registry hostname:port (defaults to the in-cluster Service FQDN)."
+    required: false
+    default: "registry.ns-registry.svc.cluster.local:5000"
+  registry-user:
+    description: "Registry basic-auth username."
+    required: true
+  registry-pass:
+    description: "Registry basic-auth password."
+    required: true
+  extra-tags:
+    description: "Newline-separated additional tags (e.g. `latest`, `stable`)."
+    required: false
+    default: "latest"
+
+outputs:
+  image:
+    description: "Fully qualified image reference of the SHA-tagged push."
+    value: ${{ steps.compute-tags.outputs.image }}
+  tag:
+    description: "Primary (SHA) tag."
+    value: ${{ steps.compute-tags.outputs.tag }}
+
+runs:
+  using: composite
+  steps:
+    # -----------------------------------------------------------------
+    # Pin the short SHA as the primary tag. Using ${{ github.sha }}
+    # rather than ${{ github.run_id }} so the same commit always
+    # produces the same image reference — rebuilds are idempotent and
+    # the rollback runbook can `kubectl set image ...:<previous-sha>`
+    # deterministically.
+    # -----------------------------------------------------------------
+    - id: compute-tags
+      shell: bash
+      run: |
+        set -euo pipefail
+        SHA="${GITHUB_SHA::12}"
+        REGISTRY="${{ inputs.registry-host }}"
+        REPO="${REGISTRY}/${{ inputs.service }}"
+        echo "tag=${SHA}"                                       >> "$GITHUB_OUTPUT"
+        echo "image=${REPO}:${SHA}"                             >> "$GITHUB_OUTPUT"
+        echo "repo=${REPO}"                                     >> "$GITHUB_OUTPUT"
+        # Render the extra-tags list into a multi-line `-t REPO:TAG` array
+        # we can feed to `docker buildx`.
+        {
+          echo "tag_args<<EOF"
+          printf -- '-t %s:%s\n' "${REPO}" "${SHA}"
+          while IFS= read -r t; do
+            [ -z "$t" ] && continue
+            printf -- '-t %s:%s\n' "${REPO}" "$t"
+          done <<< "${{ inputs.extra-tags }}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    # -----------------------------------------------------------------
+    # `docker buildx` needs a builder instance — the default one is
+    # absent in fresh self-hosted runners. `docker/setup-buildx-action`
+    # creates one and selects it; it's a no-op if a buildx instance is
+    # already present, so re-running this step is safe.
+    # -----------------------------------------------------------------
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        # The DinD sidecar in k8s/ci/runner-deployment.yaml exposes a
+        # plain HTTP daemon — no TLS material to wire in.
+        driver-opts: network=host
+
+    # -----------------------------------------------------------------
+    # Authenticate against the in-cluster registry. The runner's DinD
+    # daemon already trusts the registry as an insecure registry (see
+    # the `--insecure-registry` flag on the dind sidecar args), so we
+    # only need credentials here.
+    # -----------------------------------------------------------------
+    - name: Log in to the in-cluster registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry-host }}
+        username: ${{ inputs.registry-user }}
+        password: ${{ inputs.registry-pass }}
+
+    # -----------------------------------------------------------------
+    # Build + push both tags in a single `docker buildx build` so the
+    # registry only sees one upload session (deduplicates layers).
+    # -----------------------------------------------------------------
+    - name: Build & push image
+      shell: bash
+      env:
+        TAG_ARGS: ${{ steps.compute-tags.outputs.tag_args }}
+      run: |
+        set -euo pipefail
+        cd "${{ inputs.context }}"
+        # shellcheck disable=SC2086
+        docker buildx build \
+          --file "${{ inputs.dockerfile }}" \
+          --platform linux/amd64 \
+          --push \
+          --provenance=false \
+          --cache-from type=registry,ref=${{ steps.compute-tags.outputs.repo }}:cache \
+          --cache-to   type=registry,ref=${{ steps.compute-tags.outputs.repo }}:cache,mode=max \
+          ${TAG_ARGS} \
+          .
+
+    - name: Image summary
+      shell: bash
+      run: |
+        echo "Pushed: ${{ steps.compute-tags.outputs.image }}"
+        echo "        (and additional tags: ${{ inputs.extra-tags }})"

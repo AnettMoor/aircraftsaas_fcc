@@ -1,0 +1,19 @@
+# =====================================================================
+# ns-ci Kustomization — wired into k8s/base/kustomization.yaml.
+#
+# Order is documentary (Kustomize doesn't honour list order at apply time):
+#   1. namespace.yaml      — ns-ci with `name: ns-ci` label.
+#   2. runner-secret.yaml  — placeholder Secret for the GitHub runner
+#                            registration token + repo URL.
+#   3. rbac.yaml           — ci-deployer ServiceAccount + namespaced
+#                            Roles + RoleBindings into each app ns.
+#   4. runner-deployment.yaml — self-hosted runner Pod (runner + DinD).
+# =====================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - runner-secret.yaml
+  - rbac.yaml
+  - runner-deployment.yaml

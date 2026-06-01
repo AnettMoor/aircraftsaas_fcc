@@ -1,0 +1,123 @@
+# =====================================================================
+# CI/CD — Vue frontend
+#
+# Implements deploy.md §B.10 for the frontend_vue/ slice:
+#   * Lint + type-check (the Vue project's `vue-tsc --noEmit` runs as
+#     part of `npm run build`, but we surface it as a separate step so
+#     CI fails fast on type errors before invoking docker).
+#   * Build + push image via the shared composite action.
+#   * Roll `vue-frontend` Deployment in ns-frontend; smoke-test :80.
+# =====================================================================
+name: ci-frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend_vue/**"
+      - ".github/workflows/ci-frontend.yaml"
+      - ".github/actions/build-and-push/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SERVICE: vue-frontend
+  NAMESPACE: ns-frontend
+  DEPLOYMENT: vue-frontend
+  CONTAINER: vue-frontend
+  NODE_VERSION: "20"
+
+jobs:
+  # -------------------------------------------------------------------
+  # Stage 1 — lint + type-check + build (build catches type errors via
+  # `vue-tsc --noEmit && vite build` in package.json).
+  # -------------------------------------------------------------------
+  test:
+    name: vue lint + typecheck + build
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend_vue/package-lock.json
+
+      - name: Install
+        working-directory: frontend_vue
+        run: npm ci
+
+      - name: Type check
+        working-directory: frontend_vue
+        run: npm run type-check
+
+      - name: Lint
+        working-directory: frontend_vue
+        # `npm run lint` is `eslint ... --fix`; in CI we just want a
+        # check, so call eslint directly without `--fix` so a dirty
+        # working tree fails the build instead of silently mutating it.
+        run: npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore
+
+      - name: Build
+        working-directory: frontend_vue
+        run: npm run build
+
+  # -------------------------------------------------------------------
+  # Stage 2 — Docker build + push.
+  # -------------------------------------------------------------------
+  build:
+    name: docker build & push
+    needs: test
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    outputs:
+      image: ${{ steps.bp.outputs.image }}
+      tag:   ${{ steps.bp.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & push
+        id: bp
+        uses: ./.github/actions/build-and-push
+        with:
+          service:       vue-frontend
+          context:       frontend_vue
+          dockerfile:    Dockerfile
+          registry-user: ${{ secrets.REGISTRY_USERNAME }}
+          registry-pass: ${{ secrets.REGISTRY_PASSWORD }}
+
+  # -------------------------------------------------------------------
+  # Stage 3 — rolling update + smoke. The frontend serves static assets
+  # on container :8080 behind a ClusterIP Service on :80 (see
+  # k8s/frontend/service.yaml), so the smoke probe targets / on :80.
+  # -------------------------------------------------------------------
+  deploy:
+    name: rollout + smoke
+    needs: build
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - name: kubectl set image
+        run: |
+          set -euo pipefail
+          kubectl -n "${NAMESPACE}" set image \
+            deployment/"${DEPLOYMENT}" \
+            "${CONTAINER}=${{ needs.build.outputs.image }}"
+
+      - name: kubectl rollout status (<= 120s)
+        run: |
+          kubectl -n "${NAMESPACE}" rollout status \
+            deployment/"${DEPLOYMENT}" --timeout=120s
+
+      - name: Smoke / (in-cluster)
+        run: |
+          set -euo pipefail
+          kubectl run smoke-frontend-${GITHUB_RUN_ID} \
+            --rm -i --restart=Never \
+            --namespace "${NAMESPACE}" \
+            --image=curlimages/curl:8.10.1 \
+            --command -- \
+            curl -fsS --max-time 10 \
+              "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local/"

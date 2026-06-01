@@ -1,0 +1,106 @@
+# =====================================================================
+# CI/CD — Booking service
+#
+# Implements deploy.md §B.10 for the Booking.WebHost slice. Mirrors
+# ci-users.yaml; see that file for inline rationale.
+# =====================================================================
+name: ci-booking
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "AircraftSaaS/Services/Booking.WebHost/**"
+      - "AircraftSaaS/Modules/Booking/**"
+      - "AircraftSaaS/Shared/**"
+      - "AircraftSaaS/Tests/Booking.Tests/**"
+      - "AircraftSaaS/Directory.Build.props"
+      - "AircraftSaaS/AircraftSaaS.sln"
+      - ".github/workflows/ci-booking.yaml"
+      - ".github/actions/build-and-push/**"
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-booking-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SERVICE: booking-service
+  NAMESPACE: ns-booking
+  DEPLOYMENT: booking-service
+  CONTAINER: booking-service
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  test:
+    name: dotnet test (Booking.Tests)
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        working-directory: AircraftSaaS
+        run: dotnet restore Tests/Booking.Tests/Booking.Tests.csproj
+      - name: Test
+        working-directory: AircraftSaaS
+        run: |
+          dotnet test Tests/Booking.Tests/Booking.Tests.csproj \
+            --configuration Release \
+            --logger "trx;LogFileName=booking.trx" \
+            --results-directory ./TestResults
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking-test-results
+          path: AircraftSaaS/TestResults
+          if-no-files-found: ignore
+
+  build:
+    name: docker build & push
+    needs: test
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    outputs:
+      image: ${{ steps.bp.outputs.image }}
+      tag:   ${{ steps.bp.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & push
+        id: bp
+        uses: ./.github/actions/build-and-push
+        with:
+          service:       booking-service
+          context:       AircraftSaaS
+          dockerfile:    Services/Booking.WebHost/Dockerfile
+          registry-user: ${{ secrets.REGISTRY_USERNAME }}
+          registry-pass: ${{ secrets.REGISTRY_PASSWORD }}
+
+  deploy:
+    name: rollout + smoke
+    needs: build
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - name: kubectl set image
+        run: |
+          set -euo pipefail
+          kubectl -n "${NAMESPACE}" set image \
+            deployment/"${DEPLOYMENT}" \
+            "${CONTAINER}=${{ needs.build.outputs.image }}"
+      - name: kubectl rollout status (<= 120s)
+        run: |
+          kubectl -n "${NAMESPACE}" rollout status \
+            deployment/"${DEPLOYMENT}" --timeout=120s
+      - name: Smoke /health (in-cluster)
+        run: |
+          set -euo pipefail
+          kubectl run smoke-booking-${GITHUB_RUN_ID} \
+            --rm -i --restart=Never \
+            --namespace "${NAMESPACE}" \
+            --image=curlimages/curl:8.10.1 \
+            --command -- \
+            curl -fsS --max-time 10 \
+              "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local:8080/health"

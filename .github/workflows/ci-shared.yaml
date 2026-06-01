@@ -1,0 +1,57 @@
+# =====================================================================
+# CI/CD — Shared libraries fan-out.
+#
+# Implements deploy.md §B.10:
+#   "ci-shared.yaml — runs on changes to Shared/* and triggers all three
+#    backend pipelines."
+#
+# Rationale: every backend WebHost's Dockerfile copies Shared/Shared.*
+# csprojs into its build stage (see e.g. Users.WebHost/Dockerfile). A
+# shared library change therefore invalidates all three image layers
+# and could regress any of the three test suites. The path-filtered
+# per-service workflows already cover this (each lists `Shared/**`
+# explicitly), but this fan-out workflow:
+#
+#   * Provides a single explicit trigger surface — humans browsing
+#     Actions see "ci-shared" instead of three parallel ci-users /
+#     ci-fleet / ci-booking runs and wonder if they're coordinated.
+#   * Allows manual `workflow_dispatch` of "rebuild everything" from
+#     the GitHub UI without committing.
+#   * Allows future Shared-library-specific test stages to be added
+#     here without touching the per-service files.
+#
+# The actual builds happen inside the per-service workflows via
+# `workflow_call`; this file's `jobs` are just declarative invocations.
+# =====================================================================
+name: ci-shared
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "AircraftSaaS/Shared/**"
+      - ".github/workflows/ci-shared.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-shared-${{ github.ref }}
+  # Shared-library fan-outs CAN be cancelled if a newer one arrives —
+  # only the newest fan-out's children carry the right SHA into the
+  # cluster anyway.
+  cancel-in-progress: true
+
+jobs:
+  users:
+    name: Trigger ci-users
+    uses: ./.github/workflows/ci-users.yaml
+    secrets: inherit
+
+  fleet:
+    name: Trigger ci-fleet
+    uses: ./.github/workflows/ci-fleet.yaml
+    secrets: inherit
+
+  booking:
+    name: Trigger ci-booking
+    uses: ./.github/workflows/ci-booking.yaml
+    secrets: inherit

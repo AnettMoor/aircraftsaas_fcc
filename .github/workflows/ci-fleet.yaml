@@ -1,0 +1,109 @@
+# =====================================================================
+# CI/CD — Fleet service
+#
+# Implements deploy.md §B.10 for the Fleet.WebHost slice. Mirrors
+# ci-users.yaml; differences are only the path filter, the namespace,
+# the Dockerfile path, and the test project. See ci-users.yaml for
+# inline rationale on the stage layout, concurrency model, and smoke
+# test strategy.
+# =====================================================================
+name: ci-fleet
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "AircraftSaaS/Services/Fleet.WebHost/**"
+      - "AircraftSaaS/Modules/Fleet/**"
+      - "AircraftSaaS/Shared/**"
+      - "AircraftSaaS/Tests/Fleet.Tests/**"
+      - "AircraftSaaS/Directory.Build.props"
+      - "AircraftSaaS/AircraftSaaS.sln"
+      - ".github/workflows/ci-fleet.yaml"
+      - ".github/actions/build-and-push/**"
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-fleet-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SERVICE: fleet-service
+  NAMESPACE: ns-fleet
+  DEPLOYMENT: fleet-service
+  CONTAINER: fleet-service
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  test:
+    name: dotnet test (Fleet.Tests)
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        working-directory: AircraftSaaS
+        run: dotnet restore Tests/Fleet.Tests/Fleet.Tests.csproj
+      - name: Test
+        working-directory: AircraftSaaS
+        run: |
+          dotnet test Tests/Fleet.Tests/Fleet.Tests.csproj \
+            --configuration Release \
+            --logger "trx;LogFileName=fleet.trx" \
+            --results-directory ./TestResults
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fleet-test-results
+          path: AircraftSaaS/TestResults
+          if-no-files-found: ignore
+
+  build:
+    name: docker build & push
+    needs: test
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    outputs:
+      image: ${{ steps.bp.outputs.image }}
+      tag:   ${{ steps.bp.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & push
+        id: bp
+        uses: ./.github/actions/build-and-push
+        with:
+          service:       fleet-service
+          context:       AircraftSaaS
+          dockerfile:    Services/Fleet.WebHost/Dockerfile
+          registry-user: ${{ secrets.REGISTRY_USERNAME }}
+          registry-pass: ${{ secrets.REGISTRY_PASSWORD }}
+
+  deploy:
+    name: rollout + smoke
+    needs: build
+    runs-on: [self-hosted, linux, k8s, aircraft]
+    steps:
+      - name: kubectl set image
+        run: |
+          set -euo pipefail
+          kubectl -n "${NAMESPACE}" set image \
+            deployment/"${DEPLOYMENT}" \
+            "${CONTAINER}=${{ needs.build.outputs.image }}"
+      - name: kubectl rollout status (<= 120s)
+        run: |
+          kubectl -n "${NAMESPACE}" rollout status \
+            deployment/"${DEPLOYMENT}" --timeout=120s
+      - name: Smoke /health (in-cluster)
+        run: |
+          set -euo pipefail
+          kubectl run smoke-fleet-${GITHUB_RUN_ID} \
+            --rm -i --restart=Never \
+            --namespace "${NAMESPACE}" \
+            --image=curlimages/curl:8.10.1 \
+            --command -- \
+            curl -fsS --max-time 10 \
+              "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local:8080/health"

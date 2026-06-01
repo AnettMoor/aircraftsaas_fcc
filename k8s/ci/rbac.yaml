@@ -1,0 +1,181 @@
+# =====================================================================
+# RBAC for the in-cluster CI deployer.
+#
+# Implements deploy.md §B.8 + §5.3:
+#   * `ci-deployer` ServiceAccount lives in ns-ci (the runner Pod runs
+#     under it).
+#   * A namespaced Role allows only the verbs the rolling-update +
+#     smoke-test workflow needs: get/list/watch/patch/update on
+#     Deployments + ReplicaSets, run/exec/log on Pods, and read Jobs +
+#     Services so the migration-job and curl-based smoke tests work.
+#   * The Role is bound into each of the four app namespaces
+#     (ns-users, ns-fleet, ns-booking, ns-frontend). The runner has
+#     NO permissions on ns-infra, ns-registry, ns-ci itself, or any
+#     cluster-scoped resource — least privilege, no cluster-admin.
+#
+# The GitHub Actions workflows use the runner's projected SA token
+# (mounted by Kubernetes into /var/run/secrets/kubernetes.io/serviceaccount/)
+# directly — no kubeconfig is exported off-cluster.
+# =====================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deployer
+  namespace: ns-ci
+---
+# ---------------------------------------------------------------------
+# Role definition (one copy per target namespace because Roles are
+# namespaced; ClusterRole would over-grant).
+# ---------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: ns-users
+rules:
+  # Deployments + ReplicaSets: rollout, scale, status, undo.
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  # Pods + logs: smoke tests, debugging.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  # Pod exec used by the in-cluster curl smoke test (`kubectl run --rm`).
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  # Jobs: re-run migration jobs after a rollout.
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  # Services + ConfigMaps: read-only (smoke tests resolve service FQDNs;
+  # no mutation of cluster-wide config from CI).
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: ns-fleet
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: ns-booking
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: ns-frontend
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+# ---------------------------------------------------------------------
+# RoleBindings: bind the ns-ci/ci-deployer SA into every target ns.
+# ---------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: ns-users
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: ns-ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: ns-fleet
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: ns-ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: ns-booking
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: ns-ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: ns-frontend
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: ns-ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer

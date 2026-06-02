@@ -92,19 +92,26 @@ fi
 echo "[ok] sg-edge.tpl  (operator IP = $OPERATOR_IP)"
 
 # ---------------------------------------------------------------------
-# 3. VM templates -- inline the base64-encoded cloud-init script
-#    into the START_SCRIPT_BASE64 slot. This is what cp.tpl/wk.tpl
-#    reserve with the BASE64_OF_CLOUD_INIT_{CP,WK}_YAML placeholder.
+# 3. VM templates -- inline the base64-encoded bootstrap script into
+#    the START_SCRIPT_BASE64 slot. This is what cp.tpl/wk.tpl reserve
+#    with the BASE64_OF_BOOTSTRAP_{CP,WK} placeholder.
+#
+#    NOTE: START_SCRIPT_BASE64 is executed by one-context AS A SHELL
+#    SCRIPT (it does `bash -c "$(echo "$SCRIPT" | base64 -d)"`). A
+#    previous iteration stuffed `#cloud-config` YAML there; bash
+#    happily parsed the lines as commands ("package_update:: command
+#    not found") and the bootstrap silently no-op'd. The files in
+#    opennebula/context/bootstrap-*.sh are real bash scripts and DO run.
 # ---------------------------------------------------------------------
-CP_INIT_B64="$(base64 -w0 "$SCRIPT_DIR/context/cloud-init.cp.yaml")"
-WK_INIT_B64="$(base64 -w0 "$SCRIPT_DIR/context/cloud-init.wk.yaml")"
+CP_BOOT_B64="$(base64 -w0 "$SCRIPT_DIR/context/bootstrap-cp.sh")"
+WK_BOOT_B64="$(base64 -w0 "$SCRIPT_DIR/context/bootstrap-wk.sh")"
 
-sed "s|BASE64_OF_CLOUD_INIT_CP_YAML|$CP_INIT_B64|" \
+sed "s|BASE64_OF_BOOTSTRAP_CP|$CP_BOOT_B64|" \
     "$SCRIPT_DIR/templates/cp.tpl" > "$OUT_DIR/cp.tpl"
-sed "s|BASE64_OF_CLOUD_INIT_WK_YAML|$WK_INIT_B64|" \
+sed "s|BASE64_OF_BOOTSTRAP_WK|$WK_BOOT_B64|" \
     "$SCRIPT_DIR/templates/wk.tpl" > "$OUT_DIR/wk.tpl"
-echo "[ok] cp.tpl  (cloud-init.cp.yaml inlined, $(wc -c < "$SCRIPT_DIR/context/cloud-init.cp.yaml") bytes)"
-echo "[ok] wk.tpl  (cloud-init.wk.yaml inlined, $(wc -c < "$SCRIPT_DIR/context/cloud-init.wk.yaml") bytes)"
+echo "[ok] cp.tpl  (bootstrap-cp.sh inlined, $(wc -c < "$SCRIPT_DIR/context/bootstrap-cp.sh") bytes)"
+echo "[ok] wk.tpl  (bootstrap-wk.sh inlined, $(wc -c < "$SCRIPT_DIR/context/bootstrap-wk.sh") bytes)"
 
 # ---------------------------------------------------------------------
 # 4. OneFlow service -- YAML to JSON + numeric template ID substitution.
@@ -146,7 +153,7 @@ fi
 #    mention the placeholders in their explanation (e.g. cluster.tpl's
 #    header explains why $NETWORK[...] was REMOVED).
 # ---------------------------------------------------------------------
-LEAKED=$(grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT' "$OUT_DIR" 2>/dev/null \
+LEAKED=$(grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT|BASE64_OF_BOOTSTRAP' "$OUT_DIR" 2>/dev/null \
     | grep -vE ':[[:space:]]*#' || true)
 if [[ -n "$LEAKED" ]]; then
     echo "ERROR: unresolved placeholder(s) remain in NON-COMMENT lines:" >&2

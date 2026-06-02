@@ -25,8 +25,8 @@ Once the cluster is up, [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/ov
 | [`security-groups/cluster.tpl`](security-groups/cluster.tpl) | Intra-cluster control-plane + kubelet + Calico ports |
 | [`security-groups/edge.tpl`](security-groups/edge.tpl) | Public `:80` / `:443` + restricted `:6443` (cp-1 only) |
 | [`security-groups/nodeport.tpl`](security-groups/nodeport.tpl) | `30000-32767/tcp` from the edge NIC only (wk-* only) |
-| [`context/cloud-init.cp.yaml`](context/cloud-init.cp.yaml) | First-boot bootstrap for cp-1 (kubeadm init, Calico, Ingress) |
-| [`context/cloud-init.wk.yaml`](context/cloud-init.wk.yaml) | First-boot bootstrap for wk-* (kubeadm join) |
+| [`context/bootstrap-cp.sh`](context/bootstrap-cp.sh) | First-boot **bash script** for cp-1 (kubeadm init, Calico, Ingress, publishes `KUBECONFIG_B64` + `K8S_JOIN_COMMAND` via `onegate vm update`). Inlined into `CONTEXT.START_SCRIPT_BASE64` by [`render.sh`](render.sh). |
+| [`context/bootstrap-wk.sh`](context/bootstrap-wk.sh) | First-boot **bash script** for wk-* (polls OneGate for the join command, then `kubeadm join`). |
 | [`service/aircraft.oneflow.yaml`](service/aircraft.oneflow.yaml) | Source YAML for the OneFlow service template (converted to JSON by `render.sh`) |
 | [`runbook.md`](runbook.md) | Extended verification / troubleshooting steps |
 
@@ -155,11 +155,11 @@ onevm show $CP_ID --json \
 if [ ! -s ~/.kube/aircraft.config ]; then
   echo "ERROR: KUBECONFIG_B64 not in cp-1's USER_TEMPLATE yet."
   echo
-  echo "Reason: cloud-init wrote it back via 'onegate vm update'."
+  echo "Reason: bootstrap-cp.sh writes it back via 'onegate vm update'."
   echo "If the field is empty, one of the following is true:"
-  echo "  (a) cloud-init is still running (kubeadm init + Calico = 3-6 min)"
-  echo "  (b) cloud-init failed before reaching runcmd step 7 in"
-  echo "      opennebula/context/cloud-init.cp.yaml (line 164)"
+  echo "  (a) bootstrap is still running (kubeadm init + Calico = 4-7 min)"
+  echo "  (b) bootstrap-cp.sh failed before reaching step 9 (publish KUBECONFIG)"
+  echo "      Inspect /var/log/aircraft-cp-bootstrap.log on the VM."
   echo "  (c) OneGate is not reachable from the VM (token / endpoint missing"
   echo "      in CONTEXT) so 'onegate vm update' silently no-op'd"
   echo
@@ -216,7 +216,8 @@ From here, the application stack is deployed via the standard k8s overlay; see [
 | `KUBECONFIG_B64` never appears in cp-1's USER_TEMPLATE, `K8S_JOIN_COMMAND` also missing, `onevm show $CP_ID \| grep ONEGATE_ENDPOINT` returns empty | Original `cp.tpl` / `wk.tpl` `CONTEXT` blocks lacked `TOKEN="YES"` and `REPORT_READY="YES"`, so OpenNebula never injected `ONEGATE_ENDPOINT` + `TOKENTXT`. Every `onegate vm update` in `cloud-init.cp.yaml` (lines 160 & 164) silently failed. | Added `TOKEN="YES"` and `REPORT_READY="YES"` to the `CONTEXT` block of both [`templates/cp.tpl`](templates/cp.tpl) and [`templates/wk.tpl`](templates/wk.tpl). **Existing instantiated VMs must be terminated and re-instantiated** — context is fixed at boot, not editable in-place. See "Recovering from a broken cluster instantiation" below. |
 | `jq: error (at <stdin>:220): Cannot index array with string "IP"` in the kubeconfig fallback block | `jq -r '.VM.TEMPLATE.NIC.IP // .VM.TEMPLATE.NIC[0].IP'` — `jq`'s `//` only handles `null`/`false`, not runtime type errors, so a multi-NIC VM (`NIC` is an array) aborts before the fallback fires. | Replaced with type-aware expression: `(.VM.TEMPLATE.NIC \| if type=="array" then .[0].IP else .IP end) // empty` |
 | `The Service template specifies User Inputs but no values have been found` from `oneflow-template instantiate` | Two stacked bugs: (1) the JSON was wrapped in `merge_template` (that wrapper is for `oneflow-template create`, not `instantiate`); (2) OpenNebula 7.x `oneflow-template instantiate` has **no `--params` / `--custom_attr` / `-i` flag** — the help is just `instantiate <templateid> [<file>]`. Passing flags returns `invalid option`. | Runbook now generates a JSON with **bare** top-level `custom_attrs_values` and passes it as a **positional file argument** (or via stdin): `oneflow-template instantiate $TEMPLATE_ID /tmp/onerender/instantiate.json`. Also added a `grep -q OPERATOR_IP` sanity check to catch un-expanded shell variables in the heredoc. |
-| VMs are RUNNING, `ONEGATE_ENDPOINT` is populated, but the endpoint points at `http://10.10.0.1:5030` (or similar bridge IP that VMs can't reach) → `KUBECONFIG_B64` and `K8S_JOIN_COMMAND` are never written back to USER_TEMPLATE. | On a **minione** lab, OneGate listens only on the `minionebr` bridge (`172.16.100.1:5030`). The original vNet design used an isolated `aircraft-br0`/`10.10.0.0/24` bridge that has no route to `172.16.100.1`, so every `onegate vm update` from inside the VM times out and the bootstrap appears to hang at "cloud-init RUNNING but no KUBECONFIG_B64". | The vNet now rides on `minionebr` directly (`BRIDGE = "minionebr"`, `172.16.100.0/24`). All three security groups switched to `172.16.100.0/24` as the cluster CIDR. `cloud-init.cp.yaml` certSAN updated to `172.16.100.50`. Production deployments should re-pin to `aircraft-br0` per the comment block in [`vnet/aircraft-vnet.tpl`](vnet/aircraft-vnet.tpl). |
+| VMs are RUNNING, `ONEGATE_ENDPOINT` is populated, but the endpoint points at `http://10.10.0.1:5030` (or similar bridge IP that VMs can't reach) → `KUBECONFIG_B64` and `K8S_JOIN_COMMAND` are never written back to USER_TEMPLATE. | On a **minione** lab, OneGate listens only on the `minionebr` bridge (`172.16.100.1:5030`). The original vNet design used an isolated `aircraft-br0`/`10.10.0.0/24` bridge that has no route to `172.16.100.1`, so every `onegate vm update` from inside the VM times out and the bootstrap appears to hang at "RUNNING but no KUBECONFIG_B64". | The vNet now rides on `minionebr` directly (`BRIDGE = "minionebr"`, `172.16.100.0/24`). All three security groups switched to `172.16.100.0/24` as the cluster CIDR. `bootstrap-cp.sh` auto-detects the primary NIC IP for `certSANs`. Production deployments should re-pin to `aircraft-br0` per the comment block in [`vnet/aircraft-vnet.tpl`](vnet/aircraft-vnet.tpl). |
+| VMs are RUNNING with correct `ONEGATE_ENDPOINT`, but `TOKENTXT` stays `null` indefinitely, `KUBECONFIG_B64` / `K8S_JOIN_COMMAND` never appear, `virsh console one-<id>` returns `cannot find character device <null>`. | The old `context/cloud-init.cp.yaml` was a `#cloud-config` YAML file, but OpenNebula's `CONTEXT.START_SCRIPT_BASE64` is a **shell-script field** — one-context decodes it and pipes it to `bash`, NOT to cloud-init. Every YAML line became a "command not found" error, so kubeadm init never ran and no `onegate vm update` was ever called (hence `TOKENTXT` stayed lazily un-generated). | Replaced YAML files with proper bash scripts: [`context/bootstrap-cp.sh`](context/bootstrap-cp.sh) and [`context/bootstrap-wk.sh`](context/bootstrap-wk.sh). Both use `set -euxo pipefail` and write a trace log to `/var/log/aircraft-<role>-bootstrap.log` for post-mortem. Added a `RAW` block to [`templates/cp.tpl`](templates/cp.tpl) and [`templates/wk.tpl`](templates/wk.tpl) so `virsh console` now works for live debugging. |
 
 ---
 

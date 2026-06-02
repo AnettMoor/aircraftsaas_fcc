@@ -60,12 +60,26 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
+# RAW serial console -- enables `sudo virsh console one-<id>` from the
+# OpenNebula host for cloud-init debugging. Without this, virsh emits
+# "internal error: cannot find character device <null>" and the only
+# debugging path is via VNC.
+RAW = [
+    TYPE = "kvm",
+    DATA = "<serial type='pty'><target port='0'/></serial><console type='pty'><target type='serial' port='0'/></console>"
+]
+
 # IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
 # OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The
-# `onegate vm update` calls in cloud-init.cp.yaml (steps 6 and 7) use
+# `onegate vm update` calls in bootstrap-cp.sh (steps 8 and 9) use
 # those to publish K8S_JOIN_COMMAND and KUBECONFIG_B64 back to
 # USER_TEMPLATE. Without them, onegate silently fails and the operator
 # observes "KUBECONFIG_B64 not in USER_TEMPLATE yet" forever.
+#
+# START_SCRIPT_BASE64 is executed by one-context as a BASH SCRIPT, NOT
+# as cloud-init YAML. opennebula/context/bootstrap-cp.sh is therefore
+# a plain bash script (#!/usr/bin/env bash); render.sh base64-encodes
+# it and substitutes the BASE64_OF_BOOTSTRAP_CP placeholder below.
 CONTEXT = [
     NETWORK             = "YES",
     TOKEN               = "YES",
@@ -75,7 +89,7 @@ CONTEXT = [
     K8S_EDGE_HOST       = "aircraft.example.com",
     K8S_VERSION         = "1.30",
     POD_CIDR            = "192.168.0.0/16",
-    START_SCRIPT_BASE64 = "BASE64_OF_CLOUD_INIT_CP_YAML"
+    START_SCRIPT_BASE64 = "BASE64_OF_BOOTSTRAP_CP"
 ]
 
 USER_INPUTS = [

@@ -47,12 +47,23 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
+RAW = [
+    TYPE = "kvm",
+    DATA = "<serial type='pty'><target port='0'/></serial><console type='pty'><target type='serial' port='0'/></console>"
+]
+
 # IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
 # OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The
-# wait-for-join-command.sh helper (cloud-init.wk.yaml line 84) calls
-# `onegate vm show` to poll cp-1's USER_TEMPLATE for K8S_JOIN_COMMAND.
-# Without these, onegate exits non-zero with "ONEGATE_ENDPOINT not set"
+# poll loop in bootstrap-wk.sh calls `onegate vm show` / `onegate
+# service show` to find the K8S_JOIN_COMMAND that cp-1 published.
+# Without these, onegate exits non-zero ("ONEGATE_ENDPOINT not set")
 # and the worker hangs at the join step.
+#
+# K8S_CONTROL_PLANE_VM here is the OneFlow-generated VM name. OneFlow
+# auto-names role VMs as "<role>_<cardinality-index>_(service_<SID>)",
+# so the cp is "controlplane_0_(service_<SID>)". We pass the partial
+# match "controlplane" and bootstrap-wk.sh has a fallback that picks
+# the VM by ROLE_NAME=controlplane via `onegate service show`.
 CONTEXT = [
     NETWORK                 = "YES",
     TOKEN                   = "YES",
@@ -60,9 +71,9 @@ CONTEXT = [
     SSH_PUBLIC_KEY          = "$USER[SSH_PUBLIC_KEY]",
     K8S_NODE_ROLE           = "worker",
     K8S_VERSION             = "1.30",
-    K8S_CONTROL_PLANE_VM    = "cp-1",
+    K8S_CONTROL_PLANE_VM    = "controlplane",
     K8S_JOIN_COMMAND_SOURCE = "USER_TEMPLATE/K8S_JOIN_COMMAND",
-    START_SCRIPT_BASE64     = "BASE64_OF_CLOUD_INIT_WK_YAML"
+    START_SCRIPT_BASE64     = "BASE64_OF_BOOTSTRAP_WK"
 ]
 
 USER_INPUTS = [

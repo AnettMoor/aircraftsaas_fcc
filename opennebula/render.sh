@@ -113,8 +113,10 @@ echo "[ok] wk.tpl  (cloud-init.wk.yaml inlined, $(wc -c < "$SCRIPT_DIR/context/c
 #    render the oneflow file -- in that case skip with a warning so the
 #    operator can re-run after `onetemplate create`.
 # ---------------------------------------------------------------------
-CP_ID=$(onetemplate list --no-header 2>/dev/null | awk '$2=="aircraft-cp" {print $1; exit}')
-WK_ID=$(onetemplate list --no-header 2>/dev/null | awk '$2=="aircraft-wk" {print $1; exit}')
+# onetemplate list columns: ID USER GROUP NAME REGTIME
+# The NAME is column 4 (not 2 -- USER and GROUP sit between ID and NAME).
+CP_ID=$(onetemplate list --no-header 2>/dev/null | awk '$4=="aircraft-cp" {print $1; exit}')
+WK_ID=$(onetemplate list --no-header 2>/dev/null | awk '$4=="aircraft-wk" {print $1; exit}')
 
 if [[ -z "$CP_ID" || -z "$WK_ID" ]]; then
     cat >&2 <<EOF

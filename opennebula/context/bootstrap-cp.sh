@@ -146,11 +146,26 @@ step "4-kubeadm-init"
 PRIMARY_IP=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -1)
 echo "Primary IP detected: $PRIMARY_IP"
 
+# controlPlaneEndpoint MUST be a DNS name or IP that *every* node
+# (cp + workers) can resolve. On a minione lab there is no public DNS
+# for K8S_EDGE_HOST=aircraft.example.com, so we use the cp's primary
+# IP directly. K8S_EDGE_HOST is still added to certSANs so the operator
+# can wire a real DNS later without re-issuing the API server cert.
+#
+# If `kubeadm init` is re-run on a half-bootstrapped node (e.g. after a
+# previous attempt failed at line 169), the manifests, etcd directory
+# and listener ports linger from the first try. Reset before re-init.
+if [[ -d /etc/kubernetes/manifests ]] && \
+   compgen -G "/etc/kubernetes/manifests/*.yaml" >/dev/null; then
+    echo "Detected previous half-init; running kubeadm reset before retry."
+    kubeadm reset -f --cri-socket=unix:///run/containerd/containerd.sock || true
+fi
+
 cat >/root/kubeadm-config.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 kubernetesVersion: "v${K8S_VERSION}.0"
-controlPlaneEndpoint: "${K8S_EDGE_HOST}:6443"
+controlPlaneEndpoint: "${PRIMARY_IP}:6443"
 networking:
   podSubnet: "${POD_CIDR}"
   serviceSubnet: "10.96.0.0/12"

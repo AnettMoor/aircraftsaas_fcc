@@ -47,8 +47,16 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
+# IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
+# OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The
+# wait-for-join-command.sh helper (cloud-init.wk.yaml line 84) calls
+# `onegate vm show` to poll cp-1's USER_TEMPLATE for K8S_JOIN_COMMAND.
+# Without these, onegate exits non-zero with "ONEGATE_ENDPOINT not set"
+# and the worker hangs at the join step.
 CONTEXT = [
     NETWORK                 = "YES",
+    TOKEN                   = "YES",
+    REPORT_READY            = "YES",
     SSH_PUBLIC_KEY          = "$USER[SSH_PUBLIC_KEY]",
     K8S_NODE_ROLE           = "worker",
     K8S_VERSION             = "1.30",

@@ -60,8 +60,16 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
+# IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
+# OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The
+# `onegate vm update` calls in cloud-init.cp.yaml (steps 6 and 7) use
+# those to publish K8S_JOIN_COMMAND and KUBECONFIG_B64 back to
+# USER_TEMPLATE. Without them, onegate silently fails and the operator
+# observes "KUBECONFIG_B64 not in USER_TEMPLATE yet" forever.
 CONTEXT = [
     NETWORK             = "YES",
+    TOKEN               = "YES",
+    REPORT_READY        = "YES",
     SSH_PUBLIC_KEY      = "$USER[SSH_PUBLIC_KEY]",
     K8S_NODE_ROLE       = "control-plane",
     K8S_EDGE_HOST       = "aircraft.example.com",

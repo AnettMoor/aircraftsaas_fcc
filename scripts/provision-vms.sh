@@ -450,10 +450,26 @@ else
     BRC=$(onevm show "$CP_VMID" --json 2>/dev/null \
           | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_RC // empty')
     if [[ -n "$BRC" && "$BRC" != "0" ]]; then
-      TAIL=$(onevm show "$CP_VMID" --json 2>/dev/null \
-             | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_LOG_TAIL // "<no tail>"')
+      # bootstrap-cp.sh publishes the failure log as base64 across
+      # BOOTSTRAP_LOG_B64_1..4 chunks (onegate's per-key length cap
+      # is ~4 KiB). Concatenate then decode.
+      TAIL=$(onevm show "$CP_VMID" --json 2>/dev/null | jq -r '
+        .VM.USER_TEMPLATE
+        | ((.BOOTSTRAP_LOG_B64_1 // "")
+         + (.BOOTSTRAP_LOG_B64_2 // "")
+         + (.BOOTSTRAP_LOG_B64_3 // "")
+         + (.BOOTSTRAP_LOG_B64_4 // ""))' \
+        | base64 -d 2>/dev/null || true)
+      # Fall back to the legacy single-line field if a pre-base64 cp
+      # template is still running.
+      if [[ -z "$TAIL" ]]; then
+        TAIL=$(onevm show "$CP_VMID" --json 2>/dev/null \
+               | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_LOG_TAIL // "<no log captured>"')
+      fi
       die "cp bootstrap FAILED — rc=${BRC} ${SNAP}
-log tail: ${TAIL}"
+---- last 200 lines of /var/log/aircraft-cp-bootstrap.log ----
+${TAIL}
+--------------------------------------------------------------"
     fi
     log "  waiting on cp bootstrap... ${SNAP}"
     sleep 10

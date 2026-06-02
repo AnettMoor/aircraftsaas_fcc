@@ -38,14 +38,25 @@ report_failure() {
     local rc=$?
     local lineno=${1:-unknown}
     set +e
-    local tail80
-    # OpenNebula USER_TEMPLATE values must be plain ASCII without
-    # newlines or quotes; flatten the log tail to a single line.
-    tail80=$(tail -n 80 /var/log/aircraft-cp-bootstrap.log 2>/dev/null \
-             | tr '\n' '|' | tr -d '"\\' | sed 's/[^[:print:]|]/?/g' | cut -c1-3500)
+    # OpenNebula USER_TEMPLATE rejects values containing newlines,
+    # quotes, or backslashes; the previous tr/sed flattening produced
+    # output that onegate silently dropped (or truncated at the first
+    # `|`), so the operator saw <no tail>. Base64 is a safe transport:
+    # it is pure [A-Za-z0-9+/=], has no shell-special chars, and the
+    # operator can `| base64 -d` it back to a readable log.
+    #
+    # Onegate has an undocumented value-length cap (~4 KiB observed on
+    # OpenNebula 7.x), so split the b64 stream across 4 USER_TEMPLATE
+    # keys (LOG_B64_1..LOG_B64_4) of <=3500 chars each = ~10 KiB raw
+    # log, plenty for the last ~200 lines.
+    local b64
+    b64=$(tail -n 200 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
     onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
     onegate vm update --data "BOOTSTRAP_FAIL_LINE=${lineno}" || true
-    onegate vm update --data "BOOTSTRAP_LOG_TAIL=${tail80}"  || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_1=${b64:0:3500}"     || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_2=${b64:3500:3500}"  || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_3=${b64:7000:3500}"  || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_4=${b64:10500:3500}" || true
     exit $rc
 }
 trap 'report_failure $LINENO' ERR

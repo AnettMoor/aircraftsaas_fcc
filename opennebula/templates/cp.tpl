@@ -53,9 +53,10 @@ MEMORY           = "4096"
 # a space). Change the value below to whatever `oneimage list` shows
 # for your Ubuntu 22.04 LTS image. The runbook documents the override.
 DISK = [
-    IMAGE      = "ubuntu-2204-lts",
-    SIZE       = "40960",
-    DEV_PREFIX = "vd"
+    IMAGE       = "Ubuntu 22.04",
+    IMAGE_UNAME = "oneadmin",
+    SIZE        = "40960",
+    DEV_PREFIX  = "vd"
 ]
 
 # NETWORK_UNAME pins lookup to the vNet's owner. Without it,

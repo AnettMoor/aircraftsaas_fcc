@@ -32,9 +32,10 @@ MEMORY           = "2048"
 
 # NOTE: same image-name caveat as cp.tpl -- must match `oneimage list`.
 DISK = [
-    IMAGE      = "ubuntu-2204-lts",
-    SIZE       = "40960",
-    DEV_PREFIX = "vd"
+    IMAGE       = "Ubuntu 22.04",
+    IMAGE_UNAME = "oneadmin",
+    SIZE        = "40960",
+    DEV_PREFIX  = "vd"
 ]
 
 # NETWORK_UNAME: see comment in cp.tpl. OneFlow services run as their

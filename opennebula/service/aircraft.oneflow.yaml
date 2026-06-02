@@ -28,9 +28,10 @@
 #
 # Apply with:
 #   opennebula/render.sh
-#   oneflow-template create opennebula/service/aircraft.oneflow.json
-#   oneflow-template instantiate aircraft \
-#       --custom_attr OPERATOR_CIDR=<your-public-ip>/32
+#   oneflow-template create /tmp/onerender/aircraft.oneflow.json
+#   # OpenNebula 7.x: instantiate takes no flags; pass JSON with
+#   # top-level `custom_attrs_values` as a positional file argument.
+#   oneflow-template instantiate <template-id> /tmp/onerender/instantiate.json
 #
 # Pre-requisites (already created via the runbook):
 #   * onetemplate "aircraft-cp"        (opennebula/templates/cp.tpl)

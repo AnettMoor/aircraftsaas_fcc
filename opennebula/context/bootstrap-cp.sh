@@ -28,12 +28,42 @@ exec > >(tee -a /var/log/aircraft-cp-bootstrap.log) 2>&1
 echo "=== aircraft-cp bootstrap starting at $(date -Is) ==="
 
 # ---------------------------------------------------------------------
+# Error reporter: on any failure, publish the last ~80 lines of the
+# bootstrap log into USER_TEMPLATE.BOOTSTRAP_LOG_TAIL so the operator
+# can read it from the OpenNebula host without VNC/sudo/serial console.
+# Also publish BOOTSTRAP_STEP at every major step (heartbeat) so even
+# a hang (rather than a crash) leaves a forensic breadcrumb.
+# ---------------------------------------------------------------------
+report_failure() {
+    local rc=$?
+    local lineno=${1:-unknown}
+    set +e
+    local tail80
+    # OpenNebula USER_TEMPLATE values must be plain ASCII without
+    # newlines or quotes; flatten the log tail to a single line.
+    tail80=$(tail -n 80 /var/log/aircraft-cp-bootstrap.log 2>/dev/null \
+             | tr '\n' '|' | tr -d '"\\' | sed 's/[^[:print:]|]/?/g' | cut -c1-3500)
+    onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
+    onegate vm update --data "BOOTSTRAP_FAIL_LINE=${lineno}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_TAIL=${tail80}"  || true
+    exit $rc
+}
+trap 'report_failure $LINENO' ERR
+
+step() {
+    echo "=== STEP: $1 ==="
+    onegate vm update --data "BOOTSTRAP_STEP=$1" 2>/dev/null || true
+}
+
+# ---------------------------------------------------------------------
 # Defensive: defaults if CONTEXT didn't inject them (shouldn't happen,
 # but fail loud rather than silently install 1.30.0 over nothing).
 # ---------------------------------------------------------------------
 : "${K8S_VERSION:?K8S_VERSION missing from CONTEXT}"
 : "${K8S_EDGE_HOST:?K8S_EDGE_HOST missing from CONTEXT}"
 : "${POD_CIDR:=192.168.0.0/16}"
+
+step "1-prep-kernel"
 
 # ---------------------------------------------------------------------
 # 1. Kernel modules + sysctls required by kubelet + Calico.
@@ -55,6 +85,8 @@ sysctl --system
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
 
+step "2-apt-kube"
+
 # ---------------------------------------------------------------------
 # 2. containerd + Kubernetes apt repos.
 # ---------------------------------------------------------------------
@@ -73,6 +105,8 @@ EOF
 apt-get update -y
 apt-get install -y "kubelet=${K8S_VERSION}.*" "kubeadm=${K8S_VERSION}.*" "kubectl=${K8S_VERSION}.*"
 apt-mark hold kubelet kubeadm kubectl
+
+step "3-containerd-config"
 
 # ---------------------------------------------------------------------
 # 3. containerd config -- systemd cgroup driver + in-cluster registry trust.
@@ -100,6 +134,8 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now containerd
+
+step "4-kubeadm-init"
 
 # ---------------------------------------------------------------------
 # 4. kubeadm config + init.
@@ -138,6 +174,8 @@ chown -R root:root /root/.kube
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
+step "5-calico"
+
 # ---------------------------------------------------------------------
 # 5. Calico (Tigera operator + Installation).
 # ---------------------------------------------------------------------
@@ -158,6 +196,8 @@ spec:
 EOF
 kubectl apply -f /root/calico-installation.yaml
 
+step "6-metrics-server"
+
 # ---------------------------------------------------------------------
 # 6. metrics-server (for HPAs).
 # ---------------------------------------------------------------------
@@ -166,11 +206,15 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/down
 kubectl -n kube-system patch deployment metrics-server --type=json \
     -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
 
+step "7-ingress-nginx"
+
 # ---------------------------------------------------------------------
 # 7. NGINX Ingress controller.
 # ---------------------------------------------------------------------
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
 kubectl label namespace ingress-nginx name=ns-gateway --overwrite
+
+step "8-publish-join"
 
 # ---------------------------------------------------------------------
 # 8. Publish K8S_JOIN_COMMAND to USER_TEMPLATE for workers.
@@ -179,6 +223,8 @@ JOIN=$(kubeadm token create --ttl 0 --print-join-command)
 echo "Join command generated, length=${#JOIN}"
 onegate vm update --data "K8S_JOIN_COMMAND=${JOIN}"
 
+step "9-publish-kubeconfig"
+
 # ---------------------------------------------------------------------
 # 9. Publish kubeconfig (with server: rewritten to the edge host) to
 #    USER_TEMPLATE for the operator's kubectl.
@@ -186,5 +232,7 @@ onegate vm update --data "K8S_JOIN_COMMAND=${JOIN}"
 KUBECONFIG_REWRITTEN=$(sed "s|server: https://[0-9.]*:6443|server: https://${K8S_EDGE_HOST}:6443|" \
                           /etc/kubernetes/admin.conf | base64 -w0)
 onegate vm update --data "KUBECONFIG_B64=${KUBECONFIG_REWRITTEN}"
+
+step "DONE"
 
 echo "=== aircraft-cp bootstrap finished at $(date -Is) ==="

@@ -16,8 +16,31 @@ set -euxo pipefail
 exec > >(tee -a /var/log/aircraft-wk-bootstrap.log) 2>&1
 echo "=== aircraft-wk bootstrap starting at $(date -Is) ==="
 
+# Failure reporter: writes log tail + rc + fail-line + last step into
+# USER_TEMPLATE so the host-side operator can see WHY without VNC/sudo.
+report_failure() {
+    local rc=$?
+    local lineno=${1:-unknown}
+    set +e
+    local tail80
+    tail80=$(tail -n 80 /var/log/aircraft-wk-bootstrap.log 2>/dev/null \
+             | tr '\n' '|' | tr -d '"\\' | sed 's/[^[:print:]|]/?/g' | cut -c1-3500)
+    onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
+    onegate vm update --data "BOOTSTRAP_FAIL_LINE=${lineno}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_TAIL=${tail80}"  || true
+    exit $rc
+}
+trap 'report_failure $LINENO' ERR
+
+step() {
+    echo "=== STEP: $1 ==="
+    onegate vm update --data "BOOTSTRAP_STEP=$1" 2>/dev/null || true
+}
+
 : "${K8S_VERSION:?K8S_VERSION missing from CONTEXT}"
 : "${K8S_CONTROL_PLANE_VM:?K8S_CONTROL_PLANE_VM missing from CONTEXT}"
+
+step "1-prep-kernel"
 
 # ---------------------------------------------------------------------
 # 1. Kernel + containerd + kube* (same prep as cp).
@@ -79,6 +102,8 @@ EOF
 systemctl daemon-reload
 systemctl enable --now containerd
 
+step "2-poll-join"
+
 # ---------------------------------------------------------------------
 # 2. Poll OneGate for the join command. cp-1's bootstrap publishes it
 #    as USER_TEMPLATE/K8S_JOIN_COMMAND once kubeadm init finishes.
@@ -110,11 +135,15 @@ if [[ -z "$JOIN" ]]; then
     exit 1
 fi
 
+step "3-kubeadm-join"
+
 # ---------------------------------------------------------------------
 # 3. kubeadm join.
 # ---------------------------------------------------------------------
 echo "$JOIN --cri-socket=unix:///run/containerd/containerd.sock" > /root/join-command.sh
 chmod +x /root/join-command.sh
 bash /root/join-command.sh
+
+step "DONE"
 
 echo "=== aircraft-wk bootstrap finished at $(date -Is) ==="

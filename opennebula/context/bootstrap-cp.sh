@@ -59,6 +59,23 @@ report_failure() {
     # `tail -c 20000` (raw bytes) instead: ~20 KiB raw -> ~27 KiB b64,
     # fits cleanly across 8 chunks, and the last bytes (= the actual
     # error) are guaranteed to be included.
+    # Capture extra forensic state in the log BEFORE we snapshot it,
+    # so the operator can see WHY apiserver died (OOM kills, static-pod
+    # state, kubelet flaps). All blank-output `|| true` so this is safe
+    # to invoke even mid-bootstrap when none of these tools exist yet.
+    {
+        echo "----- BOOTSTRAP DIAG @ $(date -Is) -----"
+        echo "----- free -h -----"
+        free -h 2>&1 || true
+        echo "----- dmesg | grep -iE 'oom|killed process|memory cgroup' | tail -30 -----"
+        dmesg 2>&1 | grep -iE 'oom|killed process|memory cgroup' | tail -30 || true
+        echo "----- systemctl is-active kubelet containerd -----"
+        systemctl is-active kubelet containerd 2>&1 || true
+        echo "----- crictl ps -a 2>/dev/null | head -30 -----"
+        crictl ps -a 2>/dev/null | head -30 || true
+        echo "----- journalctl -u kubelet -n 30 --no-pager -----"
+        journalctl -u kubelet -n 30 --no-pager 2>&1 || true
+    } >>/var/log/aircraft-cp-bootstrap.log 2>&1 || true
     local b64
     b64=$(tail -c 20000 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
     onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
@@ -104,6 +121,57 @@ retry() {
         sleep "$delay"
         delay=$((delay*2))
     done
+}
+
+# Block until kube-apiserver is alive AND its /readyz endpoint says "ok".
+# Used between every post-kubeadm step because, on a 4 GiB cp under
+# Calico install pressure, kube-apiserver routinely drops off the bus
+# for 30-120s at a time (most often because etcd's fsync stalls long
+# enough for the apiserver liveness probe to fail and the kubelet to
+# restart the static pod; sometimes because the kernel OOM-killer
+# reaped a different pod and freed memory the apiserver was waiting
+# on). The previous bootstrap blew straight through these outages and
+# died at the next `kubectl apply --validate=true`, because validation
+# needs `GET /openapi/v2` which is the slowest-to-restore apiserver
+# endpoint after a restart (it lazy-loads from the discovery cache).
+#
+# Strategy: probe /readyz on 127.0.0.1:6443 every 5s for up to ${1:-300}s.
+# If it returns "ok" we proceed. If it doesn't, we dump diagnostics
+# (kubelet status, crictl ps for static pods, dmesg tail for OOM kills,
+# free -h for current pressure) and let `set -e` blow up the bootstrap
+# at the next kubectl call -- which now produces a USEFUL log instead
+# of generic "connection refused".
+await_apiserver() {
+    local timeout=${1:-300} elapsed=0
+    echo "[await_apiserver] polling /readyz (timeout=${timeout}s)..."
+    while (( elapsed < timeout )); do
+        if kubectl get --raw=/readyz 2>/dev/null | grep -q '^ok$'; then
+            echo "[await_apiserver] /readyz OK after ${elapsed}s"
+            return 0
+        fi
+        sleep 5
+        elapsed=$((elapsed+5))
+    done
+    echo "[await_apiserver] /readyz STILL not OK after ${timeout}s -- collecting diagnostics" >&2
+    echo "---- free -h ----" >&2; free -h >&2 || true
+    echo "---- dmesg | grep -iE 'oom|killed process' | tail -20 ----" >&2
+    dmesg 2>/dev/null | grep -iE 'oom|killed process' | tail -20 >&2 || true
+    echo "---- systemctl status kubelet (no pager) ----" >&2
+    systemctl status kubelet --no-pager 2>&1 | tail -20 >&2 || true
+    echo "---- crictl ps -a | head -40 ----" >&2
+    crictl ps -a 2>/dev/null | head -40 >&2 || true
+    echo "---- journalctl -u kubelet | tail -40 ----" >&2
+    journalctl -u kubelet --no-pager -n 40 2>&1 >&2 || true
+    return 1
+}
+
+# kubectl apply wrapper: `--validate=false` skips the GET /openapi/v2
+# preflight that fails first whenever apiserver flaps (because openapi
+# is the slowest discovery endpoint to come back online after an
+# apiserver restart). The CRD/Deployment manifests we apply are
+# upstream-blessed and don't need client-side schema validation.
+kapply() {
+    kubectl apply --validate=false "$@"
 }
 
 # ---------------------------------------------------------------------
@@ -295,14 +363,7 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 # all readiness checks (etcd, informers, apiserver-storage) pass. This
 # is the precondition kubeadm's own --timeout flags assume is already
 # met when entering addon phases, but on minione it routinely isn't.
-echo "[kubeadm] waiting for apiserver /readyz to be healthy..."
-for i in $(seq 1 60); do
-    if kubectl get --raw=/readyz 2>/dev/null | grep -q '^ok$'; then
-        echo "[kubeadm] apiserver /readyz OK after ${i}*5s"
-        break
-    fi
-    sleep 5
-done
+await_apiserver 300
 
 # Now install the addons. Both `kubeadm init phase addon *` commands are
 # idempotent (re-applies the same manifest), so the retry helper is safe.
@@ -327,7 +388,7 @@ step "5-calico"
 #   "resource mapping not found for name: default ... no matches for kind
 #    Installation in version operator.tigera.io/v1"
 # ---------------------------------------------------------------------
-retry kubectl apply --server-side --force-conflicts \
+retry kapply --server-side --force-conflicts \
     -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
 
 # Wait up to 2 minutes for the Installation CRD to be Established.
@@ -356,7 +417,7 @@ spec:
         encapsulation: VXLAN
         natOutgoing: Enabled
 EOF
-kubectl apply --server-side --force-conflicts -f /root/calico-installation.yaml
+retry kapply --server-side --force-conflicts -f /root/calico-installation.yaml
 
 # Wait for the tigera-operator to materialise the `calico-system`
 # namespace (the operator reconciles the Installation CR and creates
@@ -373,12 +434,18 @@ done
 # converge eventually and bootstrap should not block forever on this.
 kubectl -n calico-system rollout status ds/calico-node --timeout=300s || true
 
+# Calico install hot-patches the apiserver (admission webhooks etc.)
+# and on a 4 GiB cp this routinely makes the apiserver flap for 30-120s
+# afterwards. Block here until /readyz comes back BEFORE we hammer it
+# with the next round of `kubectl apply`s (metrics-server, ingress-nginx).
+await_apiserver 600
+
 step "6-metrics-server"
 
 # ---------------------------------------------------------------------
 # 6. metrics-server (for HPAs).
 # ---------------------------------------------------------------------
-retry kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml
+retry kapply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml
 
 # Wait for the metrics-server Deployment object to actually exist before
 # patching it. `kubectl apply` returns immediately after the API accepts
@@ -434,7 +501,8 @@ step "7-ingress-nginx"
 # ---------------------------------------------------------------------
 # 7. NGINX Ingress controller.
 # ---------------------------------------------------------------------
-retry kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+await_apiserver 300
+retry kapply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
 
 # Wait for the namespace to exist before labelling it (avoids races on
 # slow apiservers right after Calico has just hot-patched admission).

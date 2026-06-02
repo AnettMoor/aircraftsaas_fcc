@@ -36,9 +36,17 @@ DESCRIPTION      = "Aircraft SaaS Kubernetes control-plane (1 cp, 2 wk topology)
 # so we drop RAM to 2 GiB (still enough for kubeadm init + Calico +
 # metrics-server + ingress-nginx). VCPU stays at 2 -- the cp also runs
 # etcd and the scheduler, which are CPU-sensitive under burst load.
+# IMPORTANT: control-plane memory MUST be >= 4 GiB on this stack.
+# We host etcd + kube-apiserver + kube-controller-manager + kube-scheduler
+# + containerd + kube-proxy + tigera-operator + ingress-nginx + metrics-server
+# all on this single node. 2 GiB was attempted; etcd/apiserver thrashed and
+# CrashLoopBackOff'd inside ~3 minutes once Calico+ingress-nginx landed.
+# Symptoms when undersized: kubectl returns "TLS handshake timeout" or
+# "connect: connection refused" intermittently; static-pod RESTARTS climb
+# into double digits; etcd logs show "raft member restarting" loops.
 CPU              = "2"
 VCPU             = "2"
-MEMORY           = "2048"
+MEMORY           = "4096"
 
 # NOTE: the IMAGE here must match a name in `oneimage list`. The
 # OpenNebula Marketplace import is usually named "Ubuntu 22.04" (with

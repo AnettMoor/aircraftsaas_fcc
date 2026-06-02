@@ -1,0 +1,170 @@
+#cloud-config
+# =====================================================================
+# Cloud-init: control-plane node (cp-1).
+#
+# Implements the contract in plans/opennebula.md §3.3. Every step has
+# an explicit exit code so OpenNebula marks the VM FAILURE on a
+# half-broken bootstrap instead of silently leaving it RUNNING.
+#
+# Variables come from CONTEXT (see opennebula/templates/cp.tpl):
+#   * K8S_VERSION    — apt-pinned (e.g. "1.30")
+#   * K8S_EDGE_HOST  — DNS name baked into --control-plane-endpoint
+#   * POD_CIDR       — Calico pod CIDR (default 192.168.0.0/16)
+#
+# Output written back to OpenNebula:
+#   * USER_TEMPLATE/K8S_JOIN_COMMAND       — read by workers in
+#                                            cloud-init.wk.yaml
+#   * USER_TEMPLATE/KUBECONFIG_B64         — operator-side kubeconfig
+#                                            (server: rewritten to the
+#                                             edge DNS name)
+# =====================================================================
+
+package_update: true
+package_upgrade: false   # avoid changing kernel mid-bootstrap
+
+# ---------------------------------------------------------------------
+# Static apt key + repos for kubeadm/kubelet/kubectl + containerd.
+# ---------------------------------------------------------------------
+apt:
+  sources:
+    kubernetes:
+      source: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/ /"
+      keyid:  "234654DA9A296436"
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+  - jq
+  - containerd
+
+write_files:
+  # -------------------------------------------------------------------
+  # containerd config — enables the systemd cgroup driver kubelet
+  # expects, and adds the in-cluster registry as an insecure mirror.
+  # The registry trust block is the one verified by
+  # tests/opennebula/registry-trust.sh.
+  # -------------------------------------------------------------------
+  - path: /etc/modules-load.d/k8s.conf
+    permissions: "0644"
+    content: |
+      overlay
+      br_netfilter
+
+  - path: /etc/sysctl.d/k8s.conf
+    permissions: "0644"
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+
+  - path: /etc/containerd/config.toml
+    permissions: "0644"
+    content: |
+      version = 2
+      [plugins."io.containerd.grpc.v1.cri"]
+        sandbox_image = "registry.k8s.io/pause:3.9"
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+        [plugins."io.containerd.grpc.v1.cri".registry]
+          config_path = "/etc/containerd/certs.d"
+
+  # The hosts.toml file is what registry-trust.sh §1 greps for.
+  - path: /etc/containerd/certs.d/registry.ns-registry.svc.cluster.local:5000/hosts.toml
+    permissions: "0644"
+    content: |
+      # In-cluster Docker Registry v2 — plain HTTP inside the vNet.
+      # See plans/opennebula.md §3.3 and tests/opennebula/registry-trust.sh.
+      server = "http://registry.ns-registry.svc.cluster.local:5000"
+      [host."http://registry.ns-registry.svc.cluster.local:5000"]
+        capabilities = ["pull", "resolve"]
+        skip_verify  = true
+        plain_http   = true
+
+  # -------------------------------------------------------------------
+  # kubeadm init config — pins Calico-compatible pod CIDR and the
+  # control-plane endpoint (the OpenNebula edge DNAT name).
+  # -------------------------------------------------------------------
+  - path: /root/kubeadm-config.yaml
+    permissions: "0600"
+    content: |
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: ClusterConfiguration
+      kubernetesVersion: "v${K8S_VERSION}.0"
+      controlPlaneEndpoint: "${K8S_EDGE_HOST}:6443"
+      networking:
+        podSubnet: "${POD_CIDR}"
+        serviceSubnet: "10.96.0.0/12"
+      apiServer:
+        certSANs:
+          - "${K8S_EDGE_HOST}"
+          - "10.10.0.10"
+          - "127.0.0.1"
+      ---
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: InitConfiguration
+      nodeRegistration:
+        criSocket: "unix:///run/containerd/containerd.sock"
+
+# ---------------------------------------------------------------------
+# Run order — each step is fail-fast.
+# ---------------------------------------------------------------------
+runcmd:
+  # ----- 1. Pin & install kube* + disable swap. ---------------------
+  - bash -eux -c "swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab"
+  - bash -eux -c "modprobe overlay && modprobe br_netfilter && sysctl --system"
+  - bash -eux -c "install -d /etc/apt/keyrings && curl -fsSL https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+  - bash -eux -c "apt-get update && apt-get install -y kubelet=${K8S_VERSION}.* kubeadm=${K8S_VERSION}.* kubectl=${K8S_VERSION}.* && apt-mark hold kubelet kubeadm kubectl"
+  - bash -eux -c "systemctl daemon-reload && systemctl enable --now containerd"
+
+  # ----- 2. kubeadm init. -------------------------------------------
+  - bash -eux -c "kubeadm init --config=/root/kubeadm-config.yaml --upload-certs"
+  - bash -eux -c "install -d /root/.kube && cp /etc/kubernetes/admin.conf /root/.kube/config"
+
+  # ----- 3. Calico CNI (Tigris operator + IPPool). ------------------
+  - bash -eux -c "kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml"
+  - bash -eux -c "cat <<'EOF' | kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f -
+      apiVersion: operator.tigera.io/v1
+      kind: Installation
+      metadata: { name: default }
+      spec:
+        calicoNetwork:
+          mtu: 1450
+          ipPools:
+            - cidr: ${POD_CIDR}
+              encapsulation: VXLAN
+              natOutgoing: Enabled
+      EOF"
+
+  # ----- 4. metrics-server (HPAs depend on it). ---------------------
+  - bash -eux -c "kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml"
+  # Self-signed kubelet TLS on a freshly-bootstrapped cluster — patch
+  # metrics-server to tolerate it (the alternative is renewing kubelet
+  # certs from a real CA, which is out of scope here).
+  - bash -eux -c "kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system patch deployment metrics-server --type=json -p='[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--kubelet-insecure-tls\"}]'"
+
+  # ----- 5. NGINX Ingress controller. -------------------------------
+  - bash -eux -c "kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml"
+  # Label ingress-nginx namespace so the existing NetworkPolicies
+  # (k8s/network-policies/allow-*.yaml) match it.
+  - bash -eux -c "kubectl --kubeconfig=/etc/kubernetes/admin.conf label namespace ingress-nginx name=ns-gateway --overwrite"
+
+  # ----- 6. Generate non-expiring join command for workers and
+  #         write it back to OpenNebula USER_TEMPLATE so wk-1/wk-2's
+  #         cloud-init can read it. The join command is sensitive
+  #         (token + ca-cert-hash) but stays inside the encrypted
+  #         OpenNebula tenancy store. ---------------------------------
+  - bash -eux -c "JOIN=$(kubeadm token create --ttl 0 --print-join-command) && onegate vm update --data \"K8S_JOIN_COMMAND=$JOIN\""
+
+  # ----- 7. Write a kubeconfig with the edge host as `server:` and
+  #         publish it back via USER_TEMPLATE for the operator. ------
+  - bash -eux -c "sed 's|server: https://[0-9.]*:6443|server: https://${K8S_EDGE_HOST}:6443|' /etc/kubernetes/admin.conf | base64 -w0 | xargs -I {} onegate vm update --data 'KUBECONFIG_B64={}'"
+
+# ---------------------------------------------------------------------
+# Marker: cluster-ready.sh can grep this on the host to confirm
+# cloud-init reached the end of `runcmd` without a non-zero exit.
+# ---------------------------------------------------------------------
+final_message: "aircraft-cp cloud-init finished — control-plane up after $UPTIME s"

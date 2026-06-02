@@ -1,0 +1,99 @@
+# =====================================================================
+# OneFlow service template — orchestrates the 3-VM cluster as a single
+# logical object.
+#
+# Why oneflow (vs. driving onevm three times by hand):
+#   * Role dependency: `workers.parents = [control-plane]` makes
+#     OpenNebula refuse to instantiate wk-1/wk-2 until cp-1 is
+#     RUNNING. That's what removes the "wait, then read the join
+#     token by hand" step from the §2.1 manual runbook.
+#   * Atomic teardown: `oneflow delete aircraft` removes all four
+#     resources (vNet, sgs, vms) in one shot.
+#   * Cardinality: workers ship as a single role with cardinality=2,
+#     so scaling to a 4-worker cluster is a one-line edit.
+#
+# Apply with:
+#   oneflow-template create opennebula/service/aircraft.oneflow.yaml
+#   oneflow-template instantiate <id>
+#
+# Pre-requisites (already created via the runbook):
+#   * onetemplate "aircraft-cp"        (opennebula/templates/cp.tpl)
+#   * onetemplate "aircraft-wk"        (opennebula/templates/wk.tpl)
+#   * onevnet     "aircraft-vnet"      (opennebula/vnet/aircraft-vnet.tpl)
+#   * onesecgroup "aircraft-cluster"   (opennebula/security-groups/cluster.tpl)
+#   * onesecgroup "aircraft-edge"      (opennebula/security-groups/edge.tpl)
+#   * onesecgroup "aircraft-nodeport"  (opennebula/security-groups/nodeport.tpl)
+# =====================================================================
+
+name: "aircraft"
+deployment: "straight"   # roles instantiated in dependency order, sequentially.
+description: >
+  Aircraft SaaS Kubernetes cluster — 1 control-plane + 2 workers on
+  the aircraft-vnet (10.10.0.0/24). Stamped from
+  opennebula/templates/{cp,wk}.tpl.
+
+# ---------------------------------------------------------------------
+# Role: control-plane
+#
+# Single VM, cardinality fixed at 1. No min/max cooldown — we never
+# auto-scale the control-plane.
+# ---------------------------------------------------------------------
+roles:
+  - name: "control-plane"
+    cardinality: 1
+    vm_template: "aircraft-cp"
+    # No `parents:` — this role bootstraps first.
+
+    # Ready-when checks: the role is `RUNNING` only after the VM has
+    # set USER_TEMPLATE/K8S_JOIN_COMMAND (i.e. cloud-init step #6 on
+    # cp-1 has succeeded). Workers wait on this transition.
+    on_hold: false
+    cooldown: 0
+
+    # Forwards instantiation-time USER_INPUTS to the cp template.
+    vm_template_contents: |
+      K8S_EDGE_HOST  = "$K8S_EDGE_HOST"
+      K8S_VERSION    = "$K8S_VERSION"
+      OPERATOR_CIDR  = "$OPERATOR_CIDR"
+
+  # -------------------------------------------------------------------
+  # Role: workers
+  #
+  # Cardinality 2, with the IaaS-level anti-affinity from wk.tpl's
+  # SCHED_RANK. `parents: [control-plane]` is what gates the
+  # bootstrap so workers don't poll for a join command that doesn't
+  # exist yet.
+  # -------------------------------------------------------------------
+  - name: "workers"
+    cardinality: 2
+    min_vms: 2
+    max_vms: 4         # head-room for `oneflow-template scale aircraft workers 4`
+    vm_template: "aircraft-wk"
+    parents:
+      - "control-plane"
+    cooldown: 30       # seconds between worker starts (give cp-1 breathing room)
+    vm_template_contents: |
+      K8S_VERSION            = "$K8S_VERSION"
+      K8S_CONTROL_PLANE_VM   = "cp-1"
+      K8S_JOIN_COMMAND_SOURCE = "USER_TEMPLATE/K8S_JOIN_COMMAND"
+
+# ---------------------------------------------------------------------
+# Service-level USER_INPUTS exposed by `oneflow-template instantiate -i`.
+#
+# OPERATOR_CIDR is the kube-apiserver source whitelist (see
+# opennebula/security-groups/edge.tpl). Fails closed on default.
+# ---------------------------------------------------------------------
+custom_attrs:
+  K8S_EDGE_HOST:
+    type: text
+    description: "Edge DNS name DNAT'd to cp-1's :443 / :6443"
+    default: "aircraft.example.com"
+  K8S_VERSION:
+    type: list
+    description: "Kubernetes minor version (apt pin)"
+    options: ["1.30", "1.31"]
+    default: "1.30"
+  OPERATOR_CIDR:
+    type: text
+    description: "CIDR allowed to reach kube-apiserver via edge DNAT"
+    default: "REPLACE_WITH_OPERATOR_CIDR"

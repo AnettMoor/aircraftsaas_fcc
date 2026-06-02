@@ -1,0 +1,112 @@
+#cloud-config
+# =====================================================================
+# Cloud-init: worker node (wk-1, wk-2).
+#
+# Mirror image of cloud-init.cp.yaml minus the kubeadm init / Calico /
+# metrics-server / Ingress steps. The only worker-specific concern is
+# polling OpenNebula for the join command published by cp-1.
+#
+# Variables from CONTEXT (opennebula/templates/wk.tpl):
+#   * K8S_VERSION             — apt-pinned (e.g. "1.30")
+#   * K8S_CONTROL_PLANE_VM    — name of the cp VM (default "cp-1")
+#   * K8S_JOIN_COMMAND_SOURCE — USER_TEMPLATE attribute name
+# =====================================================================
+
+package_update: true
+package_upgrade: false
+
+apt:
+  sources:
+    kubernetes:
+      source: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/ /"
+      keyid:  "234654DA9A296436"
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+  - jq
+  - containerd
+
+write_files:
+  - path: /etc/modules-load.d/k8s.conf
+    permissions: "0644"
+    content: |
+      overlay
+      br_netfilter
+
+  - path: /etc/sysctl.d/k8s.conf
+    permissions: "0644"
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+
+  # Same containerd config as cp-1. Workers ALSO need the in-cluster
+  # registry trust — they are the ones pulling app images.
+  - path: /etc/containerd/config.toml
+    permissions: "0644"
+    content: |
+      version = 2
+      [plugins."io.containerd.grpc.v1.cri"]
+        sandbox_image = "registry.k8s.io/pause:3.9"
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+        [plugins."io.containerd.grpc.v1.cri".registry]
+          config_path = "/etc/containerd/certs.d"
+
+  - path: /etc/containerd/certs.d/registry.ns-registry.svc.cluster.local:5000/hosts.toml
+    permissions: "0644"
+    content: |
+      # In-cluster Docker Registry v2 — plain HTTP inside the vNet.
+      server = "http://registry.ns-registry.svc.cluster.local:5000"
+      [host."http://registry.ns-registry.svc.cluster.local:5000"]
+        capabilities = ["pull", "resolve"]
+        skip_verify  = true
+        plain_http   = true
+
+  # Polling helper used by runcmd step 3 below. Lives in /usr/local/sbin
+  # so the operator can re-run it by hand for debugging without
+  # re-instantiating the worker.
+  - path: /usr/local/sbin/wait-for-join-command.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      # Poll OpenNebula USER_TEMPLATE on the control-plane VM until
+      # K8S_JOIN_COMMAND is populated. cp-1 writes it from its own
+      # cloud-init step #6. We re-try for up to 15 min (cloud-init on
+      # cp-1 takes ~5 min in practice; 3x headroom).
+      for i in {1..90}; do
+        JOIN=$(onegate vm show -j --filter NAME="${K8S_CONTROL_PLANE_VM}" \
+               | jq -r '.[0].USER_TEMPLATE.K8S_JOIN_COMMAND // empty')
+        if [[ -n "$JOIN" ]]; then
+          echo "$JOIN"
+          exit 0
+        fi
+        sleep 10
+      done
+      echo "FATAL: ${K8S_CONTROL_PLANE_VM} never published K8S_JOIN_COMMAND" >&2
+      exit 1
+
+runcmd:
+  # ----- 1. Pin & install kube* + disable swap. ---------------------
+  - bash -eux -c "swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab"
+  - bash -eux -c "modprobe overlay && modprobe br_netfilter && sysctl --system"
+  - bash -eux -c "install -d /etc/apt/keyrings && curl -fsSL https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+  - bash -eux -c "apt-get update && apt-get install -y kubelet=${K8S_VERSION}.* kubeadm=${K8S_VERSION}.* && apt-mark hold kubelet kubeadm"
+  - bash -eux -c "systemctl daemon-reload && systemctl enable --now containerd"
+
+  # ----- 2. Wait for cp-1 to publish the join command. --------------
+  - bash -eux -c "/usr/local/sbin/wait-for-join-command.sh > /root/join-command.sh && chmod +x /root/join-command.sh"
+
+  # ----- 3. kubeadm join. -------------------------------------------
+  # The join command from cp-1 already contains --token + --discovery-
+  # token-ca-cert-hash. We append the cri-socket explicitly to match
+  # the containerd config we wrote above.
+  - bash -eux -c "bash /root/join-command.sh --cri-socket=unix:///run/containerd/containerd.sock"
+
+final_message: "aircraft-wk cloud-init finished — kubelet joined cp-1 after $UPTIME s"

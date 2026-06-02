@@ -1,13 +1,21 @@
 # =====================================================================
 # Base Kustomization
 #
-# This is the "Minikube-equivalent" baseline: replica counts, hostnames
-# (*.aircraft.localtest.me), and image tags (`<svc>:dev`) match the manual
-# walkthrough in local.md. Overlays under k8s/overlays/* patch this for
-# different environments:
-#   * overlays/minikube   — explicit Minikube preset (defaults already match)
-#   * overlays/opennebula — production hostnames, in-cluster registry images,
-#                           replicas=3, anti-affinity
+# This is the **developer-loop baseline** — replica counts, hostnames
+# (*.aircraft.localtest.me), and image tags (`<svc>:dev`) match the
+# Minikube walkthrough in local.md. It is NOT the production target;
+# the OpenNebula automation in plans/opennebula.md tore down the
+# previous "manual cluster" baseline (deploy.md §2.1) and the
+# OpenNebula overlay below is now the only production deploy path.
+#
+# Overlays under k8s/overlays/* patch this base for different
+# environments:
+#   * overlays/minikube   — explicit dev-loop preset (defaults match)
+#   * overlays/opennebula — production: real edge hostnames, in-cluster
+#                           registry images, replicas=3, anti-affinity,
+#                           imagePullPolicy=Always, plaintext registry
+#                           credentials removed in favour of the
+#                           SealedSecret. See plans/opennebula.md §4.
 #
 # Resources are pulled in via per-component `kustomization.yaml` files
 # (not raw paths) so that Kustomize's "no traversal outside root" rule

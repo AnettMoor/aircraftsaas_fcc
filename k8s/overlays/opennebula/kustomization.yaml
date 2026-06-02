@@ -157,3 +157,126 @@ patches:
         path: /metadata/annotations/cert-manager.io~1cluster-issuer
         value: letsencrypt-staging
 
+  # ---------------------------------------------------------------------
+  # plans/opennebula.md §4.1 functional patches — applied only on the
+  # OpenNebula overlay because the Minikube dev loop relies on the
+  # opposite behaviour (IfNotPresent against a locally-built image
+  # cache, plaintext registry auth, *.localtest.me CSP).
+  # ---------------------------------------------------------------------
+
+  # 1. Force `imagePullPolicy: Always` on every app container. The
+  #    in-cluster registry tag is `latest` by default (and overridden to
+  #    a git-sha by CI at deploy time). With `IfNotPresent` the kubelet
+  #    would happily keep running a stale local copy of `latest` after
+  #    a re-push; on the Minikube overlay that is intentional (the dev
+  #    loads images via `minikube docker-env`), here it is wrong.
+  - target: { kind: Deployment, name: users-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: fleet-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: booking-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: vue-frontend }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+
+  # 2. Same for the EF Core migration Jobs — they run once at deploy
+  #    time but MUST execute against the just-pushed image, not a
+  #    cached one (otherwise schema migrations and runtime drift).
+  #    The Kustomize `images:` block above already rewrites the
+  #    image *reference* (users-service -> registry FQDN); this patch
+  #    only handles the pull policy.
+  - target: { kind: Job, name: users-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Job, name: fleet-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Job, name: booking-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+
+  # 3. Rewrite the inline CSP `connect-src` whitelist on the frontend
+  #    Ingress. The host-replacement patches above swap the Ingress
+  #    `host:` field but DO NOT touch the annotation body, so the SPA
+  #    bundle running on https://app.aircraft.example.com would still
+  #    be CSP-blocked from XHR'ing the *.aircraft.example.com API
+  #    subdomains. We replace the whole `configuration-snippet`
+  #    annotation in one shot so the next CSP edit only touches one
+  #    place.
+  - target: { kind: Ingress, name: frontend-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1configuration-snippet
+        value: |
+          more_set_headers "X-Frame-Options: DENY";
+          more_set_headers "X-Content-Type-Options: nosniff";
+          more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+          more_set_headers "Content-Security-Policy: default-src 'self'; connect-src 'self' https://users.aircraft.example.com https://fleet.aircraft.example.com https://booking.aircraft.example.com; frame-ancestors 'none'";
+
+  # 4. Delete the plaintext `registry-auth` Secret shipped under
+  #    k8s/registry/auth-secret.yaml (placeholder credentials
+  #    `ciuser:ciuser`). It is replaced by
+  #    k8s/sealed-secrets/registry-auth-sealedsecret.yaml, which is
+  #    already part of the sealed-secrets component. Same `$patch:
+  #    delete` story applies to the per-namespace `local-registry`
+  #    imagePullSecrets (their real values come from the
+  #    SealedSecret on apply).
+  - target: { kind: Secret, name: registry-auth, namespace: ns-registry }
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: registry-auth
+        namespace: ns-registry
+  - target: { kind: Secret, name: local-registry, namespace: ns-users }
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: local-registry
+        namespace: ns-users
+  - target: { kind: Secret, name: local-registry, namespace: ns-fleet }
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: local-registry
+        namespace: ns-fleet
+  - target: { kind: Secret, name: local-registry, namespace: ns-booking }
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: local-registry
+        namespace: ns-booking
+  - target: { kind: Secret, name: local-registry, namespace: ns-frontend }
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: local-registry
+        namespace: ns-frontend
+

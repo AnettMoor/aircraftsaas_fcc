@@ -385,21 +385,62 @@ log "STAGE 10/10 — Extract kubeconfig from cp-1 USER_TEMPLATE"
 mkdir -p "$(dirname "$KUBECONFIG_OUT")"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  printf '  $ %s\n' "onevm show cp-1 --json | jq -r .VM.USER_TEMPLATE.KUBECONFIG_B64 | base64 -d > ${KUBECONFIG_OUT}"
+  printf '  $ %s\n' "CP_VMID=\$(onevm list --no-header | awk '/controlplane/ {print \$1; exit}')"
+  printf '  $ %s\n' "onevm show \$CP_VMID --json | jq -r .VM.USER_TEMPLATE.KUBECONFIG_B64 | base64 -d > ${KUBECONFIG_OUT}"
 else
-  # Wait for cp-1's cloud-init to publish KUBECONFIG_B64.
+  # OneFlow names role VMs "<role>_<index>_(service_<SID>)" — e.g.
+  # "controlplane_0_(service_36)". There is no "cp-1" by name; resolve
+  # dynamically every iteration because rolled-back attempts can leave
+  # multiple stale "controlplane_*" entries lying around.
+  CP_VMID=$(onevm list --no-header 2>/dev/null \
+            | awk '/controlplane_/ {print $1; exit}')
+  [[ -z "$CP_VMID" ]] && die "could not find a controlplane_* VM after instantiation"
+  log "  cp VM resolved: VMID=${CP_VMID}"
+
+  # Wait for cp's bootstrap-cp.sh to publish KUBECONFIG_B64 to USER_TEMPLATE.
+  # bootstrap-cp.sh walks BOOTSTRAP_STEP=1..9 then writes KUBECONFIG_B64
+  # at step 9. Surface the heartbeat in the log so a hang is visible.
   for _ in $(seq 1 60); do
-    B64=$(onevm show cp-1 --json 2>/dev/null \
+    SNAP=$(onevm show "$CP_VMID" --json 2>/dev/null | jq -r '
+      .VM.USER_TEMPLATE
+      | "step=\(.BOOTSTRAP_STEP // "?") rc=\(.BOOTSTRAP_RC // "?") fail_line=\(.BOOTSTRAP_FAIL_LINE // "?") kubeconfig=\((.KUBECONFIG_B64 // "")|length)"')
+    B64=$(onevm show "$CP_VMID" --json 2>/dev/null \
           | jq -r '.VM.USER_TEMPLATE.KUBECONFIG_B64 // empty')
-    [[ -n "$B64" ]] && break
-    log "  cp-1 has not published KUBECONFIG_B64 yet; waiting..."
+    if [[ -n "$B64" ]]; then
+      log "  cp bootstrap published KUBECONFIG_B64 (${SNAP})"
+      break
+    fi
+    # If the bootstrap reported a non-zero RC, surface the failure tail
+    # immediately rather than continuing to spin for 10 minutes.
+    BRC=$(onevm show "$CP_VMID" --json 2>/dev/null \
+          | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_RC // empty')
+    if [[ -n "$BRC" && "$BRC" != "0" ]]; then
+      TAIL=$(onevm show "$CP_VMID" --json 2>/dev/null \
+             | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_LOG_TAIL // "<no tail>"')
+      die "cp bootstrap FAILED — rc=${BRC} ${SNAP}
+log tail: ${TAIL}"
+    fi
+    log "  waiting on cp bootstrap... ${SNAP}"
     sleep 10
   done
-  [[ -z "$B64" ]] && die "cp-1 did not publish KUBECONFIG_B64 in 10 minutes"
+  [[ -z "$B64" ]] && die "cp did not publish KUBECONFIG_B64 in 10 minutes (last: ${SNAP})"
+
   printf '%s' "$B64" | base64 -d > "$KUBECONFIG_OUT"
   chmod 600 "$KUBECONFIG_OUT"
+
+  # The kubeconfig's server: line points at K8S_EDGE_HOST (no public DNS
+  # in this lab). Rewrite it to the cp's actual IP so kubectl works
+  # immediately from the operator workstation.
+  CP_IP=$(onevm show "$CP_VMID" --json 2>/dev/null \
+          | jq -r '.. | objects | select(has("ETH0_IP")) | .ETH0_IP' | head -1)
+  if [[ -n "$CP_IP" ]]; then
+    sed -i.bak "s|server: https://${EDGE_HOST}:6443|server: https://${CP_IP}:6443|" "$KUBECONFIG_OUT"
+    rm -f "${KUBECONFIG_OUT}.bak"
+    log "  rewrote server: -> https://${CP_IP}:6443"
+  fi
+
   log "  kubeconfig written to ${KUBECONFIG_OUT}"
-  log "  next: export KUBECONFIG=${KUBECONFIG_OUT} && kubectl get nodes"
+  log "  next: export KUBECONFIG=${KUBECONFIG_OUT} && kubectl --insecure-skip-tls-verify get nodes"
 fi
 
 cat <<EOF

@@ -40,52 +40,58 @@
 NAME        = "aircraft-cluster"
 DESCRIPTION = "Intra-cluster Kubernetes control-plane + kubelet + CNI"
 
+# NOTE: SOURCE_PREFIX is 172.16.100.0/24 because aircraft-vnet now rides
+# on minione's pre-existing `minionebr` bridge (see
+# opennebula/vnet/aircraft-vnet.tpl header for the rationale). If you
+# move this deployment to a production OpenNebula with a dedicated
+# `aircraft-br0` bridge on 10.10.0.0/24, switch BOTH this file AND
+# aircraft-vnet.tpl back to 10.10.0.0/24 in lockstep.
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "6443",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "10250",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "10256",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "2379:2380",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "UDP",
     RULE_TYPE     = "inbound",
     RANGE         = "4789",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "179",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [
     PROTOCOL      = "ICMP",
     RULE_TYPE     = "inbound",
-    SOURCE_PREFIX = "10.10.0.0/24"
+    SOURCE_PREFIX = "172.16.100.0/24"
 ]
 
 RULE = [

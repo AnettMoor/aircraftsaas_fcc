@@ -101,7 +101,7 @@ write_files:
       apiServer:
         certSANs:
           - "${K8S_EDGE_HOST}"
-          - "10.10.0.10"
+          - "172.16.100.50"   # cp-1 NIC IP on minione's minionebr bridge
           - "127.0.0.1"
       ---
       apiVersion: kubeadm.k8s.io/v1beta3

@@ -25,11 +25,15 @@
 NAME        = "aircraft-nodeport"
 DESCRIPTION = "NodePort range (30000-32767/tcp) from the edge NIC only"
 
+# Source = cp-1 NIC IP (.50 on the minione bridge). In production with
+# the dedicated aircraft-br0/10.10.0.0/24 bridge this would be .254
+# (the edge DNAT NIC); on minione cp-1 itself handles edge ingress
+# because there is no separate edge NIC.
 RULE = [
     PROTOCOL      = "TCP",
     RULE_TYPE     = "inbound",
     RANGE         = "30000:32767",
-    SOURCE_PREFIX = "10.10.0.254/32"
+    SOURCE_PREFIX = "172.16.100.50/32"
 ]
 
 RULE = [

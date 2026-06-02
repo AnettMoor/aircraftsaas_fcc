@@ -1,78 +1,89 @@
 # =====================================================================
 # OpenNebula virtual network — aircraft-vnet
 #
-# Layer-2 isolated /24 carrying all Kubernetes node-to-node traffic.
-# Outbound Internet is provided by the OpenNebula NAT on the gateway
-# IP; inbound is only the single :80/:443 DNAT into cp-1 that the
-# edge security group authorises.
+# Carries node-to-node Kubernetes traffic for the Aircraft SaaS cluster.
 #
-# Why this shape (plans/opennebula.md §3.2):
-#   * /24 is plenty for 3 cluster nodes + future expansion (the
-#     pod-CIDR 192.168.0.0/16 lives inside the cluster, NOT on this
-#     vNet — Calico VXLAN-encapsulates it before it touches the wire).
-#   * Static address pool, not DHCP: kubeadm uses node IPs as kubelet
-#     identity; DHCP renewal would race with Calico's BGP peerings.
-#   * BRIDGE name `aircraft-br0` so the OpenNebula host's firewall
-#     can match on it explicitly when stacking security groups.
+# IMPORTANT — lab vs. production topology
+# ---------------------------------------
+# The original design (commit history) used a separate L2-isolated
+# bridge `aircraft-br0` on `10.10.0.0/24` with NAT egress to the
+# Internet and a single DNAT for :80/:443 inbound. That design is
+# correct for a production OpenNebula deployment where the operator
+# has full control over host networking.
 #
-# Address allocation policy (matches cloud-init expectations):
-#   * .10 → cp-1
-#   * .11 → wk-1
-#   * .12 → wk-2
-#   * .1  → OpenNebula gateway (set by GATEWAY below)
-#   * .254 → reserved for the edge DNAT NIC (operator-side)
+# On a **minione** lab installation the only pre-wired bridge is
+# `minionebr` (172.16.100.0/24), which already has:
+#   * NAT egress to the internet (iptables MASQUERADE on eth0)
+#   * dnsmasq serving DNS + DHCP on 172.16.100.1
+#   * OneGate listening on http://172.16.100.1:5030
+#
+# A separate 10.10.0.0/24 bridge on minione has none of those services
+# routed/forwarded, so VMs on it cannot reach OneGate (=> KUBECONFIG_B64
+# never gets published back), cannot resolve DNS, and cannot pull
+# `kubeadm` packages from apt. This template therefore rides on
+# `minionebr` directly.
+#
+# To move back to the production isolated-bridge topology, change:
+#   BRIDGE          -> aircraft-br0
+#   NETWORK_ADDRESS -> 10.10.0.0
+#   GATEWAY/DNS     -> 10.10.0.1
+#   AR.IP           -> 10.10.0.10  (size 10)
+# AND configure the host to forward + NAT the new subnet (see
+# opennebula/runbook.md §4 "Custom isolated bridge on a production
+# OpenNebula host").
+#
+# Address allocation policy (matches cloud-init expectations on minione):
+#   * 172.16.100.1   -> minione gateway / DNS / OneGate (pre-existing)
+#   * 172.16.100.2-49  reserved for minione's own appliance VMs
+#   * 172.16.100.50  -> cp-1   (control plane)
+#   * 172.16.100.51  -> wk-1
+#   * 172.16.100.52  -> wk-2
+#   * 172.16.100.53-59 spare (HA cp-2/cp-3 etc.)
 # =====================================================================
 
 NAME        = "aircraft-vnet"
-DESCRIPTION = "L2-isolated /24 for the Aircraft SaaS Kubernetes cluster"
+DESCRIPTION = "Aircraft SaaS Kubernetes cluster vNet (rides on minione's minionebr / 172.16.100.0/24)"
 
 VN_MAD = "bridge"
-BRIDGE = "aircraft-br0"
+BRIDGE = "minionebr"
 
 # ---------------------------------------------------------------------
-# Subnet — RFC1918 /24, deliberately a different /16 from the pod and
-# service CIDRs so the routing table in each node stays unambiguous.
+# Subnet -- match the pre-existing minione bridge exactly. NETWORK_MASK
+# and GATEWAY must agree with `ip addr show minionebr` on the host or
+# Kubernetes pods will lose default route after Calico installs.
 # ---------------------------------------------------------------------
-NETWORK_ADDRESS = "10.10.0.0"
+NETWORK_ADDRESS = "172.16.100.0"
 NETWORK_MASK    = "255.255.255.0"
-GATEWAY         = "10.10.0.1"
-DNS             = "10.10.0.1"
+GATEWAY         = "172.16.100.1"
+DNS             = "172.16.100.1"
 
 # ---------------------------------------------------------------------
-# Static address pool. OpenNebula allocates in the order VMs are
-# instantiated; the oneflow service in service/aircraft.oneflow.yaml
-# instantiates cp before wk, so .10 lands on cp-1 deterministically.
-#
-# If the operator needs to rebuild a single node without renumbering,
-# `onevnet hold aircraft-vnet --ip 10.10.0.10` reserves the IP first.
+# Static address pool -- 8 addresses starting at .50, leaving the lower
+# half free for minione's own marketplace appliance VMs (Alpine etc.).
+# OpenNebula allocates IPs in instantiation order; OneFlow brings cp
+# up before workers (parents: [controlplane]), so cp-1 lands on .50
+# deterministically. cert-init.cp.yaml's certSANs entry for the cp IP
+# pins to .50 to match.
 # ---------------------------------------------------------------------
 AR = [
     TYPE = "IP4",
-    IP   = "10.10.0.10",
+    IP   = "172.16.100.50",
     SIZE = "10"
 ]
 
 # ---------------------------------------------------------------------
-# Default per-NIC security groups. VM templates can append additional
-# groups (e.g. `aircraft-edge` for cp-1) without losing the cluster
-# baseline. The cluster group itself is defined in
-# opennebula/security-groups/cluster.tpl.
+# Default per-NIC security group. VM templates append additional groups
+# (e.g. `aircraft-edge` for cp-1) without losing the cluster baseline.
 # ---------------------------------------------------------------------
 SECURITY_GROUPS = "aircraft-cluster"
 
 # ---------------------------------------------------------------------
-# Calico MTU — see plans/opennebula.md §7 risk row 2. The OpenNebula
-# bridge uses the host MTU (usually 1500). Calico's VXLAN encap adds
-# 50 bytes, so the inner MTU must be 1450. We pin the *physical* MTU
-# advertised by DHCP/Cloud-init here to 1500 (unchanged) and let
-# Calico's FELIX_MTU env var carry the 1450 to the workloads.
+# Calico MTU note (unchanged from the production topology). minionebr
+# is a Linux bridge with MTU 1500. Calico's VXLAN encap adds 50 bytes,
+# so the inner pod MTU MUST be 1450. The Calico Installation manifest
+# in cloud-init.cp.yaml line 135 pins `calicoNetwork.mtu: 1450`.
 # ---------------------------------------------------------------------
 MTU = "1500"
 
-# ---------------------------------------------------------------------
-# Filter rules at the vNet level — belt and braces in addition to the
-# security groups. Drop everything by default; security groups open
-# the necessary ports on a per-NIC basis.
-# ---------------------------------------------------------------------
-INBOUND_AVG_BW  = "0"   # no rate limit; the SGs handle access control
+INBOUND_AVG_BW  = "0"
 OUTBOUND_AVG_BW = "0"

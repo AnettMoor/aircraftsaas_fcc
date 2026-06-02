@@ -24,8 +24,9 @@ CPU              = "4"
 VCPU             = "4"
 MEMORY           = "8192"
 
+# NOTE: same image-name caveat as cp.tpl -- must match `oneimage list`.
 DISK = [
-    IMAGE      = "ubuntu-2204-lts",
+    IMAGE      = "Ubuntu 22.04",
     SIZE       = "40960",
     DEV_PREFIX = "vd"
 ]

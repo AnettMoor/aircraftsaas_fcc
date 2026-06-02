@@ -35,8 +35,12 @@ CPU              = "2"
 VCPU             = "2"
 MEMORY           = "4096"
 
+# NOTE: the IMAGE here must match a name in `oneimage list`. The
+# OpenNebula Marketplace import is usually named "Ubuntu 22.04" (with
+# a space). Change the value below to whatever `oneimage list` shows
+# for your Ubuntu 22.04 LTS image. The runbook documents the override.
 DISK = [
-    IMAGE      = "ubuntu-2204-lts",
+    IMAGE      = "Ubuntu 22.04",
     SIZE       = "40960",
     DEV_PREFIX = "vd"
 ]

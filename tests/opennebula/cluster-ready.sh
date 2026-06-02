@@ -71,13 +71,27 @@ done < <(echo "$NODES_JSON" | jq -r '.items[] | "\(.metadata.name) \(.status.nod
 # ---------------------------------------------------------------------
 # 3. Calico CNI is the CNI in use (NetworkPolicy enforcement depends
 #    on it — deploy.md §9 risk row 1).
+#
+# Calico can be installed two ways:
+#   (a) classic "calico.yaml" manifest -> DaemonSet lives in kube-system
+#   (b) Tigera operator (what bootstrap-cp.sh installs) -> DaemonSet lives
+#       in calico-system, managed by the operator in tigera-operator ns
+# Accept either layout; only fail if neither namespace has the DS.
 # ---------------------------------------------------------------------
 log "checking Calico CNI is installed and DaemonSet is healthy"
-if ! kubectl -n kube-system get daemonset calico-node >/dev/null 2>&1; then
-  err "calico-node DaemonSet not found in kube-system — NetworkPolicies will silently no-op"
+CALICO_NS=""
+for ns in calico-system kube-system; do
+  if kubectl -n "$ns" get daemonset calico-node >/dev/null 2>&1; then
+    CALICO_NS="$ns"
+    break
+  fi
+done
+if [[ -z "$CALICO_NS" ]]; then
+  err "calico-node DaemonSet not found in calico-system or kube-system — NetworkPolicies will silently no-op"
 else
-  DESIRED=$(kubectl -n kube-system get daemonset calico-node -o jsonpath='{.status.desiredNumberScheduled}')
-  READY_DS=$(kubectl -n kube-system get daemonset calico-node -o jsonpath='{.status.numberReady}')
+  log "  found calico-node in namespace: $CALICO_NS"
+  DESIRED=$(kubectl -n "$CALICO_NS" get daemonset calico-node -o jsonpath='{.status.desiredNumberScheduled}')
+  READY_DS=$(kubectl -n "$CALICO_NS" get daemonset calico-node -o jsonpath='{.status.numberReady}')
   [[ "$DESIRED" == "$READY_DS" && "$DESIRED" -ge 3 ]] \
     || err "calico-node ready=$READY_DS / desired=$DESIRED (want $DESIRED == ready and >= 3)"
 fi

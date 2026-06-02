@@ -1,0 +1,12 @@
+# cert-manager component kustomization — Phase C §C.15.
+#
+# Resources here are install-marker + both ClusterIssuer flavours.
+# The overlay selects which issuer the Ingress annotations point at
+# (selfsigned-ca-issuer on minikube, letsencrypt-staging on
+# opennebula) via a separate ingress-tls patch.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - controller.yaml
+  - issuer-selfsigned.yaml
+  - issuer-letsencrypt.yaml

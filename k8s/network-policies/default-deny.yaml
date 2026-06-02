@@ -1,3 +1,21 @@
+# =====================================================================
+# default-deny — Phase C §C.12
+#
+# A NetworkPolicy with an empty podSelector and both Ingress + Egress
+# policyTypes silently isolates every pod in the namespace from every
+# other peer. The matching `allow-*.yaml` files then re-open exactly
+# the flows the architecture allows.
+#
+# Coverage:
+#   * ns-users, ns-fleet, ns-booking, ns-infra  — Phase A
+#   * ns-frontend                                — Phase C addition
+#   * ns-registry                                — Phase C addition
+#
+# ns-ci is intentionally NOT default-denied: the GitHub Actions runner
+# needs broad egress (GitHub Actions service, public NuGet/npm mirrors,
+# in-cluster apiserver + registry). It is quarantined by RBAC instead
+# (k8s/ci/rbac.yaml), not by NetworkPolicy.
+# =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: default-deny, namespace: ns-users }
@@ -16,4 +34,31 @@ spec: { podSelector: {}, policyTypes: [Ingress, Egress] }
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: default-deny, namespace: ns-infra }
+spec: { podSelector: {}, policyTypes: [Ingress, Egress] }
+---
+# ---------------------------------------------------------------------
+# ns-frontend (Vue SPA pods).
+# The browser, not the pod, calls the backend services through the
+# Ingress, so the pod itself only needs:
+#   * Ingress :8080 from ingress-nginx (ns-gateway)
+#   * Egress  :53   to kube-dns
+# Everything else is denied.
+# ---------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny, namespace: ns-frontend }
+spec: { podSelector: {}, policyTypes: [Ingress, Egress] }
+---
+# ---------------------------------------------------------------------
+# ns-registry (in-cluster Docker Registry v2).
+# Image pulls happen kubelet-side (cluster-level), but the registry
+# Pod itself only needs:
+#   * Ingress :5000 from the app namespaces that pull images and from
+#     ns-ci (the runner pushes images).
+#   * Egress  :53   to kube-dns (storage backend resolution).
+# No public Ingress exists for this namespace.
+# ---------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny, namespace: ns-registry }
 spec: { podSelector: {}, policyTypes: [Ingress, Egress] }

@@ -1,0 +1,28 @@
+# =====================================================================
+# RBAC component — Phase C §C.14.
+#
+# Implemented as a Kustomize *Component* (rather than a Kustomization)
+# so the deployment-hardening strategic-merge patch can be applied at
+# overlay layer without violating Kustomize's path-traversal security
+# boundary. Components are designed to be referenced from anywhere in
+# the tree via `components:`; their `patches` are layered on top of
+# whatever the consuming overlay already pulled in via `resources:`.
+#
+# Usage from an overlay:
+#
+#   apiVersion: kustomize.config.k8s.io/v1beta1
+#   kind: Kustomization
+#   resources: [../../base]
+#   components: [../../rbac]
+#
+# This component:
+#   * Adds the four `*-runtime` ServiceAccounts.
+#   * Patches every app Deployment to bind it to its runtime SA,
+#     disable SA-token automount, and require a read-only root FS.
+# =====================================================================
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - runtime-serviceaccounts.yaml
+patches:
+  - path: deployment-hardening-patch.yaml

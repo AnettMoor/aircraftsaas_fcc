@@ -1,0 +1,110 @@
+# =====================================================================
+# Pod-level hardening patches — Phase C §C.14.
+#
+# Strategic-merge patches that the Phase C overlay applies on top of the
+# base Deployments. They flip three properties for every app workload:
+#
+#   1. spec.template.spec.serviceAccountName           = <svc>-runtime
+#   2. spec.template.spec.automountServiceAccountToken = false
+#   3. spec.template.spec.containers[*].securityContext.readOnlyRootFilesystem = true
+#
+# .NET 10 containers need a writable scratch directory for the diagnostic
+# pipe socket and OpenTelemetry temp files. We add `emptyDir` mounts at
+# /tmp and /var/tmp so readOnlyRootFilesystem does not break startup.
+#
+# These patches are kept out of the base Deployments because Phase A
+# explicitly documented that automount stays on in the base ("Phase C
+# will flip this to false" — see comment in k8s/users/deployment.yaml).
+# Putting the change here keeps that commit-trail honest.
+# =====================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: ns-users
+spec:
+  template:
+    spec:
+      serviceAccountName: users-runtime
+      automountServiceAccountToken: false
+      containers:
+        - name: users-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp,      mountPath: /tmp }
+            - { name: var-tmp,  mountPath: /var/tmp }
+            - { name: dotnet,   mountPath: /home/app/.dotnet }
+      volumes:
+        - { name: tmp,     emptyDir: {} }
+        - { name: var-tmp, emptyDir: {} }
+        - { name: dotnet,  emptyDir: {} }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-service
+  namespace: ns-fleet
+spec:
+  template:
+    spec:
+      serviceAccountName: fleet-runtime
+      automountServiceAccountToken: false
+      containers:
+        - name: fleet-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp,      mountPath: /tmp }
+            - { name: var-tmp,  mountPath: /var/tmp }
+            - { name: dotnet,   mountPath: /home/app/.dotnet }
+      volumes:
+        - { name: tmp,     emptyDir: {} }
+        - { name: var-tmp, emptyDir: {} }
+        - { name: dotnet,  emptyDir: {} }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: ns-booking
+spec:
+  template:
+    spec:
+      serviceAccountName: booking-runtime
+      automountServiceAccountToken: false
+      containers:
+        - name: booking-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp,      mountPath: /tmp }
+            - { name: var-tmp,  mountPath: /var/tmp }
+            - { name: dotnet,   mountPath: /home/app/.dotnet }
+      volumes:
+        - { name: tmp,     emptyDir: {} }
+        - { name: var-tmp, emptyDir: {} }
+        - { name: dotnet,  emptyDir: {} }
+---
+# vue-frontend already runs readOnlyRootFilesystem + non-root since
+# Phase A (see k8s/frontend/deployment.yaml). The Phase C patch only
+# binds it to the dedicated runtime SA.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vue-frontend
+  namespace: ns-frontend
+spec:
+  template:
+    spec:
+      serviceAccountName: vue-frontend-runtime
+      automountServiceAccountToken: false

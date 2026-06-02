@@ -1,0 +1,26 @@
+# =====================================================================
+# SealedSecrets component kustomization — Phase C §C.13.
+#
+# This is the Phase C secrets posture: the controller is installed and
+# every plaintext Secret is replaced by a SealedSecret. Adding this
+# directory to a base kustomization brings up the full sealed-secret
+# story.
+#
+# IMPORTANT: this directory does NOT also delete the plaintext Secrets
+# committed under k8s/users/, k8s/fleet/, k8s/booking/, k8s/infra/, and
+# k8s/registry/. That deletion is done with overlay-level `patches:`
+# (see k8s/overlays/minikube/kustomization.yaml + opennebula). The
+# rationale: a fresh cluster needs the plaintext baselines until the
+# operator has run `kubeseal --re-encrypt` to fill in the placeholders,
+# at which point the overlay's $patch:delete activates and the plaintext
+# Secrets disappear from the rendered manifest set.
+# =====================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - controller.yaml
+  - users-sealedsecret.yaml
+  - fleet-sealedsecret.yaml
+  - booking-sealedsecret.yaml
+  - postgres-sealedsecret.yaml
+  - registry-auth-sealedsecret.yaml

@@ -22,6 +22,13 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - ../../cert-manager
+
+components:
+  # Phase C §C.14 — runtime SAs + automountSAToken=false +
+  # readOnlyRootFilesystem applied here so the patch can reach the
+  # Deployments pulled in via ../../base.
+  - ../../rbac
 
 # --- Image rewrites ----------------------------------------------------
 # The base uses `<svc>:dev` (matches local Minikube builds). OpenNebula
@@ -113,3 +120,40 @@ patches:
       - op: replace
         path: /spec/rules/0/host
         value: app.aircraft.example.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: app.aircraft.example.com
+
+  # --- Phase C §C.15: switch every Ingress from the self-signed
+  # ClusterIssuer (Minikube default) to letsencrypt-staging. Promote
+  # to letsencrypt-prod by editing this overlay once staging succeeds.
+  - target: { kind: Ingress, name: users-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-staging
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: users.aircraft.example.com
+  - target: { kind: Ingress, name: fleet-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-staging
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: fleet.aircraft.example.com
+  - target: { kind: Ingress, name: booking-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-staging
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: booking.aircraft.example.com
+  - target: { kind: Ingress, name: frontend-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-staging
+

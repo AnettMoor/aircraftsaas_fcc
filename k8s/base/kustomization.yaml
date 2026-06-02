@@ -47,10 +47,13 @@ resources:
   #    runner alongside the workload it deploys.
   - ../ci
 
-  # 7. NetworkPolicies for the existing app namespaces.
-  #    The ns-frontend and ns-registry policies are produced in Phase C
-  #    (deploy.md §C.12); they are intentionally NOT applied here so
-  #    that Phase A can bring the cluster up end-to-end without the
-  #    chaos-test surface depending on policies that haven't been
-  #    authored yet.
+  # 7. NetworkPolicies for every app namespace, including the
+  #    ns-frontend and ns-registry policies added in Phase C §C.12.
   - ../network-policies
+
+  # 8. Phase C §C.14 — RBAC ships as a Kustomize *Component* under
+  #    k8s/rbac/, layered in by each overlay (`components:` section)
+  #    so the strategic-merge hardening patch can reach the Deployments
+  #    pulled in via this base. Wiring it as a plain `resources:` here
+  #    would force the patch to live under k8s/base/ to satisfy
+  #    kustomize's path-traversal rule.

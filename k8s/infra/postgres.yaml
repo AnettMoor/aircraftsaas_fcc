@@ -15,6 +15,7 @@
 #     `aircraft-booking`) still created via the `pg-init` ConfigMap
 #     mounted into /docker-entrypoint-initdb.d.
 # =====================================================================
+# pre-commit:allow-plaintext-secret
 apiVersion: v1
 kind: Secret
 metadata:

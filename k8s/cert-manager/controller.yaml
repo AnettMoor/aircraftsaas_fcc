@@ -1,0 +1,53 @@
+# =====================================================================
+# cert-manager — controller install reference (Phase C §C.15).
+#
+# Upstream ships a single ~3000-line manifest that bundles ~15 CRDs +
+# RBAC + 3 Deployments (cert-manager, cert-manager-webhook,
+# cert-manager-cainjector). Re-inlining all of it here would dominate
+# this repository's diff and bypass upstream's signed releases. The
+# Phase C posture is therefore:
+#
+#   1. The operator installs the upstream release manifest once per
+#      cluster (out-of-band, signed by Jetstack):
+#
+#        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
+#
+#      Pinned version: v1.15.3 (latest stable at Phase C authoring
+#      time; matches the ClusterIssuer manifests in this directory).
+#
+#   2. This file is a stub kept under version control so that the
+#      Phase C deployment story is self-describing — `kubectl
+#      describe -f k8s/cert-manager/controller.yaml` lands on a
+#      README-like ConfigMap that records the upstream version and
+#      reproducible install command.
+#
+# Rationale for not vendoring the full manifest: upgrades become a
+# rebase nightmare, and Phase A already established the pattern of
+# "controller blob installed by the operator, app manifests in Git"
+# for the Bitnami sealed-secrets controller (k8s/sealed-secrets/
+# controller.yaml is the exception that proves the rule — it's small).
+# =====================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    name: cert-manager
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cert-manager-install-marker
+  namespace: cert-manager
+  labels:
+    component: install-marker
+data:
+  upstream-version: "v1.15.3"
+  install-command: |
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
+  rationale: |
+    Phase C §C.15. cert-manager itself is installed via the upstream
+    release manifest (signed by Jetstack). This marker ConfigMap lets
+    `kubectl get cm -n cert-manager` surface which version was applied,
+    and lets the CI smoke test assert it is present before issuing
+    Certificates.

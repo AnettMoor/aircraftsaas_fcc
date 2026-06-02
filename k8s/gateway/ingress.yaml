@@ -18,6 +18,19 @@
 # Each Ingress object lives in the SAME namespace as its backend
 # Service, because Kubernetes Ingress backends cannot reference a
 # Service in another namespace.
+#
+# =====================================================================
+# Phase C §C.15 additions on every Ingress below:
+#
+#   * `cert-manager.io/cluster-issuer: selfsigned-ca-issuer` — the
+#     OpenNebula overlay rewrites this to `letsencrypt-staging` (then
+#     `letsencrypt-prod`). cert-manager populates the
+#     `<host>-tls` Secret named in `spec.tls[*].secretName`.
+#   * `nginx.ingress.kubernetes.io/ssl-redirect: "true"` — force HTTPS.
+#   * `nginx.ingress.kubernetes.io/hsts: "true"` + `hsts-max-age` —
+#     browsers refuse plain-HTTP for the host for a year.
+#   * `nginx.ingress.kubernetes.io/configuration-snippet:` —
+#     X-Frame-Options DENY, nosniff, Referrer-Policy, CSP.
 # =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -26,8 +39,22 @@ metadata:
   namespace: ns-users
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; frame-ancestors 'none'";
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts: [users.aircraft.localtest.me]
+      secretName: users-tls
   rules:
   - host: users.aircraft.localtest.me
     http:
@@ -46,8 +73,22 @@ metadata:
   namespace: ns-fleet
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; frame-ancestors 'none'";
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts: [fleet.aircraft.localtest.me]
+      secretName: fleet-tls
   rules:
   - host: fleet.aircraft.localtest.me
     http:
@@ -66,8 +107,22 @@ metadata:
   namespace: ns-booking
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; frame-ancestors 'none'";
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts: [booking.aircraft.localtest.me]
+      secretName: booking-tls
   rules:
   - host: booking.aircraft.localtest.me
     http:
@@ -91,6 +146,10 @@ spec:
 # (users.* / fleet.* / booking.*) — there is intentionally no /api/*
 # path rule here, because the in-pod nginx no longer proxies API
 # traffic (frontend_vue/nginx.conf was reworked in Phase A).
+#
+# The CSP for the SPA host is slightly relaxed compared to the API
+# hosts (allows `connect-src` to the sibling api subdomains) so the
+# bundle can XHR to users./fleet./booking.* from the browser.
 # ---------------------------------------------------------------------
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -99,8 +158,22 @@ metadata:
   namespace: ns-frontend
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'; connect-src 'self' https://users.aircraft.localtest.me https://fleet.aircraft.localtest.me https://booking.aircraft.localtest.me; frame-ancestors 'none'";
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts: [app.aircraft.localtest.me]
+      secretName: frontend-tls
   rules:
   - host: app.aircraft.localtest.me
     http:

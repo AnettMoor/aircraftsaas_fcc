@@ -62,6 +62,14 @@ inputs:
     description: "Newline-separated additional tags (e.g. `latest`, `stable`)."
     required: false
     default: "latest"
+  trivy-severity:
+    description: "Comma-separated severities that fail the build (Phase C §C.16)."
+    required: false
+    default: "HIGH,CRITICAL"
+  trivy-skip:
+    description: "Set to 'true' to skip the trivy scan (emergency override)."
+    required: false
+    default: "false"
 
 outputs:
   image:
@@ -150,6 +158,78 @@ runs:
           --cache-to   type=registry,ref=${{ steps.compute-tags.outputs.repo }}:cache,mode=max \
           ${TAG_ARGS} \
           .
+
+    # -----------------------------------------------------------------
+    # Phase C §C.16 — Trivy scan.
+    #
+    # Scans the just-pushed image for OS package + lang dependency CVEs.
+    # Fails the build on HIGH/CRITICAL severities (configurable via
+    # `trivy-severity`). The `trivy-skip` toggle exists ONLY for the
+    # documented emergency override scenario (deploy.md §11 runbook).
+    #
+    # We scan the *pushed* reference (registry URL) rather than the
+    # local buildx output for two reasons:
+    #   1. `buildx build --push` does not load the image into the
+    #      DinD daemon, so a local-by-name scan would miss.
+    #   2. Scanning the registry reference is what every downstream
+    #      consumer (kubelet pull, manual `docker run`) actually
+    #      receives — the scan target matches the deployed artefact.
+    #
+    # The trivy DB is cached at ~/.cache/trivy across runs (the
+    # self-hosted runner's home dir is on the work emptyDir, so the
+    # cache survives within a Pod lifetime).
+    # -----------------------------------------------------------------
+    - name: Trivy scan (HIGH,CRITICAL fail-build)
+      if: ${{ inputs.trivy-skip != 'true' }}
+      shell: bash
+      env:
+        IMAGE: ${{ steps.compute-tags.outputs.image }}
+        SEV:   ${{ inputs.trivy-severity }}
+      run: |
+        set -euo pipefail
+        echo "[trivy] scanning ${IMAGE} (fail on: ${SEV})"
+
+        # Install trivy on demand if it is not already on PATH. The
+        # self-hosted runner image (k8s/ci/runner-deployment.yaml) does
+        # not bake it in, so install-on-first-use keeps the image lean.
+        if ! command -v trivy >/dev/null 2>&1; then
+          curl -sSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b "$HOME/.local/bin" v0.55.0
+          export PATH="$HOME/.local/bin:$PATH"
+        fi
+
+        # `--insecure` because the in-cluster registry is plain HTTP
+        # until §C.15 cert-manager terminates TLS at the Ingress (the
+        # *registry* Service stays HTTP intra-cluster).
+        trivy image \
+          --quiet \
+          --no-progress \
+          --insecure \
+          --exit-code 1 \
+          --severity "${SEV}" \
+          --ignore-unfixed \
+          --format table \
+          "${IMAGE}"
+
+    - name: Trivy SARIF artefact (always)
+      if: ${{ always() && inputs.trivy-skip != 'true' }}
+      shell: bash
+      env:
+        IMAGE:   ${{ steps.compute-tags.outputs.image }}
+        SERVICE: ${{ inputs.service }}
+      run: |
+        set -euo pipefail
+        mkdir -p trivy-reports
+        OUT="trivy-reports/${SERVICE}.sarif"
+        # Best-effort: a non-zero exit here is fine — the previous
+        # step has already decided pass/fail; this is just the report.
+        trivy image \
+          --quiet --no-progress --insecure \
+          --severity HIGH,CRITICAL,MEDIUM \
+          --format sarif \
+          --output "${OUT}" \
+          "${IMAGE}" || true
+        echo "[trivy] report written to ${OUT}"
 
     - name: Image summary
       shell: bash

@@ -9,6 +9,7 @@
 #   * Erlang cookie pinned via the same Secret so a future cluster
 #     expansion doesn't reshuffle node identity on restart.
 # =====================================================================
+# pre-commit:allow-plaintext-secret
 apiVersion: v1
 kind: Secret
 metadata:

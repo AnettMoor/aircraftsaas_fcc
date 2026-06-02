@@ -1,0 +1,38 @@
+# =====================================================================
+# allow-frontend — Phase C §C.12
+#
+# The Vue SPA pod is a static-asset server: the browser, not the pod,
+# talks to the backend APIs. So the pod's surface is intentionally tiny.
+#
+# Ingress: only ingress-nginx (labeled name: ns-gateway) reaches :8080.
+# Egress:  only DNS (kube-dns) — no upstream calls leave the pod.
+# =====================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-frontend-ingress, namespace: ns-frontend }
+spec:
+  podSelector: { matchLabels: { app: vue-frontend } }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector: { matchLabels: { name: ns-gateway } }
+    ports: [{ protocol: TCP, port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-frontend-egress, namespace: ns-frontend }
+spec:
+  podSelector: { matchLabels: { app: vue-frontend } }
+  policyTypes: [Egress]
+  egress:
+  # DNS (CoreDNS) — must use the auto-injected
+  # kubernetes.io/metadata.name label, because kube-system does NOT have a
+  # `name=kube-system` label by default on stock Kubernetes / kubeadm clusters.
+  - to:
+    - namespaceSelector:
+        matchLabels: { kubernetes.io/metadata.name: kube-system }
+      podSelector:
+        matchLabels: { k8s-app: kube-dns }
+    ports:
+    - { protocol: UDP, port: 53 }
+    - { protocol: TCP, port: 53 }

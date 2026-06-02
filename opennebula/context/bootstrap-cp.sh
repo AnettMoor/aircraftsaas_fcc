@@ -47,11 +47,20 @@ report_failure() {
     #
     # Onegate has an undocumented value-length cap (~4 KiB observed on
     # OpenNebula 7.x), so split the b64 stream across 8 USER_TEMPLATE
-    # keys (LOG_B64_1..LOG_B64_8) of <=3500 chars each = ~20 KiB raw
-    # log, enough for the last ~500 lines even when apt-get install
-    # spam dominates the early steps.
+    # keys (LOG_B64_1..LOG_B64_8) of <=3500 chars each = ~28 KiB b64
+    # = ~21 KiB raw log.
+    #
+    # CRITICAL: we must capture the *tail* of the log (where the failure
+    # message is), not the head. Previously `tail -n 500 | base64 -w0`
+    # produced ~45 KiB of b64 and the slicing copied only chunks 1..8 of
+    # the FIRST 28 KiB — i.e. the OLDEST 14 KiB of raw text, which on a
+    # typical run is dominated by apt-get install spam from steps 2-3
+    # and CUTS OFF before the kubeadm-init error in step 4. Use
+    # `tail -c 20000` (raw bytes) instead: ~20 KiB raw -> ~27 KiB b64,
+    # fits cleanly across 8 chunks, and the last bytes (= the actual
+    # error) are guaranteed to be included.
     local b64
-    b64=$(tail -n 500 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
+    b64=$(tail -c 20000 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
     onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
     onegate vm update --data "BOOTSTRAP_FAIL_LINE=${lineno}" || true
     onegate vm update --data "BOOTSTRAP_LOG_B64_1=${b64:0:3500}"     || true
@@ -231,9 +240,31 @@ EOF
 #     happens to crash-restart during the [api-check] wait window.
 # A bare `kubeadm reset -f` between attempts is sufficient — the kubeadm
 # config remains valid (deterministic PRIMARY_IP, same certSANs).
+#
+# We split kubeadm init into two parts:
+#   (1) `kubeadm init --skip-phases=addon/coredns,addon/kube-proxy`
+#   (2) `kubeadm init phase addon coredns` + `kubeadm init phase addon
+#       kube-proxy` (idempotent, wrapped in our `retry` helper).
+#
+# Rationale: in the minione lab kubeadm reliably reaches the very last
+# (addon) phase, then issues:
+#   GET https://${PRIMARY_IP}:6443/apis/apps/v1/namespaces/kube-system/
+#       deployments?labelSelector=k8s-app%3Dkube-dns
+# which intermittently hangs past kubeadm's hardcoded 30s client timeout
+# because, in the ~10s window between [mark-control-plane] and
+# addon/coredns, the freshly-started apiserver re-acquires the etcd
+# leader lease and the embedded etcd does a full fsync on a single tiny
+# VM disk -- on minione's `fs_lvm_ssh` driver this routinely blocks the
+# apiserver for >30s. The previous design's "retry whole init 3 times"
+# strategy wasted ~90s per attempt and almost always hit the exact same
+# stall again because each restart goes through the same fsync window.
+# Splitting lets us retry only the addon phase (each attempt <5s),
+# and adding a `/readyz` precheck means we don't issue the addon call
+# until the apiserver is actually healthy.
 KUBEADM_RC=0
 for attempt in 1 2 3; do
-    if kubeadm init --config=/root/kubeadm-config.yaml --upload-certs; then
+    if kubeadm init --config=/root/kubeadm-config.yaml --upload-certs \
+                    --skip-phases=addon/coredns,addon/kube-proxy; then
         KUBEADM_RC=0
         break
     fi
@@ -258,6 +289,25 @@ cp /etc/kubernetes/admin.conf /root/.kube/config
 chown -R root:root /root/.kube
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
+
+# Wait for /readyz before invoking the addon phases. /readyz returns 200
+# only when apiserver has finished its post-leader-election warmup AND
+# all readiness checks (etcd, informers, apiserver-storage) pass. This
+# is the precondition kubeadm's own --timeout flags assume is already
+# met when entering addon phases, but on minione it routinely isn't.
+echo "[kubeadm] waiting for apiserver /readyz to be healthy..."
+for i in $(seq 1 60); do
+    if kubectl get --raw=/readyz 2>/dev/null | grep -q '^ok$'; then
+        echo "[kubeadm] apiserver /readyz OK after ${i}*5s"
+        break
+    fi
+    sleep 5
+done
+
+# Now install the addons. Both `kubeadm init phase addon *` commands are
+# idempotent (re-applies the same manifest), so the retry helper is safe.
+retry kubeadm init phase addon coredns    --config=/root/kubeadm-config.yaml
+retry kubeadm init phase addon kube-proxy --config=/root/kubeadm-config.yaml
 
 step "5-calico"
 

@@ -1,11 +1,9 @@
 # =====================================================================
 # users-service Deployment.
 #
-# Image tag `users-service:dev` matches the local Minikube workflow
-# (`eval $(minikube docker-env)` + `docker build -t users-service:dev`)
-# documented in local.md. The opennebula overlay rewrites this image
-# reference to the in-cluster registry FQDN at deploy time
-# (k8s/overlays/opennebula/kustomization.yaml).
+# The `users-service:dev` image reference is a placeholder; the
+# OpenNebula overlay rewrites it to the in-cluster registry FQDN at
+# deploy time (k8s/overlays/opennebula/kustomization.yaml).
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -56,7 +54,7 @@ spec:
             # the matching emptyDir mounts for /tmp + dotnet diagnostics.
       # Spread replicas across nodes so a single worker loss doesn't
       # take the service offline. Soft constraint (ScheduleAnyway) so
-      # single-node clusters (e.g. dev Minikube) still schedule.
+      # smaller clusters still schedule.
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

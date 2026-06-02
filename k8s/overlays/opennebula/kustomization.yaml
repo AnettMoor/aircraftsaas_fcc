@@ -31,8 +31,8 @@ components:
   - ../../rbac
 
 # --- Image rewrites ----------------------------------------------------
-# The base uses `<svc>:dev` (matches local Minikube builds). OpenNebula
-# pulls from the in-cluster registry instead. CI overrides the tag at
+# The base uses placeholder `<svc>:dev` references. OpenNebula pulls
+# from the in-cluster registry instead. CI overrides the tag at
 # rollout time; here we only set the prefix + a sane default tag.
 images:
   - name: users-service
@@ -98,8 +98,8 @@ patches:
         path: /spec/replicas
         value: 3
 
-  # Real edge hostnames. The base uses *.aircraft.localtest.me which
-  # resolves to 127.0.0.1 (good for Minikube, wrong for OpenNebula).
+  # Real edge hostnames. The base uses placeholder *.aircraft.localtest.me
+  # which is rewritten here to the real edge DNS provided by OpenNebula NAT.
   - target: { kind: Ingress, name: users-ingress }
     patch: |-
       - op: replace
@@ -124,9 +124,10 @@ patches:
         path: /spec/tls/0/hosts/0
         value: app.aircraft.example.com
 
-  # --- Phase C §C.15: switch every Ingress from the self-signed
-  # ClusterIssuer (Minikube default) to letsencrypt-staging. Promote
-  # to letsencrypt-prod by editing this overlay once staging succeeds.
+  # --- Phase C §C.15: every Ingress carries a placeholder
+  # `cert-manager.io/cluster-issuer` annotation in the base; the
+  # overlay points it at `letsencrypt-staging`. Promote to
+  # `letsencrypt-prod` by editing this overlay once staging succeeds.
   - target: { kind: Ingress, name: users-ingress }
     patch: |-
       - op: replace
@@ -158,18 +159,15 @@ patches:
         value: letsencrypt-staging
 
   # ---------------------------------------------------------------------
-  # plans/opennebula.md §4.1 functional patches — applied only on the
-  # OpenNebula overlay because the Minikube dev loop relies on the
-  # opposite behaviour (IfNotPresent against a locally-built image
-  # cache, plaintext registry auth, *.localtest.me CSP).
+  # plans/opennebula.md §4.1 functional patches applied on the
+  # OpenNebula overlay (the only production deploy target).
   # ---------------------------------------------------------------------
 
   # 1. Force `imagePullPolicy: Always` on every app container. The
   #    in-cluster registry tag is `latest` by default (and overridden to
   #    a git-sha by CI at deploy time). With `IfNotPresent` the kubelet
   #    would happily keep running a stale local copy of `latest` after
-  #    a re-push; on the Minikube overlay that is intentional (the dev
-  #    loads images via `minikube docker-env`), here it is wrong.
+  #    a re-push, which is wrong for a production rollout.
   - target: { kind: Deployment, name: users-service }
     patch: |-
       - op: replace

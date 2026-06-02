@@ -4,7 +4,7 @@ This document is a focused, operator-facing playbook for deploying the AircraftS
 
 It assumes the IaaS layer described in [`opennebula/runbook.md`](opennebula/runbook.md:1) and [`plans/deploy.md`](plans/deploy.md:1) §2 has already been executed. **Nothing below provisions VMs, installs kubeadm, or sets up Calico** — only the application + supporting platform services are deployed here.
 
-For local dev parity, see [`local.md`](local.md:1). For Kustomize overlay semantics, see [`k8s/overlays/opennebula/kustomization.yaml`](k8s/overlays/opennebula/kustomization.yaml:1).
+For Kustomize overlay semantics, see [`k8s/overlays/opennebula/kustomization.yaml`](k8s/overlays/opennebula/kustomization.yaml:1).
 
 ---
 

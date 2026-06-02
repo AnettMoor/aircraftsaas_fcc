@@ -1,12 +1,12 @@
-# OpenNebula Automation & Minikube-→-OpenNebula Cut-over Plan
+# OpenNebula Automation Plan
 
 > **Sibling document to** [`plans/deploy.md`](deploy.md). That plan deferred OpenNebula automation to a separate work item (its §2.2 + Phase D). **This is that work item.**
 >
-> **Trigger for writing this plan:** the manually-built 3-VM OpenNebula cluster of `deploy.md` §2.1 has been **torn down**. There is no longer a "validation cluster" the PaaS overlay can be exercised against. From now on, every `kubectl apply -k k8s/overlays/opennebula` run must target a cluster produced by the automation defined here.
+> Every `kubectl apply -k k8s/overlays/opennebula` run must target a cluster produced by the automation defined here.
 >
 > Consequence: this plan owns BOTH
 >   1. the contents of the [`opennebula/`](../opennebula/) tree (templates, vNet, cloud-init, security groups, runbook), AND
->   2. the small set of [`k8s/`](../k8s/) refactors needed to leave the Minikube-coupled defaults behind now that the manual fallback cluster is gone.
+>   2. the small set of [`k8s/`](../k8s/) refactors needed to consolidate the manifests around the OpenNebula production overlay as the sole deploy target.
 
 ---
 
@@ -16,7 +16,7 @@
 
 1. Produce a **byte-equivalent replacement** for the §2.1 manual cluster from native OpenNebula primitives (`onetemplate` / `onevm` / `oneflow` / `onevnet` / `onesecgroup`) — **no Terraform, no Ansible**. The §2.2 sketch in [`plans/deploy.md`](deploy.md) is the verbatim target shape.
 2. Make the cluster *reproducible*: a clean OpenNebula tenancy + this repo must yield a cluster that passes [`tests/opennebula/cluster-ready.sh`](../tests/opennebula/cluster-ready.sh) and [`tests/opennebula/registry-trust.sh`](../tests/opennebula/registry-trust.sh) with zero manual steps after `onetemplate instantiate`.
-3. Decouple the k8s/* manifests from Minikube assumptions that are no longer load-bearing now that no manual cluster remains as a safety net.
+3. Keep the k8s/* manifests free of dev-only assumptions; the OpenNebula overlay is the sole deploy target.
 4. Define a deterministic **first-boot sequence** that solves the chicken-and-egg between (a) the in-cluster Docker Registry and (b) the workloads that pull from it.
 
 ### Non-goals
@@ -37,8 +37,8 @@
 | [`tests/opennebula/cluster-ready.sh`](../tests/opennebula/cluster-ready.sh), [`tests/opennebula/registry-trust.sh`](../tests/opennebula/registry-trust.sh) | Shipped, never run against a live cluster | Become the **acceptance gate** for §6 below. |
 | [`tests/opennebula/post-cutover-validation.sh`](../tests/opennebula/post-cutover-validation.sh) | **Missing** (referenced from `opennebula/README.md` but not present on disk) | Must be written as part of this plan. |
 | [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) | Production preset already in place: replicas=3, anti-affinity, real hostnames, registry FQDN, letsencrypt-staging | Stays as-is structurally — small additions in §4 only. |
-| [`k8s/base/kustomization.yaml`](../k8s/base/kustomization.yaml) | Calls itself "Minikube-equivalent baseline" | Comment / framing must be updated; defaults stay Minikube-shaped because `overlays/minikube` still consumes them. |
-| [`k8s/gateway/ingress.yaml`](../k8s/gateway/ingress.yaml), [`k8s/users/deployment.yaml`](../k8s/users/deployment.yaml), siblings | `*.localtest.me`, `<svc>:dev`, `imagePullPolicy: IfNotPresent` | Compatible with overlays/opennebula (already overridden). Audited for completeness in §4. |
+| [`k8s/base/kustomization.yaml`](../k8s/base/kustomization.yaml) | Holds the structural defaults consumed by the OpenNebula overlay | Comment / framing updated to call it a "structural baseline". |
+| [`k8s/gateway/ingress.yaml`](../k8s/gateway/ingress.yaml), [`k8s/users/deployment.yaml`](../k8s/users/deployment.yaml), siblings | Placeholder `*.localtest.me`, `<svc>:dev`, `imagePullPolicy: IfNotPresent` | All overridden by overlays/opennebula. Audited for completeness in §4. |
 | [`k8s/ci/runner-deployment.yaml`](../k8s/ci/runner-deployment.yaml) | DinD `--insecure-registry=registry.ns-registry.svc.cluster.local:5000` | Compatible. The new nodes' containerd must mirror this trust (§3.3). |
 
 ---
@@ -137,7 +137,7 @@ The cloud-init is **declarative, not scripted**: every step is a `runcmd` whose 
 
 ---
 
-## 4. k8s/* code changes required by the Minikube → OpenNebula move
+## 4. k8s/* code changes required by the OpenNebula consolidation
 
 The full inventory of files that need touching, with one-line rationale. Most are **comment / framing updates** rather than functional changes, because [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) already does the heavy lifting. Functional changes are flagged **[FUNCTIONAL]**.
 
@@ -145,8 +145,8 @@ The full inventory of files that need touching, with one-line rationale. Most ar
 
 | File | Change | Why |
 |---|---|---|
-| [`k8s/base/kustomization.yaml`](../k8s/base/kustomization.yaml) | Reword the "Minikube-equivalent baseline" header — keep the defaults, but explicitly call them "developer-loop baseline" so future readers don't assume Minikube is the production fallback. | Manual §2.1 cluster gone; "Minikube-equivalent" is now misleading. |
-| [`k8s/users/deployment.yaml`](../k8s/users/deployment.yaml), [`k8s/fleet/deployment.yaml`](../k8s/fleet/deployment.yaml), [`k8s/booking/deployment.yaml`](../k8s/booking/deployment.yaml) | **[FUNCTIONAL]** change `imagePullPolicy` from `IfNotPresent` → `IfNotPresent` *only* in `overlays/minikube`, force `Always` on `overlays/opennebula`. Add an overlay patch. | OpenNebula nodes don't have a `minikube docker-env` preload — without `Always` they may run a stale local copy of a tag (`latest`, or a sha-tag re-pushed by CI). |
+| [`k8s/base/kustomization.yaml`](../k8s/base/kustomization.yaml) | Reword the header to "structural baseline" so future readers understand the base is consumed only by the OpenNebula overlay. | Sole deploy target is OpenNebula. |
+| [`k8s/users/deployment.yaml`](../k8s/users/deployment.yaml), [`k8s/fleet/deployment.yaml`](../k8s/fleet/deployment.yaml), [`k8s/booking/deployment.yaml`](../k8s/booking/deployment.yaml) | **[FUNCTIONAL]** force `imagePullPolicy: Always` via an `overlays/opennebula` patch. | Without `Always` the kubelet may run a stale local copy of a tag (`latest`, or a sha-tag re-pushed by CI). |
 | Same three Deployments | Add overlay patch setting `image: registry.ns-registry.svc.cluster.local:5000/<svc>:latest` — already covered by the overlay's `images:` rewrite; **no source change**, audit only. | Verified — overlay covers it. |
 | [`k8s/users/migration-job.yaml`](../k8s/users/migration-job.yaml), [`k8s/fleet/migration-job.yaml`](../k8s/fleet/migration-job.yaml), [`k8s/booking/migration-job.yaml`](../k8s/booking/migration-job.yaml) | **[FUNCTIONAL]** extend the existing `images:` rewrite in `overlays/opennebula` to also rewrite the migration-job container images (currently only the Deployment images are rewritten — Jobs would silently pull the unqualified `<svc>:dev` tag). | Gap discovered while writing this plan. |
 | [`k8s/frontend/deployment.yaml`](../k8s/frontend/deployment.yaml) | Audit only — overlay rewrites `vue-frontend:dev` correctly. | Verified. |
@@ -155,8 +155,7 @@ The full inventory of files that need touching, with one-line rationale. Most ar
 | [`k8s/registry/deployment.yaml`](../k8s/registry/deployment.yaml) | Audit only — single replica is acceptable; the `Recreate` strategy + PVC already match what cloud-init's containerd config expects. | Verified. |
 | [`k8s/infra/postgres.yaml`](../k8s/infra/postgres.yaml), [`k8s/infra/rabbitmq.yaml`](../k8s/infra/rabbitmq.yaml) | Audit only — StatefulSet + PVC stays as-is. Confirm the OpenNebula default StorageClass name matches what `volumeClaimTemplates` requests (or add an overlay patch setting `storageClassName`). | OpenNebula's bundled `csi-driver` typically registers `oneblock` as the SC; the manifests use the cluster default which is fine if cloud-init annotates it `storageclass.kubernetes.io/is-default-class: "true"`. |
 | [`k8s/ci/runner-deployment.yaml`](../k8s/ci/runner-deployment.yaml) | Audit only — DinD `--insecure-registry` already trusts the in-cluster registry. The same trust is wired on the nodes by cloud-init (§3.3). | Verified. |
-| [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) | **[FUNCTIONAL]** add the four patches identified above: (a) migration-job image rewrite, (b) `imagePullPolicy: Always`, (c) Ingress CSP rewrite, (d) delete `k8s/registry/auth-secret.yaml` (replaced by SealedSecret). | All four are the only material k8s/* code changes the move requires. |
-| [`k8s/overlays/minikube/kustomization.yaml`](../k8s/overlays/minikube/kustomization.yaml) | Audit only — unchanged. The Minikube overlay remains for the dev loop. | Verified. |
+| [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) | **[FUNCTIONAL]** add the four patches identified above: (a) migration-job image rewrite, (b) `imagePullPolicy: Always`, (c) Ingress CSP rewrite, (d) delete `k8s/registry/auth-secret.yaml` (replaced by SealedSecret). | All four are the only material k8s/* code changes the consolidation requires. |
 
 ### 4.2 What this plan deliberately does NOT change
 

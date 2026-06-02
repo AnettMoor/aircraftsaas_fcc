@@ -11,9 +11,9 @@
 #   * Host-based routing requires zero rewrites: the request that
 #     arrives at the upstream is byte-for-byte the request the .NET
 #     app already knows how to route.
-#   * `*.localtest.me` resolves to 127.0.0.1 by RFC, so the same
-#     manifest works on Minikube via `minikube tunnel` AND can be
-#     swapped to `*.aircraft.example.com` in a production overlay.
+#   * Hostnames use placeholder `*.aircraft.localtest.me` in the base
+#     and are rewritten to `*.aircraft.example.com` by the OpenNebula
+#     overlay (k8s/overlays/opennebula/kustomization.yaml).
 #
 # Each Ingress object lives in the SAME namespace as its backend
 # Service, because Kubernetes Ingress backends cannot reference a
@@ -22,10 +22,10 @@
 # =====================================================================
 # Phase C §C.15 additions on every Ingress below:
 #
-#   * `cert-manager.io/cluster-issuer: selfsigned-ca-issuer` — the
-#     OpenNebula overlay rewrites this to `letsencrypt-staging` (then
-#     `letsencrypt-prod`). cert-manager populates the
-#     `<host>-tls` Secret named in `spec.tls[*].secretName`.
+#   * `cert-manager.io/cluster-issuer: letsencrypt-staging` —
+#     promote to `letsencrypt-prod` once the edge DNS is stable.
+#     cert-manager populates the `<host>-tls` Secret named in
+#     `spec.tls[*].secretName`.
 #   * `nginx.ingress.kubernetes.io/ssl-redirect: "true"` — force HTTPS.
 #   * `nginx.ingress.kubernetes.io/hsts: "true"` + `hsts-max-age` —
 #     browsers refuse plain-HTTP for the host for a year.
@@ -39,7 +39,7 @@ metadata:
   namespace: ns-users
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    cert-manager.io/cluster-issuer: letsencrypt-staging
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/hsts: "true"
@@ -73,7 +73,7 @@ metadata:
   namespace: ns-fleet
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    cert-manager.io/cluster-issuer: letsencrypt-staging
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/hsts: "true"
@@ -107,7 +107,7 @@ metadata:
   namespace: ns-booking
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    cert-manager.io/cluster-issuer: letsencrypt-staging
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/hsts: "true"
@@ -137,10 +137,9 @@ spec:
 # ---------------------------------------------------------------------
 # Vue SPA (ns-frontend).
 #
-# `app.aircraft.localtest.me` resolves to 127.0.0.1 by RFC, so the SPA
-# is reachable through `minikube tunnel` without editing /etc/hosts.
-# The overlays/opennebula/kustomization.yaml patch rewrites this host
-# to `app.aircraft.example.com` for the production cluster.
+# The placeholder host `app.aircraft.localtest.me` is rewritten to
+# `app.aircraft.example.com` by overlays/opennebula/kustomization.yaml
+# for the production cluster.
 #
 # The Vue bundle calls the backend services on their own subdomains
 # (users.* / fleet.* / booking.*) — there is intentionally no /api/*
@@ -158,7 +157,7 @@ metadata:
   namespace: ns-frontend
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "1m"
-    cert-manager.io/cluster-issuer: selfsigned-ca-issuer
+    cert-manager.io/cluster-issuer: letsencrypt-staging
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/hsts: "true"

@@ -1,18 +1,16 @@
 # cert-manager — Phase C §C.15
 
 Provides TLS termination at the Ingress for every public host (Vue SPA +
-the three backend subdomains). The certificate story is environment-specific:
+the three backend subdomains). All certificates are issued by Let's
+Encrypt on the OpenNebula cluster.
 
 | Overlay | Issuer | Trust |
 |---|---|---|
-| `overlays/minikube`     | `selfsigned-ca-issuer` (CA-backed)  | Local trust store import via `mkcert -install` recommended; browsers will warn otherwise. |
 | `overlays/opennebula`   | `letsencrypt-staging` (HTTP-01)     | Public trust, rate-limited; switch to `letsencrypt-prod` once the edge DNS is stable. |
 
 The cert-manager controller + CRDs ship via [`controller.yaml`](controller.yaml).
-The two ClusterIssuers ship as separate manifests
-([`issuer-selfsigned.yaml`](issuer-selfsigned.yaml),
-[`issuer-letsencrypt.yaml`](issuer-letsencrypt.yaml)) so the
-appropriate overlay can pull only the one it needs.
+The production ClusterIssuer ships in
+[`issuer-letsencrypt.yaml`](issuer-letsencrypt.yaml).
 
 Per-namespace `Certificate` objects are NOT committed: the Ingress
 resources carry the `cert-manager.io/cluster-issuer` annotation, which

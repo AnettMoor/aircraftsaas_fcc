@@ -5,9 +5,9 @@
 #   Every allow-*-ingress NetworkPolicy in k8s/network-policies/ matches
 #   the gateway via `namespaceSelector: { matchLabels: { name: ns-gateway } }`.
 #   The ingress-nginx controller is installed by an external manifest
-#   (upstream ingress-nginx YAML / `minikube addons enable ingress`)
-#   into the FIXED namespace `ingress-nginx`, so we cannot create that
-#   namespace ourselves — but we MUST label it, otherwise default-deny
+#   (upstream ingress-nginx YAML / Helm chart) into the FIXED
+#   namespace `ingress-nginx`, so we cannot create that namespace
+#   ourselves — but we MUST label it, otherwise default-deny
 #   silently breaks every public route and the symptom is "404/timeout
 #   on every host" with no obvious cause.
 #
@@ -26,8 +26,8 @@
 #
 # Out-of-band fallback (for clusters that bypass kustomize):
 #   kubectl label namespace ingress-nginx name=ns-gateway --overwrite
-#   (see local.md §"Label the gateway namespace" and the OpenNebula
-#    cloud-init step in opennebula/context/cloud-init.cp.yaml.)
+#   (see the OpenNebula cloud-init step in
+#    opennebula/context/cloud-init.cp.yaml.)
 # =====================================================================
 apiVersion: v1
 kind: Namespace

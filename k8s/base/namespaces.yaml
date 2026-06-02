@@ -8,11 +8,11 @@
 #
 # NOTE — ns-gateway is intentionally NOT declared here.
 #   The "gateway" namespace is the upstream `ingress-nginx` namespace,
-#   which is created by the ingress-nginx install (Helm chart, upstream
-#   YAML, or `minikube addons enable ingress`). We adopt it by applying
-#   the `name: ns-gateway` label via k8s/gateway/namespace-label.yaml,
-#   wired into k8s/gateway/kustomization.yaml. See the comment header in
-#   that file for the full rationale and out-of-band fallback.
+#   which is created by the ingress-nginx install (Helm chart or
+#   upstream YAML). We adopt it by applying the `name: ns-gateway`
+#   label via k8s/gateway/namespace-label.yaml, wired into
+#   k8s/gateway/kustomization.yaml. See the comment header in that
+#   file for the full rationale and out-of-band fallback.
 # =====================================================================
 apiVersion: v1
 kind: Namespace

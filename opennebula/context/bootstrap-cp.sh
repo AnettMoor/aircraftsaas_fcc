@@ -229,6 +229,21 @@ spec:
 EOF
 kubectl apply --server-side --force-conflicts -f /root/calico-installation.yaml
 
+# Wait for the tigera-operator to materialise the `calico-system`
+# namespace (the operator reconciles the Installation CR and creates
+# the namespace + DaemonSet asynchronously). Otherwise the next
+# rollout-status call fails with "namespaces calico-system not found".
+for i in $(seq 1 60); do
+    if kubectl get namespace calico-system >/dev/null 2>&1; then
+        break
+    fi
+    sleep 5
+done
+# `|| true` so the bootstrap survives a Calico install that's slow
+# enough to exceed the 300s rollout timeout -- Calico will still
+# converge eventually and bootstrap should not block forever on this.
+kubectl -n calico-system rollout status ds/calico-node --timeout=300s || true
+
 step "6-metrics-server"
 
 # ---------------------------------------------------------------------

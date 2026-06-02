@@ -53,7 +53,7 @@ MEMORY           = "4096"
 # a space). Change the value below to whatever `oneimage list` shows
 # for your Ubuntu 22.04 LTS image. The runbook documents the override.
 DISK = [
-    IMAGE      = "Ubuntu 22.04",
+    IMAGE      = "ubuntu-2204-lts",
     SIZE       = "40960",
     DEV_PREFIX = "vd"
 ]

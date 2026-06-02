@@ -32,7 +32,7 @@ MEMORY           = "2048"
 
 # NOTE: same image-name caveat as cp.tpl -- must match `oneimage list`.
 DISK = [
-    IMAGE      = "Ubuntu 22.04",
+    IMAGE      = "ubuntu-2204-lts",
     SIZE       = "40960",
     DEV_PREFIX = "vd"
 ]

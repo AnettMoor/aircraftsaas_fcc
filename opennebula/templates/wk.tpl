@@ -20,9 +20,15 @@
 NAME             = "aircraft-wk"
 DESCRIPTION      = "Aircraft SaaS Kubernetes worker (joins cp-1 via kubeadm)"
 
-CPU              = "4"
-VCPU             = "4"
-MEMORY           = "8192"
+# Sizing reduced for the lab tenancy. Originally 4 vCPU / 8 GiB; the lab
+# front-end can't accommodate two workers of that size. VCPU drops to 1
+# (the OpenNebula default), MEMORY to 2 GiB. Pod scheduling will still
+# work for the Aircraft SaaS demo workloads (which sit at ~200 MiB
+# requests each); HPAs that scale to 10 replicas will be capped by
+# node capacity rather than CPU/memory pressure on the kubelet itself.
+CPU              = "1"
+VCPU             = "1"
+MEMORY           = "2048"
 
 # NOTE: same image-name caveat as cp.tpl -- must match `oneimage list`.
 DISK = [

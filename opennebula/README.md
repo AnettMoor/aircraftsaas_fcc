@@ -75,12 +75,35 @@ onetemplate create /tmp/onerender/wk.tpl
 #    (this generates aircraft.oneflow.json with the numeric IDs).
 ./opennebula/render.sh
 
-# 5. Register and instantiate the oneflow service
+# 5. Register and instantiate the oneflow service.
+#    NOTE: oneflow-template's flag for passing custom_attrs varies by
+#    version. Try these in order until one works:
+#      (a) --custom_attr KEY=value   (modern)
+#      (b) --custom-attr KEY=value   (dash variant)
+#      (c) Interactive mode: `oneflow-template instantiate <id> -i`
+#          and answer the prompts.
+#      (d) Pass a one-shot JSON file via the API (most reliable):
 oneflow-template create /tmp/onerender/aircraft.oneflow.json
-oneflow-template instantiate aircraft \
-    --custom_attr K8S_EDGE_HOST=aircraft.example.com \
-    --custom_attr K8S_VERSION=1.30 \
-    --custom_attr OPERATOR_CIDR=${OPERATOR_IP}/32
+
+# Look up the template ID that `create` just printed:
+TEMPLATE_ID=$(oneflow-template list --no-header | awk '/aircraft/ {print $1; exit}')
+echo "OneFlow template ID: $TEMPLATE_ID"
+
+# Build the merge_template JSON inline -- this is the form that works
+# across all OneFlow CLI versions (it's what the web UI uses internally):
+cat > /tmp/onerender/instantiate.json <<EOF
+{
+  "merge_template": {
+    "custom_attrs_values": {
+      "K8S_EDGE_HOST": "aircraft.example.com",
+      "K8S_VERSION":   "1.30",
+      "OPERATOR_CIDR": "${OPERATOR_IP}/32"
+    }
+  }
+}
+EOF
+
+oneflow-template instantiate $TEMPLATE_ID < /tmp/onerender/instantiate.json
 
 # 6. Watch the cluster boot (5-10 minutes)
 watch -n 5 'oneflow show aircraft; echo; onevm list'

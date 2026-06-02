@@ -31,9 +31,14 @@
 NAME             = "aircraft-cp"
 DESCRIPTION      = "Aircraft SaaS Kubernetes control-plane (1 cp, 2 wk topology)"
 
+# Sizing reduced for the lab tenancy. The original plan called for
+# 2 vCPU / 4 GiB; the lab front-end can't host that many concurrent VMs
+# so we drop RAM to 2 GiB (still enough for kubeadm init + Calico +
+# metrics-server + ingress-nginx). VCPU stays at 2 -- the cp also runs
+# etcd and the scheduler, which are CPU-sensitive under burst load.
 CPU              = "2"
 VCPU             = "2"
-MEMORY           = "4096"
+MEMORY           = "2048"
 
 # NOTE: the IMAGE here must match a name in `oneimage list`. The
 # OpenNebula Marketplace import is usually named "Ubuntu 22.04" (with

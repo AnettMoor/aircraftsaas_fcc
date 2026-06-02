@@ -46,17 +46,22 @@ report_failure() {
     # operator can `| base64 -d` it back to a readable log.
     #
     # Onegate has an undocumented value-length cap (~4 KiB observed on
-    # OpenNebula 7.x), so split the b64 stream across 4 USER_TEMPLATE
-    # keys (LOG_B64_1..LOG_B64_4) of <=3500 chars each = ~10 KiB raw
-    # log, plenty for the last ~200 lines.
+    # OpenNebula 7.x), so split the b64 stream across 8 USER_TEMPLATE
+    # keys (LOG_B64_1..LOG_B64_8) of <=3500 chars each = ~20 KiB raw
+    # log, enough for the last ~500 lines even when apt-get install
+    # spam dominates the early steps.
     local b64
-    b64=$(tail -n 200 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
+    b64=$(tail -n 500 /var/log/aircraft-cp-bootstrap.log 2>/dev/null | base64 -w0)
     onegate vm update --data "BOOTSTRAP_RC=${rc}"            || true
     onegate vm update --data "BOOTSTRAP_FAIL_LINE=${lineno}" || true
     onegate vm update --data "BOOTSTRAP_LOG_B64_1=${b64:0:3500}"     || true
     onegate vm update --data "BOOTSTRAP_LOG_B64_2=${b64:3500:3500}"  || true
     onegate vm update --data "BOOTSTRAP_LOG_B64_3=${b64:7000:3500}"  || true
     onegate vm update --data "BOOTSTRAP_LOG_B64_4=${b64:10500:3500}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_5=${b64:14000:3500}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_6=${b64:17500:3500}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_7=${b64:21000:3500}" || true
+    onegate vm update --data "BOOTSTRAP_LOG_B64_8=${b64:24500:3500}" || true
     exit $rc
 }
 trap 'report_failure $LINENO' ERR
@@ -218,7 +223,35 @@ nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
 EOF
 
-kubeadm init --config=/root/kubeadm-config.yaml --upload-certs
+# kubeadm init is wrapped in a small retry-with-reset loop because on
+# minione it occasionally fails mid-bootstrap with transient errors:
+#   - "context deadline exceeded" pulling pause:3.9 from registry.k8s.io
+#     (when the apt update earlier in step 2 saturated the egress NAT);
+#   - "etcd cluster is not available or misconfigured" if the kubelet
+#     happens to crash-restart during the [api-check] wait window.
+# A bare `kubeadm reset -f` between attempts is sufficient — the kubeadm
+# config remains valid (deterministic PRIMARY_IP, same certSANs).
+KUBEADM_RC=0
+for attempt in 1 2 3; do
+    if kubeadm init --config=/root/kubeadm-config.yaml --upload-certs; then
+        KUBEADM_RC=0
+        break
+    fi
+    KUBEADM_RC=$?
+    echo "[kubeadm] init attempt ${attempt} failed (rc=${KUBEADM_RC}); resetting and retrying" >&2
+    kubeadm reset -f --cri-socket=unix:///run/containerd/containerd.sock || true
+    rm -rf /var/lib/etcd /etc/kubernetes/manifests/* /etc/kubernetes/pki \
+           /etc/kubernetes/admin.conf /etc/kubernetes/super-admin.conf \
+           /etc/kubernetes/kubelet.conf /etc/kubernetes/controller-manager.conf \
+           /etc/kubernetes/scheduler.conf /var/lib/kubelet/pki || true
+    # Give containerd a moment to GC the half-built pause/etcd containers
+    # before the next preflight inspects /var/lib/containerd/.
+    sleep 10
+done
+if [[ "$KUBEADM_RC" -ne 0 ]]; then
+    echo "[kubeadm] init failed after 3 attempts; giving up" >&2
+    exit "$KUBEADM_RC"
+fi
 
 install -d /root/.kube
 cp /etc/kubernetes/admin.conf /root/.kube/config

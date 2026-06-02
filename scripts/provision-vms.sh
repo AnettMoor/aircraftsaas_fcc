@@ -451,14 +451,18 @@ else
           | jq -r '.VM.USER_TEMPLATE.BOOTSTRAP_RC // empty')
     if [[ -n "$BRC" && "$BRC" != "0" ]]; then
       # bootstrap-cp.sh publishes the failure log as base64 across
-      # BOOTSTRAP_LOG_B64_1..4 chunks (onegate's per-key length cap
-      # is ~4 KiB). Concatenate then decode.
+      # BOOTSTRAP_LOG_B64_1..8 chunks (onegate's per-key length cap is
+      # ~4 KiB; 8 x 3500 = ~20 KiB raw log = last ~500 lines).
       TAIL=$(onevm show "$CP_VMID" --json 2>/dev/null | jq -r '
         .VM.USER_TEMPLATE
         | ((.BOOTSTRAP_LOG_B64_1 // "")
          + (.BOOTSTRAP_LOG_B64_2 // "")
          + (.BOOTSTRAP_LOG_B64_3 // "")
-         + (.BOOTSTRAP_LOG_B64_4 // ""))' \
+         + (.BOOTSTRAP_LOG_B64_4 // "")
+         + (.BOOTSTRAP_LOG_B64_5 // "")
+         + (.BOOTSTRAP_LOG_B64_6 // "")
+         + (.BOOTSTRAP_LOG_B64_7 // "")
+         + (.BOOTSTRAP_LOG_B64_8 // ""))' \
         | base64 -d 2>/dev/null || true)
       # Fall back to the legacy single-line field if a pre-base64 cp
       # template is still running.

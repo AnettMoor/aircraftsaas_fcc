@@ -66,8 +66,16 @@ EDGE_HOST="${EDGE_HOST:-aircraft.example.com}"
 K8S_VERSION="${K8S_VERSION:-1.30}"
 KUBECONFIG_OUT="${KUBECONFIG_OUT:-${HOME}/.kube/aircraft.config}"
 
-# Resource names (kept in lock-step with opennebula/*.tpl + oneflow yaml)
-IMAGE_NAME="ubuntu-2204-lts"
+# Resource names (kept in lock-step with opennebula/*.tpl + oneflow yaml).
+# IMAGE_NAME is the literal name in `oneimage list`. The default
+# "Ubuntu 22.04" matches what `onemarketapp export <APPID>` writes when
+# no second positional argument is given. Override with AIRCRAFT_IMAGE_NAME
+# env-var if your tenancy renamed the marketplace image. The value is also
+# exported into render.sh so opennebula/templates/{cp,wk}.tpl can resolve
+# the numeric IMAGE_ID at render time (dodging the OpenNebula 7.x oneflow
+# IMAGE-by-name resolution bug — see opennebula/templates/cp.tpl header).
+IMAGE_NAME="${AIRCRAFT_IMAGE_NAME:-Ubuntu 22.04}"
+export AIRCRAFT_IMAGE_NAME="$IMAGE_NAME"
 VNET_NAME="aircraft-vnet"
 SG_CLUSTER="aircraft-cluster"
 SG_EDGE="aircraft-edge"

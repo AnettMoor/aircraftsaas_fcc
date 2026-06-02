@@ -204,18 +204,40 @@ if [[ "$SKIP_IMAGE" -eq 0 ]]; then
       printf '  $ %s\n' "onemarketapp export <APPID> ${IMAGE_NAME} --datastore default"
       printf '  $ %s\n' "oneimage chmod ${IMAGE_NAME} 644"
     else
+      # Marketplace filter: name contains "Ubuntu 22.04" but NOT "aarch64"
+      # / "arm" / "i386" -- we want the x86_64 variant for standard
+      # OpenNebula KVM hosts. The OpenNebula marketplace ships at
+      # least three arch variants and the first hit is often arm64.
       APPID=$(onemarketapp list --csv 2>/dev/null \
-              | awk -F, 'tolower($2) ~ /ubuntu 22\.04/ {print $1; exit}')
-      [[ -z "$APPID" ]] && die "no 'Ubuntu 22.04*' app found in OpenNebula marketplace"
-      log "  exporting marketplace appid=${APPID} -> ${IMAGE_NAME}"
+              | awk -F, '
+                  tolower($2) ~ /ubuntu 22\.04/ \
+                  && tolower($2) !~ /aarch64|arm64|arm|i386|ppc/ \
+                  { print $1; exit }')
+      if [[ -z "$APPID" ]]; then
+        # Fallback: explicit x86_64 match, or first row with no arch suffix.
+        APPID=$(onemarketapp list --csv 2>/dev/null \
+                | awk -F, 'tolower($2) ~ /ubuntu 22\.04.*x86_64/ {print $1; exit}')
+      fi
+      [[ -z "$APPID" ]] && die "no x86_64 'Ubuntu 22.04*' app found in OpenNebula marketplace (only arm variants present?)"
+      APPNAME=$(onemarketapp list --csv 2>/dev/null \
+                | awk -F, -v id="$APPID" '$1==id {print $2; exit}')
+      log "  exporting marketplace appid=${APPID} (\"${APPNAME}\") -> ${IMAGE_NAME}"
       onemarketapp export "$APPID" "$IMAGE_NAME" --datastore default
-      # Wait for the image to reach READY.
+
+      # Wait for the image to reach READY. oneimage show formats lines as
+      # "STATE          : rdy" so $3 is the value, NOT $2 (which is ":").
+      # Possible state strings: init, rdy (READY), used, lock, err.
       for _ in $(seq 1 60); do
-        STATE=$(oneimage show "$IMAGE_NAME" 2>/dev/null | awk '/^STATE/ {print $2; exit}')
-        [[ "$STATE" == "READY" ]] && break
-        log "  image state=${STATE:-?}; waiting..."
-        sleep 10
+        STATE=$(oneimage show "$IMAGE_NAME" 2>/dev/null \
+                | awk '/^STATE/ {print tolower($3); exit}')
+        case "$STATE" in
+          rdy|ready) break ;;
+          err|error) die "image ${IMAGE_NAME} entered ERROR state" ;;
+          *) log "  image state=${STATE:-?}; waiting..." ; sleep 10 ;;
+        esac
       done
+      [[ "$STATE" != "rdy" && "$STATE" != "ready" ]] \
+        && die "image ${IMAGE_NAME} did not reach READY in 600s (last state: ${STATE:-?})"
       oneimage chmod "$IMAGE_NAME" 644
     fi
   fi

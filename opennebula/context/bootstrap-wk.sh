@@ -106,11 +106,20 @@ step "2-poll-join"
 
 # ---------------------------------------------------------------------
 # 2. Poll OneGate for the join command. cp-1's bootstrap publishes it
-#    as USER_TEMPLATE/K8S_JOIN_COMMAND once kubeadm init finishes.
-#    We poll for up to 15 minutes (cp typically takes 5-7).
+#    as USER_TEMPLATE/K8S_JOIN_COMMAND once kubeadm init + Calico are
+#    up. Unbounded poll: there is no penalty for a worker waiting and
+#    a hard 15-min cap would defeat the whole point of OneFlow's
+#    parents/children -- it would also wedge the cluster permanently
+#    if cp-1's bootstrap took longer than 15 minutes (cf. README
+#    common-errors row "Workers exited at line ~115 of bootstrap-wk.sh").
+#
+# Heartbeat: every 60 seconds publish a poll count to USER_TEMPLATE so
+# the operator can see the worker is alive and waiting.
 # ---------------------------------------------------------------------
 JOIN=""
-for i in $(seq 1 90); do
+i=0
+while true; do
+    i=$((i + 1))
     JOIN=$(onegate vm show -j --filter "NAME=${K8S_CONTROL_PLANE_VM}" 2>/dev/null \
            | jq -r '(.VM // .[0].VM // .[0]) | .USER_TEMPLATE.K8S_JOIN_COMMAND // empty')
     if [[ -n "$JOIN" ]]; then
@@ -127,13 +136,12 @@ for i in $(seq 1 90); do
         echo "Got join command via ROLE_NAME=controlplane after ${i} poll(s)"
         break
     fi
+    # Heartbeat every 6 polls (~60s) so the operator can see progress.
+    if [[ $((i % 6)) -eq 0 ]]; then
+        onegate vm update --data "BOOTSTRAP_STEP=2-poll-join (${i} polls so far, ~$((i * 10))s)" 2>/dev/null || true
+    fi
     sleep 10
 done
-
-if [[ -z "$JOIN" ]]; then
-    echo "FATAL: control-plane never published K8S_JOIN_COMMAND after 15 min" >&2
-    exit 1
-fi
 
 step "3-kubeadm-join"
 

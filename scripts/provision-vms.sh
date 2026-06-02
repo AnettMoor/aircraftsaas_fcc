@@ -326,7 +326,7 @@ OPERATOR_CIDR="${OPERATOR_CIDR:-${OPERATOR_IP:-}/32}"
 [[ "$OPERATOR_CIDR" == "/32" ]] && die "OPERATOR_CIDR is empty"
 log "  OPERATOR_CIDR=${OPERATOR_CIDR}  EDGE_HOST=${EDGE_HOST}  K8S_VERSION=${K8S_VERSION}"
 
-if resource_exists "oneflow list" "$FLOW_NAME" 2; then
+if resource_exists "oneflow list" "$FLOW_NAME" 4; then
   log "  oneflow service ${FLOW_NAME} already running — skip instantiate"
 else
   # OpenNebula 7.x: oneflow-template instantiate takes a JSON file with
@@ -342,8 +342,9 @@ else
   }
 }
 JSON
+    # OpenNebula CLI columns: ID USER GROUP NAME ... -> NAME is $4
     FLOW_TID=$(oneflow-template list --no-header 2>/dev/null \
-               | awk -v n="$FLOW_NAME" '$2==n {print $1; exit}')
+               | awk -v n="$FLOW_NAME" '$4==n {print $1; exit}')
     [[ -z "$FLOW_TID" ]] && die "could not resolve oneflow-template id for ${FLOW_NAME}"
     log "  instantiate template-id=${FLOW_TID} with ${INSTANTIATE_JSON}"
     oneflow-template instantiate "$FLOW_TID" "$INSTANTIATE_JSON"

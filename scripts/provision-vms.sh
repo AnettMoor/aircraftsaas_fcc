@@ -147,11 +147,12 @@ fi
 if [[ "$TEARDOWN" -eq 1 ]]; then
   log "TEARDOWN — reversing provisioning"
 
-  if resource_exists "oneflow list" "$FLOW_NAME" 2; then
+  # OpenNebula CLI columns: ID USER GROUP NAME ... -> NAME is $4
+  if resource_exists "oneflow list" "$FLOW_NAME" 4; then
     log "delete oneflow service ${FLOW_NAME}"
     run oneflow delete "$FLOW_NAME"
     if [[ "$DRY_RUN" -eq 0 ]]; then
-      while resource_exists "oneflow list" "$FLOW_NAME" 2; do
+      while resource_exists "oneflow list" "$FLOW_NAME" 4; do
         log "  waiting for oneflow ${FLOW_NAME} to be reaped..."
         sleep 5
       done
@@ -160,7 +161,7 @@ if [[ "$TEARDOWN" -eq 1 ]]; then
     log "oneflow service ${FLOW_NAME} not present — skip"
   fi
 
-  if resource_exists "oneflow-template list" "$FLOW_NAME" 2; then
+  if resource_exists "oneflow-template list" "$FLOW_NAME" 4; then
     log "delete oneflow-template ${FLOW_NAME}"
     run oneflow-template delete "$FLOW_NAME"
   fi

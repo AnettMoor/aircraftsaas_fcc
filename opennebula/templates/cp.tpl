@@ -50,8 +50,14 @@ DISK = [
     DEV_PREFIX = "vd"
 ]
 
+# NETWORK_UNAME pins lookup to the vNet's owner. Without it,
+# `onetemplate instantiate` as one user fails with
+# "User X does not own a network with name: aircraft-vnet" if the
+# vNet was created by a different user. Adjust if your aircraft-vnet
+# is owned by a non-oneadmin user (check with `onevnet show aircraft-vnet`).
 NIC = [
     NETWORK         = "aircraft-vnet",
+    NETWORK_UNAME   = "oneadmin",
     SECURITY_GROUPS = "aircraft-cluster,aircraft-edge"
 ]
 

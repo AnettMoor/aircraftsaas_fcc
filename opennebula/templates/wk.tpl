@@ -37,8 +37,14 @@ DISK = [
     DEV_PREFIX = "vd"
 ]
 
+# NETWORK_UNAME: see comment in cp.tpl. OneFlow services run as their
+# OWNER user, not as the creator -- so even if you ran `onetemplate
+# create` as oneadmin, the actual VM instantiation later fails with
+# "User X does not own a network with name: aircraft-vnet" unless this
+# is set explicitly.
 NIC = [
     NETWORK         = "aircraft-vnet",
+    NETWORK_UNAME   = "oneadmin",
     SECURITY_GROUPS = "aircraft-cluster,aircraft-nodeport"
 ]
 

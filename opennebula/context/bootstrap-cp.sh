@@ -66,6 +66,32 @@ step() {
     onegate vm update --data "BOOTSTRAP_STEP=$1" 2>/dev/null || true
 }
 
+# Retry a command up to 5 times with exponential backoff (5s, 10s, 20s,
+# 40s, 80s = 155s total). Used for `kubectl apply -f https://...`
+# pulls of upstream manifests (Calico, metrics-server, ingress-nginx),
+# which routinely transient-fail on the first attempt on minione because:
+#   * github.com / raw.githubusercontent.com rate-limits unauthenticated
+#     GETs aggressively when many tenancies share an egress NAT IP;
+#   * kube-apiserver is still stabilising for 10-30s after Calico's
+#     `installation.operator.tigera.io/default` is applied (the operator
+#     hot-patches the apiserver's admission controllers), so any kubectl
+#     call right after step 5 sometimes returns "connection refused".
+# Without retries the bootstrap dies at the FIRST flake; with them every
+# subsequent attempt clearly logs "[retry N/5]" before the apply.
+retry() {
+    local n=0 delay=5 maxn=5
+    until "$@"; do
+        n=$((n+1))
+        if (( n >= maxn )); then
+            echo "[retry] giving up after ${n} attempts: $*" >&2
+            return 1
+        fi
+        echo "[retry ${n}/${maxn}] '$*' failed; sleeping ${delay}s before retry" >&2
+        sleep "$delay"
+        delay=$((delay*2))
+    done
+}
+
 # ---------------------------------------------------------------------
 # Defensive: defaults if CONTEXT didn't inject them (shouldn't happen,
 # but fail loud rather than silently install 1.30.0 over nothing).
@@ -218,7 +244,7 @@ step "5-calico"
 #   "resource mapping not found for name: default ... no matches for kind
 #    Installation in version operator.tigera.io/v1"
 # ---------------------------------------------------------------------
-kubectl apply --server-side --force-conflicts \
+retry kubectl apply --server-side --force-conflicts \
     -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
 
 # Wait up to 2 minutes for the Installation CRD to be Established.
@@ -269,7 +295,20 @@ step "6-metrics-server"
 # ---------------------------------------------------------------------
 # 6. metrics-server (for HPAs).
 # ---------------------------------------------------------------------
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml
+retry kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml
+
+# Wait for the metrics-server Deployment object to actually exist before
+# patching it. `kubectl apply` returns immediately after the API accepts
+# the manifest; the Deployment object itself may take 5-10s to appear in
+# the watch cache. Without this wait, the patch below races and dies with
+# "deployments.apps \"metrics-server\" not found" -> bootstrap rc=1 at
+# line ~310 (was the cause of the 4-kubeadm-init/5-calico transient
+# failures before retries were added).
+for _ in $(seq 1 30); do
+    kubectl -n kube-system get deployment metrics-server >/dev/null 2>&1 && break
+    sleep 2
+done
+
 # Three fixes are needed on a fresh kubeadm cluster, otherwise the pod
 # loops with CrashLoopBackOff and the deployment never goes Available:
 #
@@ -296,7 +335,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/down
 #       are stable; it's defensible in prod because metrics-server
 #       has trivial resource footprint and cp-1 already has spare
 #       capacity.
-kubectl -n kube-system patch deployment metrics-server --type=json -p='[
+retry kubectl -n kube-system patch deployment metrics-server --type=json -p='[
   {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"},
   {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-preferred-address-types=InternalIP"},
   {"op":"add","path":"/spec/template/spec/tolerations","value":[
@@ -312,8 +351,15 @@ step "7-ingress-nginx"
 # ---------------------------------------------------------------------
 # 7. NGINX Ingress controller.
 # ---------------------------------------------------------------------
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
-kubectl label namespace ingress-nginx name=ns-gateway --overwrite
+retry kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+
+# Wait for the namespace to exist before labelling it (avoids races on
+# slow apiservers right after Calico has just hot-patched admission).
+for _ in $(seq 1 30); do
+    kubectl get namespace ingress-nginx >/dev/null 2>&1 && break
+    sleep 2
+done
+retry kubectl label namespace ingress-nginx name=ns-gateway --overwrite
 
 step "8-publish-join"
 

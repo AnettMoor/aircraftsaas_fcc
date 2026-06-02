@@ -1062,6 +1062,35 @@ kubectl -n default run probe-$RANDOM --rm -it --restart=Never --image=curlimages
 # Expect: timeout / connection refused
 ```
 
+#### Per-pod tightening — negative pod-level tests
+
+The `allow-infra.yaml` policy pins each `from:` entry to BOTH a
+`namespaceSelector` AND a `podSelector` (logical AND). That means a
+namespace-level "can ns-users reach Postgres?" test is no longer
+sufficient — you have to prove that ad-hoc pods in the namespace are
+denied even though the legitimate `app: users-service` pod is allowed.
+
+```bash
+# Should SUCCEED — labelled service pod reaches Postgres
+kubectl -n ns-users exec deploy/users-service -- \
+  timeout 3 sh -c 'echo > /dev/tcp/postgres.ns-infra.svc.cluster.local/5432 && echo OK'
+# Expect: OK
+
+# Should FAIL — an unlabelled ad-hoc probe Pod in the same namespace
+# is denied, because the Postgres ingress rule requires
+# `app: users-service` on the source Pod, not just the namespace.
+kubectl -n ns-users run probe-$RANDOM --rm -it --restart=Never \
+  --image=busybox --labels='app=adhoc' -- \
+  timeout 3 nc -zv postgres.ns-infra.svc.cluster.local 5432
+# Expect: timeout / "bad address" / connection refused
+
+# Should FAIL — the RabbitMQ management UI is intentionally NOT exposed
+# via NetworkPolicy. Reach it via `kubectl port-forward` instead.
+kubectl -n ns-users exec deploy/users-service -- \
+  timeout 3 nc -zv rabbitmq.ns-infra.svc.cluster.local 15672
+# Expect: timeout / connection refused
+```
+
 Record this table — it satisfies the "namespace-level NetworkPolicy enforcement with validation" outcome from §5 of the architecture proposal.
 
 ---

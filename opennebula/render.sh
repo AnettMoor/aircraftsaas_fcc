@@ -139,10 +139,16 @@ PY
 fi
 
 # ---------------------------------------------------------------------
-# 5. Static validation -- no unresolved macros should remain anywhere.
+# 5. Static validation -- no unresolved macros should remain in
+#    non-comment lines of rendered output. Comments may legitimately
+#    mention the placeholders in their explanation (e.g. cluster.tpl's
+#    header explains why $NETWORK[...] was REMOVED).
 # ---------------------------------------------------------------------
-if grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT' "$OUT_DIR" 2>/dev/null; then
-    echo "ERROR: unresolved placeholder(s) remain in rendered output." >&2
+LEAKED=$(grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT' "$OUT_DIR" 2>/dev/null \
+    | grep -vE ':[[:space:]]*#' || true)
+if [[ -n "$LEAKED" ]]; then
+    echo "ERROR: unresolved placeholder(s) remain in NON-COMMENT lines:" >&2
+    echo "$LEAKED" >&2
     exit 1
 fi
 

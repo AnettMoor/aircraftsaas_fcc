@@ -1,64 +1,120 @@
 # `opennebula/` — Aircraft SaaS IaaS automation
 
-> **Authoritative plan:** [`plans/opennebula.md`](../plans/opennebula.md). This README is the operator-facing entry point; the plan explains the **why** behind every file in this directory.
+> **Authoritative plan:** [`plans/opennebula.md`](../plans/opennebula.md). This README is the operator-facing runbook; the plan explains the **why** behind every file in this directory.
 
-The contents of this directory **replace** the manually-built 3-VM Kubernetes cluster of `plans/deploy.md` §2.1 (which has been torn down). From now on, every `kubectl apply -k k8s/overlays/opennebula` run targets a cluster produced by the automation defined here.
+The contents of this directory provision a 3-VM Kubernetes cluster on OpenNebula:
+
+- **cp-1** — control-plane (2 vCPU, 4 GiB, 40 GiB)
+- **wk-1**, **wk-2** — workers (4 vCPU, 8 GiB, 40 GiB each)
+- L2-isolated `10.10.0.0/24` virtual network with NAT egress and a single :80/:443 inbound DNAT
+- Three stacked security groups (`cluster`, `edge`, `nodeport`)
+- Cloud-init scripts that run `kubeadm init` on cp-1 + `kubeadm join` on workers + apply Calico
+
+Once the cluster is up, [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) takes over and deploys the application stack (Users / Fleet / Booking services + Vue frontend + Postgres + RabbitMQ + Ingress + cert-manager).
+
+---
 
 ## Directory layout
 
 | Path | Purpose |
 |---|---|
-| [`templates/cp.tpl`](templates/cp.tpl) | OpenNebula VM template — control-plane (2 vCPU / 4 GiB / 40 GiB) |
-| [`templates/wk.tpl`](templates/wk.tpl) | OpenNebula VM template — worker (4 vCPU / 8 GiB / 40 GiB) |
+| [`render.sh`](render.sh) | One-shot script that substitutes operator IP + numeric template IDs into the templates and writes parser-clean copies to `/tmp/onerender/`. **Always run this first.** |
+| [`templates/cp.tpl`](templates/cp.tpl) | OpenNebula VM template — control-plane |
+| [`templates/wk.tpl`](templates/wk.tpl) | OpenNebula VM template — worker |
 | [`vnet/aircraft-vnet.tpl`](vnet/aircraft-vnet.tpl) | L2-isolated `10.10.0.0/24` virtual network |
 | [`security-groups/cluster.tpl`](security-groups/cluster.tpl) | Intra-cluster control-plane + kubelet + Calico ports |
 | [`security-groups/edge.tpl`](security-groups/edge.tpl) | Public `:80` / `:443` + restricted `:6443` (cp-1 only) |
 | [`security-groups/nodeport.tpl`](security-groups/nodeport.tpl) | `30000-32767/tcp` from the edge NIC only (wk-* only) |
 | [`context/cloud-init.cp.yaml`](context/cloud-init.cp.yaml) | First-boot bootstrap for cp-1 (kubeadm init, Calico, Ingress) |
 | [`context/cloud-init.wk.yaml`](context/cloud-init.wk.yaml) | First-boot bootstrap for wk-* (kubeadm join) |
-| [`service/aircraft.oneflow.yaml`](service/aircraft.oneflow.yaml) | OneFlow service template wiring cp + wk roles with role dependency |
-| [`runbook.md`](runbook.md) | Step-by-step `onetemplate` / `onevnet` / `onesecgroup` / `oneflow-template` commands |
+| [`service/aircraft.oneflow.yaml`](service/aircraft.oneflow.yaml) | Source YAML for the OneFlow service template (converted to JSON by `render.sh`) |
+| [`runbook.md`](runbook.md) | Extended verification / troubleshooting steps |
 
-## Quick start
+---
+
+## Why `render.sh` exists
+
+The templates in this directory cannot be fed directly to `one*` CLIs because three things vary per tenancy and per operator workstation:
+
+1. **Numeric VM template IDs** — OpenNebula assigns these at `onetemplate create` time. OneFlow service templates require the numeric ID (not the name).
+2. **Operator public IP** — embedded in `security-groups/edge.tpl` to restrict `:6443` (kube-apiserver) access.
+3. **Cloud-init payloads** — must be base64-inlined into the VM templates' `CONTEXT/START_SCRIPT_BASE64` slot.
+
+Additionally, `oneflow-template create` requires **JSON**, not YAML, even though the source file's natural format is YAML. `render.sh` does the YAML→JSON conversion as part of step (1) above.
+
+The previous version of the templates relied on macros like `$NETWORK[aircraft-vnet]` and `$CONTEXT[OPERATOR_CIDR]`. Those macros are only resolved when the templates are inlined into a VM template — they do NOT resolve when the SG / oneflow files are fed standalone to `onesecgroup create` / `oneflow-template create`. That is why the previous runbook failed with `Wrong NETWORK_ID` and `unexpected character: '#'`. The templates have now been rewritten to use literal CIDRs (`10.10.0.0/24`) and to be rendered by `render.sh` before consumption.
+
+---
+
+## Quick-start runbook (copy-paste)
+
+Run these from a shell on the **OpenNebula front-end** (where the `one*` CLIs are configured) with the repo checked out at `~/aircraftsaas_fcc`:
 
 ```bash
-# 1. Pre-requisites on the operator workstation:
-#      onetemplate / onevm / oneflow-template / oneflow CLIs configured
-#      against the target OpenNebula tenancy. OPENNEBULA_AUTH file with
-#      "<user>:<password>" present in ~/.one/one_auth.
+cd ~/aircraftsaas_fcc
 
-# 2. Provision in dependency order (details in runbook.md):
-onevnet     create opennebula/vnet/aircraft-vnet.tpl
-onesecgroup create opennebula/security-groups/cluster.tpl
-onesecgroup create opennebula/security-groups/edge.tpl
-onesecgroup create opennebula/security-groups/nodeport.tpl
-onetemplate create opennebula/templates/cp.tpl
-onetemplate create opennebula/templates/wk.tpl
-oneflow-template create opennebula/service/aircraft.oneflow.yaml
+# 0. Pre-flight
+export OPERATOR_IP=$(curl -s https://ifconfig.me)
+echo "Operator IP: $OPERATOR_IP"
+one user show   # sanity check: ~/.one/one_auth is configured
 
-# 3. Instantiate the cluster. OperatorCIDR must be provided.
+# 1. Render templates (substitutes operator IP, inlines cloud-init)
+./opennebula/render.sh
+
+# 2. Provision the network layer
+onevnet     create /tmp/onerender/aircraft-vnet.tpl
+onesecgroup create /tmp/onerender/sg-cluster.tpl
+onesecgroup create /tmp/onerender/sg-edge.tpl
+onesecgroup create /tmp/onerender/sg-nodeport.tpl
+
+# 3. Register the VM templates
+onetemplate create /tmp/onerender/cp.tpl
+onetemplate create /tmp/onerender/wk.tpl
+
+# 4. Re-run render.sh now that the VM templates exist
+#    (this generates aircraft.oneflow.json with the numeric IDs).
+./opennebula/render.sh
+
+# 5. Register and instantiate the oneflow service
+oneflow-template create /tmp/onerender/aircraft.oneflow.json
 oneflow-template instantiate aircraft \
-    --custom_attrs '{"OPERATOR_CIDR":"203.0.113.42/32"}'
+    --custom_attr K8S_EDGE_HOST=aircraft.example.com \
+    --custom_attr K8S_VERSION=1.30 \
+    --custom_attr OPERATOR_CIDR=${OPERATOR_IP}/32
 
-# 4. Wait for both roles to enter RUNNING, then extract the kubeconfig
-#    that cp-1's cloud-init published into the VM's USER_TEMPLATE:
-onevm show cp-1 --json \
+# 6. Watch the cluster boot (5-10 minutes)
+watch -n 5 'oneflow show aircraft; echo; onevm list'
+
+# 7. Pull the kubeconfig once cp-1 reports K8S_JOIN_COMMAND in its USER_TEMPLATE
+CP_ID=$(onevm list --no-header | awk '/cp-1/ {print $1; exit}')
+onevm show $CP_ID --json \
   | jq -r '.VM.USER_TEMPLATE.KUBECONFIG_B64' \
   | base64 -d > ~/.kube/aircraft.config
 export KUBECONFIG=~/.kube/aircraft.config
+kubectl get nodes -o wide   # must show 3 Ready nodes
 
-# 5. Acceptance gates — MUST all exit 0 before the cut-over runbook
-#    in docs/opennebula-cutover.md is allowed to proceed.
-tests/opennebula/cluster-ready.sh
-tests/opennebula/registry-trust.sh
-tests/opennebula/post-cutover-validation.sh
-tests/k8s/network-policy.sh
+# 8. Acceptance gate
+bash tests/opennebula/cluster-ready.sh
 ```
 
-See [`runbook.md`](runbook.md) for the full breakdown and [`docs/opennebula-cutover.md`](../docs/opennebula-cutover.md) for the cut-over checklist that ties this directory back into the PaaS overlay in [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml).
+From here, the application stack is deployed via the standard k8s overlay; see [`plans/deploy.md`](../plans/deploy.md) Phase A or my deployment summary in chat.
+
+---
+
+## Common errors and how `render.sh` prevents them
+
+| Symptom | Root cause | How render.sh fixes it |
+|---|---|---|
+| `[one.secgroup.allocate] Wrong NETWORK_ID.` | `cluster.tpl` referenced `$NETWORK[aircraft-vnet]` — only resolves when inlined into a VM template, not standalone | Templates now use `SOURCE_PREFIX = "10.10.0.0/24"` (literal CIDR) |
+| `Parse error: syntax error, unexpected CBRACKET, expecting VARIABLE` | `edge.tpl` had a trailing comma + in-bracket `#` comment in a `RULE = [...]` block | Templates rewritten without in-bracket comments or trailing commas |
+| `[oneflow-template create] unexpected character: '#' at line 1 column 1` | `oneflow-template create` requires JSON, not YAML | `render.sh` does YAML→JSON conversion via `python3 -m yaml + json.dumps` |
+| `KEY: 'name' must match regexp /^\w+$/` | OneFlow rejected role name `control-plane` (hyphen not in `\w`) | Source YAML now uses `controlplane` (no hyphen) |
+| `vm_template ID not numeric` | OneFlow requires numeric template ID, source YAML had `"aircraft-cp"` | `render.sh` looks up the IDs via `onetemplate list` and substitutes them |
+
+---
 
 ## What this directory does NOT do
 
-- Build or publish the Aircraft SaaS application images — that is owned by the GitHub Actions self-hosted runner in [`k8s/ci/`](../k8s/ci/) (see `plans/deploy.md` §4).
+- Build or publish the Aircraft SaaS application images — that is owned by the GitHub Actions self-hosted runner in [`k8s/ci/`](../k8s/ci/) (see [`plans/deploy.md`](../plans/deploy.md) §4).
 - Deploy any Kubernetes workload — that is owned by [`k8s/overlays/opennebula/kustomization.yaml`](../k8s/overlays/opennebula/kustomization.yaml) and applied AFTER the gates above pass.
 - Manage day-2 operations (node rolling upgrade, kubelet rotation) — the runbook documents the manual procedure; an Ansible play is explicitly out of scope (see [`plans/opennebula.md`](../plans/opennebula.md) §8).

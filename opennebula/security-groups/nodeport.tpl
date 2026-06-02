@@ -13,7 +13,7 @@
 #   * Intra-cluster traffic to NodePorts is unusual and almost always
 #     a misconfiguration (apps should go through ClusterIP services).
 #   * Restricting the source means a compromised app pod cannot pivot
-#     to a sibling worker via NodePort — even though Kubernetes
+#     to a sibling worker via NodePort -- even though Kubernetes
 #     NetworkPolicies would also block that, this is defence in depth.
 #
 # Why not also open UDP NodePort:
@@ -25,21 +25,13 @@
 NAME        = "aircraft-nodeport"
 DESCRIPTION = "NodePort range (30000-32767/tcp) from the edge NIC only"
 
-# ---------------------------------------------------------------------
-# NodePort range — sourced from the operator-side edge NIC IP only.
-# The edge NIC IP is the .254 reserved by aircraft-vnet.tpl's AR pool.
-# ---------------------------------------------------------------------
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "30000:32767",
-    IP        = "10.10.0.254",
-    SIZE      = "1"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "30000:32767",
+    SOURCE_PREFIX = "10.10.0.254/32"
 ]
 
-# ---------------------------------------------------------------------
-# Outbound — wide open.
-# ---------------------------------------------------------------------
 RULE = [
     PROTOCOL  = "ALL",
     RULE_TYPE = "outbound"

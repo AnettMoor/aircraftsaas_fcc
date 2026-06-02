@@ -49,8 +49,10 @@
 
 ```
 opennebula/
-├── README.md                          # replaces the current placeholder
-├── runbook.md                         # `onetemplate create` / `onevm instantiate` walk-through
+├── README.md                          # operator-facing runbook (copy-paste)
+├── runbook.md                         # extended verification + troubleshooting
+├── render.sh                          # one-shot renderer (substitutes operator IP +
+│                                      # numeric template IDs, YAML→JSON conversion)
 ├── templates/
 │   ├── cp.tpl                         # 2 vCPU, 4 GiB RAM, 40 GiB disk control-plane
 │   └── wk.tpl                         # 4 vCPU, 8 GiB RAM, 40 GiB disk worker
@@ -64,8 +66,18 @@ opennebula/
 │   ├── edge.tpl                       # 80/443 only at the edge, source = anywhere
 │   └── nodeport.tpl                   # 30000-32767/tcp from edge only
 └── service/
-    └── aircraft.oneflow.yaml          # oneflow service template wiring cp + wk roles with role dependency
+    └── aircraft.oneflow.yaml          # oneflow service source (rendered to JSON by render.sh)
 ```
+
+> **Render step is non-optional.** The templates above are *parameterised*; they cannot be fed directly to `onesecgroup create` / `onetemplate create` / `oneflow-template create`. Three things vary per tenancy and must be substituted in by [`opennebula/render.sh`](../opennebula/render.sh) before consumption:
+>
+> 1. The numeric VM template IDs (`AIRCRAFT_CP_TEMPLATE_ID`, `AIRCRAFT_WK_TEMPLATE_ID`) — OneFlow requires numeric IDs, not names.
+> 2. The operator's public IP — substituted into `security-groups/edge.tpl`'s `:6443` rule (replaces the `203.0.113.42` placeholder).
+> 3. The base64-encoded cloud-init payloads — inlined into `templates/{cp,wk}.tpl`'s `START_SCRIPT_BASE64` slot.
+>
+> Additionally `oneflow-template create` requires JSON, not YAML, so `render.sh` does the YAML→JSON conversion as part of step (1).
+>
+> An earlier version of this plan assumed `$NETWORK[aircraft-vnet]` and `$CONTEXT[OPERATOR_CIDR]` macros would expand at standalone `onesecgroup create` time — they do not (they are VM-template-inline macros only), which is why the templates were rewritten in the audit that produced [`opennebula/render.sh`](../opennebula/render.sh). See the "Common errors" table in [`opennebula/README.md`](../opennebula/README.md) for the full diagnosis.
 
 ### 3.2 IaaS resource map (mermaid)
 

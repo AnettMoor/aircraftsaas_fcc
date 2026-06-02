@@ -5,97 +5,89 @@
 # to EVERY node NIC (cp + wk) via aircraft-vnet.tpl's default
 # SECURITY_GROUPS attribute.
 #
-# This is the *baseline* SG — it locks down the cluster API surface
+# This is the *baseline* SG -- it locks down the cluster API surface
 # to the cluster vNet itself. Inbound from outside the vNet is then
 # selectively opened by stacking `aircraft-edge` (cp only) and
 # `aircraft-nodeport` (wk only) on top.
 #
 # Why each port:
-#   * 6443/tcp  — kube-apiserver. Workers talk to the API on this
-#                 port; the operator-side connection (kubectl from a
-#                 laptop) goes through the edge DNAT, not the vNet.
-#   * 10250/tcp — kubelet API. Used by the kube-apiserver to fetch
-#                 logs / exec / port-forward; MUST be intra-cluster.
-#   * 10256/tcp — kube-proxy health endpoint (load balancers probe it).
-#   * 2379-2380 — etcd peer + client. Single-cp cluster, so this is
-#                 only ever loopback; we still match the "complete
-#                 kubeadm spec" so a future cp-2 needs zero SG edits.
-#   * 4789/udp  — Calico VXLAN. Pod-to-pod traffic encapsulated here.
-#   * 179/tcp   — Calico BGP (if VXLAN is later swapped for BGP mode).
-#   * ICMP      — ping / traceroute for operator debugging on the vNet.
+#   * 6443/tcp  -- kube-apiserver. Workers talk to the API on this
+#                  port; the operator-side connection (kubectl from a
+#                  laptop) goes through the edge DNAT, not the vNet.
+#   * 10250/tcp -- kubelet API. Used by the kube-apiserver to fetch
+#                  logs / exec / port-forward; MUST be intra-cluster.
+#   * 10256/tcp -- kube-proxy health endpoint (load balancers probe it).
+#   * 2379-2380 -- etcd peer + client. Single-cp cluster, so this is
+#                  only ever loopback; we still match the "complete
+#                  kubeadm spec" so a future cp-2 needs zero SG edits.
+#   * 4789/udp  -- Calico VXLAN. Pod-to-pod traffic encapsulated here.
+#   * 179/tcp   -- Calico BGP (if VXLAN is later swapped for BGP mode).
+#   * ICMP      -- ping / traceroute for operator debugging on the vNet.
 #
-# Outbound is left wide-open: the NAT gateway is the choke point
-# (apt mirrors, Docker Hub, Let's Encrypt). Locking egress here too
-# would block kubeadm preflight (`apt-get install`) during cloud-init.
+# Source restriction uses SOURCE_PREFIX (CIDR), NOT $NETWORK[...] --
+# the macro is only resolved when the SG is referenced inline from a
+# VM template. Standalone `onesecgroup create` does NOT expand it,
+# which is why the previous version of this file failed validation
+# with "Wrong NETWORK_ID". The CIDR here MUST match
+# vnet/aircraft-vnet.tpl's NETWORK_ADDRESS / NETWORK_MASK.
+#
+# Outbound is left wide-open: the OpenNebula NAT gateway is the choke
+# point (apt mirrors, Docker Hub, Let's Encrypt). Locking egress here
+# too would block kubeadm preflight (`apt-get install`) during
+# cloud-init.
 # =====================================================================
 
 NAME        = "aircraft-cluster"
 DESCRIPTION = "Intra-cluster Kubernetes control-plane + kubelet + CNI"
 
-# ---------- Inbound (all from the cluster vNet only) -----------------
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "6443",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "6443",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "10250",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "10250",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "10256",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "10256",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
-# etcd (single-cp today; future-proofed for HA cp).
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "2379:2380",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "2379:2380",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
-# Calico VXLAN encap. Without this open the pod network silently
-# black-holes — the trickiest failure mode in the §2.1 manual cluster.
 RULE = [
-    PROTOCOL  = "UDP",
-    RULE_TYPE = "inbound",
-    RANGE     = "4789",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "UDP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "4789",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
-# Calico BGP — opened proactively for the BGP-mode swap path even
-# though the default Calico install is VXLAN.
 RULE = [
-    PROTOCOL  = "TCP",
-    RULE_TYPE = "inbound",
-    RANGE     = "179",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "TCP",
+    RULE_TYPE     = "inbound",
+    RANGE         = "179",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
-# ICMP intra-cluster for operator-side traceroute / ping.
 RULE = [
-    PROTOCOL  = "ICMP",
-    RULE_TYPE = "inbound",
-    NETWORK_ID = "$NETWORK[aircraft-vnet]"
+    PROTOCOL      = "ICMP",
+    RULE_TYPE     = "inbound",
+    SOURCE_PREFIX = "10.10.0.0/24"
 ]
 
-# ---------- Outbound — wide open via the OpenNebula NAT --------------
-# We intentionally do NOT lock egress here. Cloud-init needs to:
-#   * apt-get install containerd kubeadm kubelet kubectl
-#   * Pull Calico operator + manifests from docker.io
-#   * Pull metrics-server / ingress-nginx manifests
-#   * Talk to Let's Encrypt staging for ACME-HTTP01
-# Locking egress in this SG would require maintaining an apt/CDN
-# allowlist, which is more brittle than the L2 isolation we already
-# have on the vNet inbound side.
 RULE = [
     PROTOCOL  = "ALL",
     RULE_TYPE = "outbound"

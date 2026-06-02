@@ -9,6 +9,13 @@ spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 600
   template:
+    metadata:
+      # NOTE — `app: users-service` is REQUIRED on the Job Pod template
+      # so the migration Pod matches the per-pod ingress rule on
+      # postgres in k8s/network-policies/allow-infra.yaml. Without this
+      # label the migration would be silently denied at the Postgres
+      # NetworkPolicy and the Job would hang at backoffLimit.
+      labels: { app: users-service }
     spec:
       restartPolicy: OnFailure
       containers:

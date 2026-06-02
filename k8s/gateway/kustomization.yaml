@@ -1,4 +1,15 @@
+# =====================================================================
+# Gateway component kustomization.
+#
+# `namespace-label.yaml` is listed FIRST so the ns-gateway label is
+# present before the Ingress objects (which live in app namespaces, but
+# are matched by the gateway via the controller's namespaceSelector at
+# admission-controller time) are reconciled.
+#
+# See the header of namespace-label.yaml for the full rationale.
+# =====================================================================
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - namespace-label.yaml
   - ingress.yaml

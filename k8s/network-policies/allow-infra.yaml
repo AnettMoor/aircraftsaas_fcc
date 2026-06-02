@@ -1,3 +1,36 @@
+# =====================================================================
+# ns-infra ingress/egress policies.
+#
+# Spec §4 requirement: "explicit allow rules are defined only for the
+# specific inter-service communication paths required."
+#
+# Earlier revisions of this file used namespace-only `from:` selectors,
+# which meant ANY pod in ns-users / ns-fleet / ns-booking — including
+# ad-hoc debug pods, sidecars, or future workloads added to those
+# namespaces — could reach Postgres :5432 and RabbitMQ :5672. That was
+# service-to-service correct but pod-permissive within each namespace.
+#
+# This revision pins each `from:` entry to BOTH a namespaceSelector AND
+# a podSelector. When both selectors live inside the same array element
+# of `ingress[*].from`, Kubernetes evaluates them as a logical AND —
+# i.e. "pods labeled `app: users-service` in the namespace labeled
+# `name: ns-users`". Putting them in separate array elements would be a
+# logical OR and reintroduce the namespace-permissiveness we are fixing.
+#
+# IMPORTANT: the EF Core migration Jobs reuse the same image as the
+# runtime Deployment but have their own Pod template. We label those
+# Pods with the same `app: <svc>-service` label so they pass this
+# policy. See:
+#   * k8s/users/migration-job.yaml   spec.template.metadata.labels
+#   * k8s/fleet/migration-job.yaml   spec.template.metadata.labels
+#   * k8s/booking/migration-job.yaml spec.template.metadata.labels
+#
+# The RabbitMQ management UI :15672 is NOT exposed via NetworkPolicy.
+# It is only reachable via `kubectl port-forward` (which bypasses
+# NetworkPolicy because the connection is proxied through the
+# apiserver). This keeps the data-plane attack surface limited to the
+# AMQP port that the apps actually use.
+# =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: allow-postgres-ingress, namespace: ns-infra }
@@ -5,10 +38,20 @@ spec:
   podSelector: { matchLabels: { app: postgres } }
   policyTypes: [Ingress]
   ingress:
+  # users-service pods in ns-users (AND, not OR — same array element)
   - from:
     - namespaceSelector: { matchLabels: { name: ns-users } }
+      podSelector:       { matchLabels: { app: users-service } }
+    ports: [{ protocol: TCP, port: 5432 }]
+  # fleet-service pods in ns-fleet
+  - from:
     - namespaceSelector: { matchLabels: { name: ns-fleet } }
+      podSelector:       { matchLabels: { app: fleet-service } }
+    ports: [{ protocol: TCP, port: 5432 }]
+  # booking-service pods in ns-booking
+  - from:
     - namespaceSelector: { matchLabels: { name: ns-booking } }
+      podSelector:       { matchLabels: { app: booking-service } }
     ports: [{ protocol: TCP, port: 5432 }]
 ---
 apiVersion: networking.k8s.io/v1
@@ -18,15 +61,23 @@ spec:
   podSelector: { matchLabels: { app: rabbitmq } }
   policyTypes: [Ingress]
   ingress:
+  # AMQP only. Management UI (:15672) intentionally NOT exposed; reach
+  # it via `kubectl port-forward svc/rabbitmq -n ns-infra 15672:15672`.
   - from:
     - namespaceSelector: { matchLabels: { name: ns-users } }
+      podSelector:       { matchLabels: { app: users-service } }
+    ports: [{ protocol: TCP, port: 5672 }]
+  - from:
     - namespaceSelector: { matchLabels: { name: ns-fleet } }
+      podSelector:       { matchLabels: { app: fleet-service } }
+    ports: [{ protocol: TCP, port: 5672 }]
+  - from:
     - namespaceSelector: { matchLabels: { name: ns-booking } }
-    ports:
-    - { protocol: TCP, port: 5672 }
-    - { protocol: TCP, port: 15672 }
+      podSelector:       { matchLabels: { app: booking-service } }
+    ports: [{ protocol: TCP, port: 5672 }]
 ---
-# Both Postgres and RabbitMQ still need DNS egress (peer/cluster name resolution).
+# Both Postgres and RabbitMQ still need DNS egress (peer/cluster name
+# resolution). DNS is the only outbound traffic ns-infra is permitted.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: allow-infra-dns-egress, namespace: ns-infra }
@@ -35,8 +86,9 @@ spec:
   policyTypes: [Egress]
   egress:
   # DNS (CoreDNS) — must use the auto-injected
-  # kubernetes.io/metadata.name label, because kube-system does NOT have a
-  # `name=kube-system` label by default on stock Kubernetes / kubeadm clusters.
+  # kubernetes.io/metadata.name label, because kube-system does NOT have
+  # a `name=kube-system` label by default on stock Kubernetes / kubeadm
+  # clusters.
   - to:
     - namespaceSelector:
         matchLabels: { kubernetes.io/metadata.name: kube-system }

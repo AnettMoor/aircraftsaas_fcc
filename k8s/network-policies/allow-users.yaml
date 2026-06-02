@@ -37,8 +37,15 @@ spec:
     - namespaceSelector: { matchLabels: { name: ns-booking } }
       podSelector:       { matchLabels: { app: booking-service } }
     ports: [{ protocol: TCP, port: 8080 }]
+  # ns-infra egress is split per-pod (postgres + rabbitmq) rather than
+  # one wildcard ns-infra entry. This matches the per-pod ingress side
+  # in k8s/network-policies/allow-infra.yaml, so both caller and callee
+  # are explicitly pinned. See that file's header for full rationale.
   - to:
     - namespaceSelector: { matchLabels: { name: ns-infra } }
-    ports:
-    - { protocol: TCP, port: 5432 }
-    - { protocol: TCP, port: 5672 }
+      podSelector:       { matchLabels: { app: postgres } }
+    ports: [{ protocol: TCP, port: 5432 }]
+  - to:
+    - namespaceSelector: { matchLabels: { name: ns-infra } }
+      podSelector:       { matchLabels: { app: rabbitmq } }
+    ports: [{ protocol: TCP, port: 5672 }]

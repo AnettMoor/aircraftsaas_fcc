@@ -52,11 +52,19 @@ MEMORY           = "4096"
 # OpenNebula Marketplace import is usually named "Ubuntu 22.04" (with
 # a space). Change the value below to whatever `oneimage list` shows
 # for your Ubuntu 22.04 LTS image. The runbook documents the override.
+# Image is referenced by numeric ID, not by name. The OpenNebula 7.x
+# oneflow -> onetemplate.instantiate path mis-resolves IMAGE = "Ubuntu 22.04"
+# (with the literal space) as belonging to the role's runtime user even
+# when IMAGE_UNAME = "oneadmin" is set, producing:
+#   "DISK 0: User 0 does not own an image with name: Ubuntu 22.04 ."
+# Using IMAGE_ID bypasses the name resolver entirely. The numeric ID
+# is rendered into the .tpl by opennebula/render.sh -- DO NOT commit a
+# hardcoded ID here. The placeholder UBUNTU_IMAGE_ID below is substituted
+# at render time by `oneimage list` lookup (env override: AIRCRAFT_IMAGE_NAME).
 DISK = [
-    IMAGE       = "Ubuntu 22.04",
-    IMAGE_UNAME = "oneadmin",
-    SIZE        = "40960",
-    DEV_PREFIX  = "vd"
+    IMAGE_ID   = UBUNTU_IMAGE_ID,
+    SIZE       = "40960",
+    DEV_PREFIX = "vd"
 ]
 
 # NETWORK_UNAME pins lookup to the vNet's owner. Without it,

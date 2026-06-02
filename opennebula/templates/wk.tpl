@@ -31,11 +31,13 @@ VCPU             = "1"
 MEMORY           = "2048"
 
 # NOTE: same image-name caveat as cp.tpl -- must match `oneimage list`.
+# See header on cp.tpl for the rationale -- IMAGE_ID instead of IMAGE name
+# is required to dodge the OpenNebula 7.x oneflow image-name resolution bug.
+# render.sh substitutes UBUNTU_IMAGE_ID with the live `oneimage list` lookup.
 DISK = [
-    IMAGE       = "Ubuntu 22.04",
-    IMAGE_UNAME = "oneadmin",
-    SIZE        = "40960",
-    DEV_PREFIX  = "vd"
+    IMAGE_ID   = UBUNTU_IMAGE_ID,
+    SIZE       = "40960",
+    DEV_PREFIX = "vd"
 ]
 
 # NETWORK_UNAME: see comment in cp.tpl. OneFlow services run as their

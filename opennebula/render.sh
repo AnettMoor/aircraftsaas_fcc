@@ -106,9 +106,48 @@ echo "[ok] sg-edge.tpl  (operator IP = $OPERATOR_IP)"
 CP_BOOT_B64="$(base64 -w0 "$SCRIPT_DIR/context/bootstrap-cp.sh")"
 WK_BOOT_B64="$(base64 -w0 "$SCRIPT_DIR/context/bootstrap-wk.sh")"
 
-sed "s|BASE64_OF_BOOTSTRAP_CP|$CP_BOOT_B64|" \
+# ---------------------------------------------------------------------
+# Resolve the numeric Ubuntu image ID.
+#
+# Why numeric and not name: the OpenNebula 7.x oneflow service ->
+# onetemplate.instantiate path mis-resolves DISK.IMAGE = "<name>" when
+# the name contains a space (e.g. the default "Ubuntu 22.04" that
+# `onemarketapp export` writes). The instantiation fails with:
+#   "DISK 0: User 0 does not own an image with name: Ubuntu 22.04 ."
+# even when IMAGE_UNAME = "oneadmin" is set. Substituting the numeric
+# IMAGE_ID at render time bypasses the name resolver completely.
+#
+# Default search name is "Ubuntu 22.04"; override with the env var
+# AIRCRAFT_IMAGE_NAME if your tenancy renamed the marketplace image.
+# ---------------------------------------------------------------------
+AIRCRAFT_IMAGE_NAME="${AIRCRAFT_IMAGE_NAME:-Ubuntu 22.04}"
+# `oneimage list --no-header` columns:  ID  USER  GROUP  NAME  ...
+# The NAME may contain spaces, so we anchor on the literal name with awk
+# and reconstruct fields >=4 to allow for those spaces.
+UBUNTU_IMAGE_ID=$(oneimage list --no-header 2>/dev/null \
+    | awk -v target="$AIRCRAFT_IMAGE_NAME" '{
+        name=$4; for(i=5;i<=NF-5;i++){name=name" "$i}
+        if (name==target) { print $1; exit }
+      }')
+
+if [[ -z "$UBUNTU_IMAGE_ID" ]]; then
+    cat >&2 <<EOF
+ERROR: could not find an OpenNebula image named "$AIRCRAFT_IMAGE_NAME".
+       Either import the Ubuntu 22.04 marketplace appliance:
+          APPID=\$(onemarketapp list -f NAME~"Ubuntu 22.04*" --csv | tail -n1 | cut -d, -f1)
+          onemarketapp export "\$APPID" "Ubuntu 22.04" --datastore default
+       OR set AIRCRAFT_IMAGE_NAME to whatever your image is called in
+       \`oneimage list\` (e.g. AIRCRAFT_IMAGE_NAME="ubuntu-2204-lts").
+EOF
+    exit 1
+fi
+echo "[ok] image resolved: '$AIRCRAFT_IMAGE_NAME' -> IMAGE_ID=$UBUNTU_IMAGE_ID"
+
+sed -e "s|BASE64_OF_BOOTSTRAP_CP|$CP_BOOT_B64|" \
+    -e "s|UBUNTU_IMAGE_ID|$UBUNTU_IMAGE_ID|" \
     "$SCRIPT_DIR/templates/cp.tpl" > "$OUT_DIR/cp.tpl"
-sed "s|BASE64_OF_BOOTSTRAP_WK|$WK_BOOT_B64|" \
+sed -e "s|BASE64_OF_BOOTSTRAP_WK|$WK_BOOT_B64|" \
+    -e "s|UBUNTU_IMAGE_ID|$UBUNTU_IMAGE_ID|" \
     "$SCRIPT_DIR/templates/wk.tpl" > "$OUT_DIR/wk.tpl"
 echo "[ok] cp.tpl  (bootstrap-cp.sh inlined, $(wc -c < "$SCRIPT_DIR/context/bootstrap-cp.sh") bytes)"
 echo "[ok] wk.tpl  (bootstrap-wk.sh inlined, $(wc -c < "$SCRIPT_DIR/context/bootstrap-wk.sh") bytes)"
@@ -153,7 +192,7 @@ fi
 #    mention the placeholders in their explanation (e.g. cluster.tpl's
 #    header explains why $NETWORK[...] was REMOVED).
 # ---------------------------------------------------------------------
-LEAKED=$(grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT|BASE64_OF_BOOTSTRAP' "$OUT_DIR" 2>/dev/null \
+LEAKED=$(grep -RnE '\$NETWORK\[|\$CONTEXT\[|AIRCRAFT_CP_TEMPLATE_ID|AIRCRAFT_WK_TEMPLATE_ID|203\.0\.113\.42|BASE64_OF_CLOUD_INIT|BASE64_OF_BOOTSTRAP|UBUNTU_IMAGE_ID' "$OUT_DIR" 2>/dev/null \
     | grep -vE ':[[:space:]]*#' || true)
 if [[ -n "$LEAKED" ]]; then
     echo "ERROR: unresolved placeholder(s) remain in NON-COMMENT lines:" >&2

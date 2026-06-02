@@ -6,6 +6,8 @@ The contents of this directory provision a 3-VM Kubernetes cluster on OpenNebula
 
 - **cp-1** — control-plane (2 vCPU, 4 GiB, 40 GiB)
 - **wk-1**, **wk-2** — workers (4 vCPU, 8 GiB, 40 GiB each)
+
+> **Image name caveat (READ THIS FIRST):** Both [`templates/cp.tpl`](templates/cp.tpl:55) and [`templates/wk.tpl`](templates/wk.tpl:34) reference the OpenNebula image by the **literal name `"Ubuntu 22.04"`** — the default name that `onemarketapp export` assigns when you import the upstream marketplace appliance. If your image is named differently in `oneimage list` (e.g. `ubuntu-2204-lts` from an older import), either rename it (`oneimage rename <id> "Ubuntu 22.04"`) or edit the `IMAGE = "..."` value in both `cp.tpl` and `wk.tpl` to match. Using a non-existent image name produces a VM that **boots into a generic Linux but never executes `bootstrap-cp.sh`** because one-context isn't installed — the symptom is `onevm show <id>` reporting `LCM_STATE=RUNNING` with **no `BOOTSTRAP_STEP`, no `KUBECONFIG_B64`, no `K8S_JOIN_COMMAND`** in USER_TEMPLATE, and the cp IP never answering on `:6443`.
 - vNet on minione's pre-existing `minionebr` bridge — `172.16.100.0/24`, AR `172.16.100.50-.59` (NAT egress + DNS + OneGate already wired by minione's installer). cp-1 deterministically lands on `.50`. **Production OpenNebula deployments should re-pin this back to an isolated `aircraft-br0` / `10.10.0.0/24` bridge** — see the header of [`vnet/aircraft-vnet.tpl`](vnet/aircraft-vnet.tpl) for the exact diff.
 - Three stacked security groups (`cluster`, `edge`, `nodeport`)
 - Cloud-init scripts that run `kubeadm init` on cp-1 + `kubeadm join` on workers + apply Calico

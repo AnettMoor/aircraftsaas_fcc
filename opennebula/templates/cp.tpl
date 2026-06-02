@@ -60,14 +60,14 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
-# RAW serial console -- enables `sudo virsh console one-<id>` from the
-# OpenNebula host for cloud-init debugging. Without this, virsh emits
-# "internal error: cannot find character device <null>" and the only
-# debugging path is via VNC.
-RAW = [
-    TYPE = "kvm",
-    DATA = "<serial type='pty'><target port='0'/></serial><console type='pty'><target type='serial' port='0'/></console>"
-]
+# NOTE: serial console attachment was attempted via RAW = [ TYPE="kvm",
+# DATA="<serial.../><console.../>" ] but OpenNebula 7.x rejects that
+# block with "Invalid RAW section: cannot validate DATA with domain.rng".
+# For now debugging happens via VNC -- look up the port with:
+#   onevm show <id> | grep -E 'GRAPHICS|PORT|LISTEN'
+# and connect a VNC client to localhost:<5900+VMID> (default minione
+# binding). The bootstrap script also writes a full trace to
+# /var/log/aircraft-cp-bootstrap.log which can be retrieved via VNC.
 
 # IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
 # OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The

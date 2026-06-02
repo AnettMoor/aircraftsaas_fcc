@@ -47,10 +47,9 @@ GRAPHICS = [
     LISTEN = "0.0.0.0"
 ]
 
-RAW = [
-    TYPE = "kvm",
-    DATA = "<serial type='pty'><target port='0'/></serial><console type='pty'><target type='serial' port='0'/></console>"
-]
+# RAW serial console attempted previously but OpenNebula 7's
+# domain.rng schema rejects the inline <serial>/<console> XML. Debug
+# via VNC or via /var/log/aircraft-wk-bootstrap.log instead.
 
 # IMPORTANT: TOKEN="YES" and REPORT_READY="YES" are REQUIRED so that
 # OpenNebula injects ONEGATE_ENDPOINT + TOKENTXT into the VM. The

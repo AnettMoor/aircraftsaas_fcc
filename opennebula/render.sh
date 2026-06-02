@@ -121,14 +121,50 @@ WK_BOOT_B64="$(base64 -w0 "$SCRIPT_DIR/context/bootstrap-wk.sh")"
 # AIRCRAFT_IMAGE_NAME if your tenancy renamed the marketplace image.
 # ---------------------------------------------------------------------
 AIRCRAFT_IMAGE_NAME="${AIRCRAFT_IMAGE_NAME:-Ubuntu 22.04}"
-# `oneimage list --no-header` columns:  ID  USER  GROUP  NAME  ...
-# The NAME may contain spaces, so we anchor on the literal name with awk
-# and reconstruct fields >=4 to allow for those spaces.
-UBUNTU_IMAGE_ID=$(oneimage list --no-header 2>/dev/null \
-    | awk -v target="$AIRCRAFT_IMAGE_NAME" '{
-        name=$4; for(i=5;i<=NF-5;i++){name=name" "$i}
-        if (name==target) { print $1; exit }
-      }')
+
+# Use JSON output for the lookup. The space-tolerant awk parse used
+# previously was off-by-one for multi-word names like "Ubuntu 22.04"
+# (it consumed one of the trailing fixed columns as part of NAME and
+# failed to match). `oneimage list --json` returns a structured pool
+# we can index by NAME directly. We require jq (already a hard
+# dependency of provision-vms.sh) so this is safe to call here.
+#
+# Edge case: when the pool has exactly one image, OpenNebula sometimes
+# returns IMAGE as an object instead of an array. The `[.IMAGE] | flatten`
+# trick normalises both shapes.
+if ! command -v jq >/dev/null 2>&1; then
+    echo "ERROR: jq is required for image-name lookup." >&2
+    exit 1
+fi
+UBUNTU_IMAGE_ID=$(oneimage list --json 2>/dev/null \
+    | jq -r --arg n "$AIRCRAFT_IMAGE_NAME" '
+        (.IMAGE_POOL.IMAGE // [])
+        | (if type == "array" then . else [.] end)
+        | map(select(.NAME == $n))
+        | first
+        | .ID // empty' \
+    | head -1)
+
+# Fallback: case-insensitive substring match in case the operator imported
+# the image as "ubuntu-2204-lts" or "Ubuntu 22.04 LTS x86_64" etc. and
+# forgot to set AIRCRAFT_IMAGE_NAME.
+if [[ -z "$UBUNTU_IMAGE_ID" ]]; then
+    UBUNTU_IMAGE_ID=$(oneimage list --json 2>/dev/null \
+        | jq -r --arg n "$AIRCRAFT_IMAGE_NAME" '
+            (.IMAGE_POOL.IMAGE // [])
+            | (if type == "array" then . else [.] end)
+            | map(select((.NAME | ascii_downcase) | contains($n | ascii_downcase)))
+            | first
+            | .ID // empty')
+    if [[ -n "$UBUNTU_IMAGE_ID" ]]; then
+        MATCHED_NAME=$(oneimage list --json 2>/dev/null \
+            | jq -r --arg i "$UBUNTU_IMAGE_ID" '
+                (.IMAGE_POOL.IMAGE // [])
+                | (if type == "array" then . else [.] end)
+                | map(select(.ID == $i)) | first | .NAME')
+        echo "[info] exact name '$AIRCRAFT_IMAGE_NAME' not found; substring-matched: '$MATCHED_NAME' (ID=$UBUNTU_IMAGE_ID)"
+    fi
+fi
 
 if [[ -z "$UBUNTU_IMAGE_ID" ]]; then
     cat >&2 <<EOF

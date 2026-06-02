@@ -306,7 +306,8 @@ fi
 
 # --- 8. Create oneflow template --------------------------------------
 log "STAGE 8/10 — Create oneflow template ${FLOW_NAME}"
-if resource_exists "oneflow-template list" "$FLOW_NAME" 2; then
+# OpenNebula CLI columns: ID USER GROUP NAME ... -> NAME is $4
+if resource_exists "oneflow-template list" "$FLOW_NAME" 4; then
   log "  oneflow-template ${FLOW_NAME} already present — skip"
 else
   run oneflow-template create "${RENDER_DIR}/aircraft.oneflow.json"

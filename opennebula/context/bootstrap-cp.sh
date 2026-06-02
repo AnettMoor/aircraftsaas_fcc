@@ -222,6 +222,15 @@ metadata:
 spec:
   calicoNetwork:
     mtu: 1450
+    # bgp: Disabled is REQUIRED when encapsulation: VXLAN — without it,
+    # the operator still launches BIRD inside calico-node AND the
+    # readiness probe still includes 'bird-ready'. BIRD never comes up
+    # (no /var/run/bird/bird.ctl, no /var/lib/calico/nodename) so the
+    # probe kills the pod within ~30s — CrashLoopBackOff on every worker,
+    # cluster has CNI only on cp-1, all cross-node pod traffic is broken
+    # (metrics-server can't scrape kubelet, etc.). Setting BGP Disabled
+    # makes the operator regenerate the DaemonSet without BIRD.
+    bgp: Disabled
     ipPools:
       - cidr: ${POD_CIDR}
         encapsulation: VXLAN
@@ -250,9 +259,42 @@ step "6-metrics-server"
 # 6. metrics-server (for HPAs).
 # ---------------------------------------------------------------------
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.1/components.yaml
-# kubelet TLS is self-signed at this stage; patch metrics-server to skip verification.
-kubectl -n kube-system patch deployment metrics-server --type=json \
-    -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+# Three fixes are needed on a fresh kubeadm cluster, otherwise the pod
+# loops with CrashLoopBackOff and the deployment never goes Available:
+#
+#   (a) --kubelet-insecure-tls
+#       kubelet serving cert is self-signed at this stage; without
+#       this, metrics-server refuses to scrape (x509 verify failed).
+#
+#   (b) --kubelet-preferred-address-types=InternalIP
+#       Default order is Hostname,InternalDNS,InternalIP,...
+#       In this lab there is no DNS for node hostnames (worker-1,
+#       worker-2, cp-1), so the Hostname lookup hangs long enough
+#       that the /livez probe (3x10s) fails -> kubelet kills the
+#       pod -> CrashLoopBackOff. Forcing InternalIP bypasses DNS.
+#
+#   (c) Pin to the control-plane node + tolerate the cp NoSchedule
+#       taint. In the minione lab the workers are notably slower than
+#       the cp (which doubles as the OpenNebula front-end host),
+#       slow enough that felix's :9099 readiness probe inside
+#       calico-node sometimes flaps on workers in the first ~3 min
+#       after boot. When metrics-server lands on a flapping worker,
+#       it dies along with calico-node and the deployment never
+#       reports Available. Pinning to cp-1 makes the readiness
+#       deterministic. Removing this pin is safe once the workers
+#       are stable; it's defensible in prod because metrics-server
+#       has trivial resource footprint and cp-1 already has spare
+#       capacity.
+kubectl -n kube-system patch deployment metrics-server --type=json -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"},
+  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-preferred-address-types=InternalIP"},
+  {"op":"add","path":"/spec/template/spec/tolerations","value":[
+     {"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}
+  ]},
+  {"op":"add","path":"/spec/template/spec/nodeSelector","value":{
+     "node-role.kubernetes.io/control-plane":""
+  }}
+]'
 
 step "7-ingress-nginx"
 

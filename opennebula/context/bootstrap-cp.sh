@@ -193,8 +193,26 @@ step "5-calico"
 
 # ---------------------------------------------------------------------
 # 5. Calico (Tigera operator + Installation).
+#
+# Why --server-side: the tigera-operator manifest contains CRDs that
+# exceed the 262 144 byte `last-applied-configuration` annotation that
+# the legacy `kubectl apply` (client-side) writes to track diffs. With
+# client-side apply the CRD install fails with:
+#   "CustomResourceDefinition installations.operator.tigera.io is invalid:
+#    metadata.annotations: Too long: must have at most 262144 bytes"
+# `--server-side` skips that annotation entirely.
+#
+# Why the explicit wait: posting the Installation CR before the CRD has
+# reached the Established condition fails with:
+#   "resource mapping not found for name: default ... no matches for kind
+#    Installation in version operator.tigera.io/v1"
 # ---------------------------------------------------------------------
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+kubectl apply --server-side --force-conflicts \
+    -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+
+# Wait up to 2 minutes for the Installation CRD to be Established.
+kubectl wait --for=condition=Established --timeout=120s \
+    crd/installations.operator.tigera.io
 
 cat >/root/calico-installation.yaml <<EOF
 apiVersion: operator.tigera.io/v1
@@ -209,7 +227,7 @@ spec:
         encapsulation: VXLAN
         natOutgoing: Enabled
 EOF
-kubectl apply -f /root/calico-installation.yaml
+kubectl apply --server-side --force-conflicts -f /root/calico-installation.yaml
 
 step "6-metrics-server"
 

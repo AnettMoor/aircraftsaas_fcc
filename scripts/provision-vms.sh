@@ -158,10 +158,45 @@ if [[ "$TEARDOWN" -eq 1 ]]; then
   # OpenNebula CLI columns: ID USER GROUP NAME ... -> NAME is $4
   if resource_exists "oneflow list" "$FLOW_NAME" 4; then
     log "delete oneflow service ${FLOW_NAME}"
-    run oneflow delete "$FLOW_NAME"
+    # `oneflow delete` only works when the service is in a quiescent
+    # state (RUNNING / DONE / WARNING etc.). FAILED_DEPLOYING,
+    # FAILED_UNDEPLOYING, COOLDOWN, DEPLOYING, etc. are rejected with:
+    #   "Service cannot be undeployed in state: FAILED_DEPLOYING"
+    # `oneflow recover --delete-force` is the documented escape hatch:
+    # it transitions the service to DONE regardless of the current state
+    # and force-removes every owned VM. Try the gentle path first so a
+    # healthy oneflow gets the normal lifecycle (state machine sees
+    # UNDEPLOYING -> DONE), and fall back to recover on rejection.
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      printf '  $ %s\n' "oneflow delete $FLOW_NAME || oneflow recover --delete-force $FLOW_NAME"
+    else
+      if ! oneflow delete "$FLOW_NAME" 2>/tmp/oneflow_delete.err; then
+        if grep -qE 'cannot be undeployed|FAILED_|invalid state' /tmp/oneflow_delete.err; then
+          warn "oneflow delete refused: $(cat /tmp/oneflow_delete.err)"
+          warn "falling back to: oneflow recover --delete-force ${FLOW_NAME}"
+          oneflow recover --delete-force "$FLOW_NAME"
+        else
+          cat /tmp/oneflow_delete.err >&2
+          die "oneflow delete failed for an unexpected reason"
+        fi
+      fi
+    fi
     if [[ "$DRY_RUN" -eq 0 ]]; then
-      while resource_exists "oneflow list" "$FLOW_NAME" 4; do
+      # Recover --delete-force is async — wait for the service entry to
+      # disappear from `oneflow list` (typically <60s).
+      for _ in $(seq 1 60); do
+        resource_exists "oneflow list" "$FLOW_NAME" 4 || break
         log "  waiting for oneflow ${FLOW_NAME} to be reaped..."
+        sleep 5
+      done
+      # Also wait for the orphaned VMs spawned by this service to be
+      # reaped. OneFlow names them <role>_<index>_(service_<SID>); the
+      # `service_` substring is unique enough.
+      for _ in $(seq 1 60); do
+        STRAGGLERS=$(onevm list --no-header 2>/dev/null \
+                     | awk '/_\(service_[0-9]+\)/ {print $1}' | wc -l | tr -d ' ')
+        [[ "$STRAGGLERS" == "0" ]] && break
+        log "  waiting for ${STRAGGLERS} orphan VM(s) from oneflow to be reaped..."
         sleep 5
       done
     fi

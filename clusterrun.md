@@ -350,3 +350,67 @@ kubectl delete ns ns-users ns-fleet ns-booking ns-frontend ns-infra ns-registry 
 | SealedSecret pods show `decryption error` | re-sealed against a different controller key | re-run §5 after `kubeseal --fetch-cert` against the CURRENT controller |
 
 For the full design rationale and the optional CI/CD wiring (GitHub Actions → self-hosted runner in `ns-ci` → `kubectl set image`), see [`plans/deploy.md`](plans/deploy.md:1) §§4–7.
+
+---
+
+## 12. Automated alternative — the deploy scripts
+
+The eleven-stage manual recipe above is encoded in two idempotent shell
+scripts so the same flow can be re-executed without copy-pasting from
+this document.
+
+### 12.0 [`scripts/provision-vms.sh`](scripts/provision-vms.sh:1) — one-time per OpenNebula tenancy
+
+**Provisions the 3 VMs themselves**. Wraps every `one*` CLI call from
+[`opennebula/runbook.md`](opennebula/runbook.md:1) §1–§7: imports the Ubuntu image,
+creates the vNet + 3 security groups + 2 VM templates, creates the oneflow
+service, instantiates it (which spawns `cp-1` + `wk-1` + `wk-2` and bootstraps
+kubeadm via cloud-init), waits for all 3 VMs to reach RUNNING, then extracts the
+kubeconfig from `cp-1`'s USER_TEMPLATE.
+
+```bash
+# Run from a workstation with the one* CLIs configured (or on the OpenNebula front-end)
+export OPERATOR_IP=$(curl -s https://ifconfig.me)
+export EDGE_HOST="aircraft.example.com"
+./scripts/provision-vms.sh                       # ~15 min end-to-end
+./scripts/provision-vms.sh --dry-run             # preview every one* call
+./scripts/provision-vms.sh --skip-instantiate    # build IaaS assets, don't spawn VMs yet
+./scripts/provision-vms.sh --teardown            # reverse of provisioning
+```
+
+Idempotent: every stage checks `one* list` for the resource by name and skips
+if already present, so resuming a partial failure is safe.
+
+**Manual step that cannot be automated** between this script and the next: configure
+the edge router DNAT (ports 80, 443, 6443 → `10.10.0.10`). The script prints the
+exact mapping at the end.
+
+### 12.1 [`scripts/bootstrap-cluster.sh`](scripts/bootstrap-cluster.sh:1) — one-time per cluster
+
+Covers §2 (registry) + §4 (cert-manager + sealed-secrets controller) +
+§5 (re-seal + apply SealedSecrets).
+
+```bash
+export KUBECONFIG=~/.kube/aircraft-opennebula.yaml
+export AIRCRAFT_VAULT_DIR=/path/to/plaintext/vault   # only if re-sealing
+./scripts/bootstrap-cluster.sh                        # full run
+./scripts/bootstrap-cluster.sh --dry-run              # preview commands
+./scripts/bootstrap-cluster.sh --skip-cert-manager    # selective re-runs
+```
+
+### 12.2 [`scripts/deploy-apps.sh`](scripts/deploy-apps.sh:1) — every release
+
+Covers §3 (build + push 4 images via a temporary registry port-forward)
++ §6 (apply the overlay) + §7 (`kubectl set image` per Deployment) +
+§7 migration-Job re-run + §8 smoke tests.
+
+```bash
+export EDGE_HOST="aircraft.example.com"
+./scripts/deploy-apps.sh                              # tag = git short SHA
+./scripts/deploy-apps.sh --tag v1.2.3 --skip-build    # redeploy existing tag
+./scripts/deploy-apps.sh --dry-run --tag testtag      # print the plan
+```
+
+Both scripts are safe to re-run; every stage is gated by a `--skip-*`
+flag so a partial failure can be resumed without redoing earlier
+stages.

@@ -1,5 +1,5 @@
 # =====================================================================
-# allow-frontend — Phase C §C.12
+# allow-frontend
 #
 # The Vue SPA pod is a static-asset server: the browser, not the pod,
 # talks to the backend APIs. So the pod's surface is intentionally tiny.

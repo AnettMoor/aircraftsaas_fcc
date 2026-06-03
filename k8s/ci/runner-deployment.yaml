@@ -1,7 +1,6 @@
 # =====================================================================
 # Self-hosted GitHub Actions runner.
 #
-# Implements deploy.md §B.8 + §4.4:
 #   * The cluster lives behind OpenNebula's edge — GitHub-hosted runners
 #     cannot reach `kubectl` or the in-cluster registry. A self-hosted
 #     runner Deployment in ns-ci is the bridge.

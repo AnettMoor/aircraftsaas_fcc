@@ -1,7 +1,6 @@
 # =====================================================================
 # RBAC for the in-cluster CI deployer.
 #
-# Implements deploy.md §B.8 + §5.3:
 #   * `ci-deployer` ServiceAccount lives in ns-ci (the runner Pod runs
 #     under it).
 #   * A namespaced Role allows only the verbs the rolling-update +

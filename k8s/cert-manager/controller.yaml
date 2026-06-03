@@ -1,5 +1,5 @@
 # =====================================================================
-# cert-manager — controller install reference (Phase C §C.15).
+# cert-manager — controller install reference.
 #
 # Upstream ships a single ~3000-line manifest that bundles ~15 CRDs +
 # RBAC + 3 Deployments (cert-manager, cert-manager-webhook,

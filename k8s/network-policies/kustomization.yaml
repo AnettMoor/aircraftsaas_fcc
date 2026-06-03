@@ -3,9 +3,6 @@
 # All policies share a single `kustomize` root so the base/overlay
 # wiring in k8s/base/kustomization.yaml picks them up in one line.
 #
-# Phase C addition: allow-frontend.yaml and allow-registry.yaml. The
-# matching default-deny entries for ns-frontend and ns-registry are
-# bundled into the existing default-deny.yaml.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

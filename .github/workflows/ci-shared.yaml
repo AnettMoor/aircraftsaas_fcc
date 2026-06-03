@@ -1,7 +1,6 @@
 # =====================================================================
 # CI/CD — Shared libraries fan-out.
 #
-# Implements deploy.md §B.10:
 #   "ci-shared.yaml — runs on changes to Shared/* and triggers all three
 #    backend pipelines."
 #

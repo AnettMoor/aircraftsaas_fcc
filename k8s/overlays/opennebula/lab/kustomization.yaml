@@ -1,0 +1,171 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Pull in the same things the OpenNebula overlay does, EXCEPT cert-manager
+# is optional if you don't have a public hostname yet. Skip it on the lab
+# to save ~150–200m CPU and ~200Mi RAM.
+resources:
+  - ../../base
+  # - ../../cert-manager       # uncomment only if you really need TLS via LE
+  # - ../../sealed-secrets     # keep if you already sealed the secrets
+
+# Keep the base 2-replica defaults for everything (do NOT bump to 3 like
+# the OpenNebula overlay does). Then shrink resource requests.
+
+patches:
+  # -----------------------------------------------------------------
+  # 1. Shrink CPU/memory requests on all 4 app deployments.
+  #    They'll still burst (CPU limit unchanged) but won't reserve a
+  #    huge chunk of the cluster while idle.
+  # -----------------------------------------------------------------
+  - target: { kind: Deployment, name: users-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 50m,  memory: 192Mi }
+          limits:   { cpu: 300m, memory: 384Mi }
+  - target: { kind: Deployment, name: fleet-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 50m,  memory: 192Mi }
+          limits:   { cpu: 300m, memory: 384Mi }
+  - target: { kind: Deployment, name: booking-service }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 75m,  memory: 224Mi }   # booking does more work
+          limits:   { cpu: 400m, memory: 448Mi }
+  - target: { kind: Deployment, name: vue-frontend }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 15m,  memory: 24Mi }
+          limits:   { cpu: 150m, memory: 96Mi }
+
+  # -----------------------------------------------------------------
+  # 2. Shrink Postgres + RabbitMQ limits so a burst doesn't blow up a
+  #    1-GiB worker. Requests stay the same; only LIMITS shrink.
+  # -----------------------------------------------------------------
+  - target: { kind: StatefulSet, name: postgres }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits:   { cpu: 500m, memory: 640Mi }
+  - target: { kind: StatefulSet, name: rabbitmq }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits:   { cpu: 400m, memory: 512Mi }
+
+  # -----------------------------------------------------------------
+  # 3. Down-size the HPAs (minReplicas matches base, maxReplicas: 3,
+  #    raise utilization target so the autoscaler doesn't trigger
+  #    on idle .NET JIT warm-up).
+  # -----------------------------------------------------------------
+  - target: { kind: HorizontalPodAutoscaler, name: users-hpa }
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+  - target: { kind: HorizontalPodAutoscaler, name: fleet-hpa }
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+  - target: { kind: HorizontalPodAutoscaler, name: booking-hpa }
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+  - target: { kind: HorizontalPodAutoscaler, name: vue-frontend-hpa }
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+
+  # -----------------------------------------------------------------
+  # 4. Force Postgres + RabbitMQ to ONLY land on workers (never on
+  #    the freshly-untainted CP, which is too small for them).
+  # -----------------------------------------------------------------
+  - target: { kind: StatefulSet, name: postgres }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/affinity
+        value:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: node-role.kubernetes.io/control-plane
+                      operator: DoesNotExist
+  - target: { kind: StatefulSet, name: rabbitmq }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/affinity
+        value:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: node-role.kubernetes.io/control-plane
+                      operator: DoesNotExist
+
+  # -----------------------------------------------------------------
+  # 5. Force the CI runner OFF — it would otherwise consume ~500m / 512Mi
+  #    that you don't have. Delete the resource entirely on this overlay.
+  # -----------------------------------------------------------------
+  - target: { kind: Deployment, name: github-runner, namespace: ns-ci }
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: github-runner
+        namespace: ns-ci
+
+  # -----------------------------------------------------------------
+  # 6. Drop migration-Job replicas to backoffLimit:0 + activeDeadline so
+  #    they don't sit on resources if they fail.
+  # -----------------------------------------------------------------
+  - target: { kind: Job, name: users-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 50m, memory: 192Mi }
+          limits:   { cpu: 500m, memory: 384Mi }
+  - target: { kind: Job, name: fleet-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 50m, memory: 192Mi }
+          limits:   { cpu: 500m, memory: 384Mi }
+  - target: { kind: Job, name: booking-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 50m, memory: 192Mi }
+          limits:   { cpu: 500m, memory: 384Mi }

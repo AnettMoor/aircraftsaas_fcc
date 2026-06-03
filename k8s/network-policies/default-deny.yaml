@@ -1,5 +1,5 @@
 # =====================================================================
-# default-deny — Phase C §C.12
+# default-deny
 #
 # A NetworkPolicy with an empty podSelector and both Ingress + Egress
 # policyTypes silently isolates every pod in the namespace from every
@@ -7,9 +7,9 @@
 # the flows the architecture allows.
 #
 # Coverage:
-#   * ns-users, ns-fleet, ns-booking, ns-infra  — Phase A
-#   * ns-frontend                                — Phase C addition
-#   * ns-registry                                — Phase C addition
+#   * ns-users, ns-fleet, ns-booking, ns-infra
+#   * ns-frontend              
+#   * ns-registry
 #
 # ns-ci is intentionally NOT default-denied: the GitHub Actions runner
 # needs broad egress (GitHub Actions service, public NuGet/npm mirrors,

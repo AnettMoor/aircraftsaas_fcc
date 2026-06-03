@@ -5,7 +5,6 @@
 #
 # Booking has the heaviest fan-out (calls Fleet + Users + RabbitMQ on
 # every create), which is why the scaling-validation acceptance check
-# in deploy.md §6 targets *this* service specifically.
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment

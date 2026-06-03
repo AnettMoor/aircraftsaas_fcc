@@ -14,7 +14,7 @@
 #                           registry images, replicas=3, anti-affinity,
 #                           imagePullPolicy=Always, plaintext registry
 #                           credentials removed in favour of the
-#                           SealedSecret. See plans/opennebula.md §4.
+#                           SealedSecret.
 #
 # Resources are pulled in via per-component `kustomization.yaml` files
 # (not raw paths) so that Kustomize's "no traversal outside root" rule
@@ -49,13 +49,12 @@ resources:
   - ../gateway
 
   # 6. CI namespace (self-hosted GitHub Actions runner + ci-deployer RBAC).
-  #    Required from Phase B onwards; wired here so a single
   #    `kubectl apply -k k8s/base` (or any overlay) brings up the
   #    runner alongside the workload it deploys.
   - ../ci
 
   # 7. NetworkPolicies for every app namespace, including the
-  #    ns-frontend and ns-registry policies added in Phase C §C.12.
+  #    ns-frontend and ns-registry policies
   - ../network-policies
 
   # 8. Phase C §C.14 — RBAC ships as a Kustomize *Component* under

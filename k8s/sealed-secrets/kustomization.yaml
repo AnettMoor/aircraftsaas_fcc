@@ -1,7 +1,7 @@
 # =====================================================================
-# SealedSecrets component kustomization — Phase C §C.13.
+# SealedSecrets component kustomization.
 #
-# This is the Phase C secrets posture: the controller is installed and
+# The controller is installed and
 # every plaintext Secret is replaced by a SealedSecret. Adding this
 # directory to a base kustomization brings up the full sealed-secret
 # story.

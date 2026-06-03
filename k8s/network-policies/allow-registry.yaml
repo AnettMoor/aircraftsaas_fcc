@@ -1,5 +1,5 @@
 # =====================================================================
-# allow-registry — Phase C §C.12
+# allow-registry
 #
 # The in-cluster Docker Registry v2 receives image pulls from the app
 # namespaces (kubelet → registry over the Pod network, sourced from the

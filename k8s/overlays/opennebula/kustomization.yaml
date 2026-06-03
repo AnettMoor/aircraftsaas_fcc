@@ -15,7 +15,7 @@
 #      via `kubectl set image`; this overlay only fixes the *prefix*.
 #
 # The infra services (Postgres / RabbitMQ) intentionally stay 1-replica
-# StatefulSets here. Multi-node infra is out of scope (deploy.md §10).
+# StatefulSets here. Multi-node infra is out of scope.
 # =====================================================================
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -25,7 +25,7 @@ resources:
   - ../../cert-manager
 
 components:
-  # Phase C §C.14 — runtime SAs + automountSAToken=false +
+  # runtime SAs + automountSAToken=false +
   # readOnlyRootFilesystem applied here so the patch can reach the
   # Deployments pulled in via ../../base.
   - ../../rbac
@@ -159,8 +159,7 @@ patches:
         value: letsencrypt-staging
 
   # ---------------------------------------------------------------------
-  # plans/opennebula.md §4.1 functional patches applied on the
-  # OpenNebula overlay (the only production deploy target).
+  # functional patches applied on the OpenNebula overlay.
   # ---------------------------------------------------------------------
 
   # 1. Force `imagePullPolicy: Always` on every app container. The

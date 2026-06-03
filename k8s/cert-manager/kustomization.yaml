@@ -1,4 +1,4 @@
-# cert-manager component kustomization — Phase C §C.15.
+# cert-manager component kustomization.
 #
 # Resources here are the install-marker plus the production
 # letsencrypt ClusterIssuer. The OpenNebula overlay wires the

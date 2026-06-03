@@ -1,5 +1,5 @@
 # =====================================================================
-# Bitnami sealed-secrets-controller — Phase C §C.13
+# Bitnami sealed-secrets-controller
 #
 # Installed into kube-system. The controller watches every namespace
 # for `SealedSecret` resources, decrypts them with its private key,
@@ -10,8 +10,7 @@
 #
 #   https://github.com/bitnami-labs/sealed-secrets/releases/tag/v0.26.2
 #
-# Pinned to v0.26.2 (the latest stable at the time of Phase C). When
-# upgrading, regenerate from `kubeseal-controller.yaml` of the new
+# Pinned to v0.26.2 When upgrading, regenerate from `kubeseal-controller.yaml` of the new
 # release rather than editing this file by hand.
 #
 # Wired into the base via k8s/sealed-secrets/kustomization.yaml. The

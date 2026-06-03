@@ -1,5 +1,5 @@
 # =====================================================================
-# RBAC component — Phase C §C.14.
+# RBAC component
 #
 # Implemented as a Kustomize *Component* (rather than a Kustomization)
 # so the deployment-hardening strategic-merge patch can be applied at

@@ -1,21 +1,7 @@
 # =====================================================================
 # ns-infra ingress/egress policies.
-#
-# Spec §4 requirement: "explicit allow rules are defined only for the
-# specific inter-service communication paths required."
-#
-# Earlier revisions of this file used namespace-only `from:` selectors,
-# which meant ANY pod in ns-users / ns-fleet / ns-booking — including
-# ad-hoc debug pods, sidecars, or future workloads added to those
-# namespaces — could reach Postgres :5432 and RabbitMQ :5672. That was
-# service-to-service correct but pod-permissive within each namespace.
-#
-# This revision pins each `from:` entry to BOTH a namespaceSelector AND
-# a podSelector. When both selectors live inside the same array element
-# of `ingress[*].from`, Kubernetes evaluates them as a logical AND —
-# i.e. "pods labeled `app: users-service` in the namespace labeled
-# `name: ns-users`". Putting them in separate array elements would be a
-# logical OR and reintroduce the namespace-permissiveness we are fixing.
+
+# "explicit allow rules are defined only for the specific inter-service communication paths required."
 #
 # IMPORTANT: the EF Core migration Jobs reuse the same image as the
 # runtime Deployment but have their own Pod template. We label those

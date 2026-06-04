@@ -9,6 +9,11 @@ data:
   RabbitMQ__Port:                               "5672"
   JWT__Issuer:                                  "itcollege.taltech.ee"
   JWT__Audience:                                "itcollege.taltech.ee"
+  # CORS allow-list for the Vue SPA origin. Each overlay (lab /
+  # OpenNebula prod) overrides this with its real edge host(s) via a
+  # patch. The base value reflects the placeholder `*.aircraft.localtest.me`
+  # hostnames committed in `k8s/gateway/ingress.yaml`.
+  Cors__AllowedOrigins:                         "https://app.aircraft.localtest.me"
   # Schema migrations + seeding are owned by the one-shot Migration Job
   # (k8s/users/migration-job.yaml) so that the two runtime Pod replicas do
   # not race each other on EF Core Migrate() / Identity seeding on cold start.

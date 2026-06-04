@@ -228,6 +228,26 @@ patches:
           more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
           more_set_headers "Content-Security-Policy: default-src 'self'; connect-src 'self' https://users.aircraft.example.com https://fleet.aircraft.example.com https://booking.aircraft.example.com; frame-ancestors 'none'";
 
+  # 3b. CORS allow-list overrides per backend service. The base
+  #     ConfigMaps point at *.aircraft.localtest.me (the lab edge);
+  #     in OpenNebula prod the edge is *.aircraft.example.com so each
+  #     backend must accept that origin instead of the placeholder.
+  - target: { kind: ConfigMap, name: users-config, namespace: ns-users }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.example.com"
+  - target: { kind: ConfigMap, name: fleet-config, namespace: ns-fleet }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.example.com"
+  - target: { kind: ConfigMap, name: booking-config, namespace: ns-booking }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.example.com"
+
   # 4. Delete the plaintext `registry-auth` Secret shipped under
   #    k8s/registry/auth-secret.yaml (placeholder credentials
   #    `ciuser:ciuser`). It is replaced by

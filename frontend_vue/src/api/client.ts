@@ -13,9 +13,85 @@ import { type JWTResponse, type TokenRefreshInfo } from '@/types/auth'
 import { ApiError } from '@/types/api'
 import { storage } from '@/utils/storage'
 
+// ----------------------------------------------------------------
+// Per-service base URL routing
+//
+// In dev (`npm run dev`), all of VITE_*_URL are typically empty
+// strings; the Vue bundle therefore issues *relative* `/api/v1/...`
+// requests and Vite's dev server proxy (vite.config.ts → server.proxy)
+// forwards each path to the correct microservice on localhost.
+//
+// In prod (Docker / Kubernetes), Vite has no dev server. The bundle
+// must speak directly to each microservice's public hostname, which
+// is provided per-service via:
+//   VITE_USERS_URL    → /api/v1/identity, /companies, /licenses, /admin
+//   VITE_FLEET_URL    → /api/v1/aircraft, /airports, /maintenance
+//   VITE_BOOKING_URL  → /api/v1/bookings, /reviews
+//
+// VITE_API_BASE_URL is the legacy single-origin fallback; it is used
+// only when none of the per-service URLs match and the bundle is
+// running on a setup that DOES front everything from one origin
+// (e.g. a future API gateway). Leaving it empty in prod is fine
+// because the per-path router below covers every microservice.
+// ----------------------------------------------------------------
 const API_VERSION = import.meta.env.VITE_API_VERSION ?? '1'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5219'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
+const USERS_URL   = import.meta.env.VITE_USERS_URL   ?? ''
+const FLEET_URL   = import.meta.env.VITE_FLEET_URL   ?? ''
+const BOOKING_URL = import.meta.env.VITE_BOOKING_URL ?? ''
+
+/**
+ * Pick the per-service origin for an Axios request URL.
+ *
+ * The `path` argument is the URL *relative* to `API_BASE` (i.e. it
+ * starts with `/identity/account/login`, NOT `/api/v1/identity/...`),
+ * because every service file in `src/api/services/` uses paths like
+ * `/identity/...` / `/aircraft/...` and Axios prefixes them with
+ * `apiClient.baseURL`.
+ *
+ * Returns the absolute base URL to use for this request, or an empty
+ * string to fall back to `API_BASE` (same-origin / dev proxy).
+ */
+function pickServiceOrigin(path: string | undefined): string {
+  if (!path) return ''
+  // strip a leading API_BASE prefix if the caller passed an absolute path
+  const p = path.startsWith('/api/v') ? path.replace(/^\/api\/v\d+/, '') : path
+
+  // Users microservice
+  if (p.startsWith('/identity'))    return USERS_URL
+  if (p.startsWith('/companies'))   return USERS_URL
+  if (p.startsWith('/licenses'))    return USERS_URL
+  if (p.startsWith('/admin'))       return USERS_URL
+
+  // Fleet microservice
+  if (p.startsWith('/aircraft'))    return FLEET_URL
+  if (p.startsWith('/airports'))    return FLEET_URL
+  if (p.startsWith('/maintenance')) return FLEET_URL
+
+  // Booking microservice
+  if (p.startsWith('/bookings'))    return BOOKING_URL
+  if (p.startsWith('/reviews'))     return BOOKING_URL
+
+  return ''
+}
+
+/**
+ * Resolve the API_BASE for a given relative service path. Falls back
+ * to the legacy `API_BASE_URL` when no per-service URL applies.
+ */
+export function resolveApiBase(path?: string): string {
+  const origin = pickServiceOrigin(path) || API_BASE_URL
+  return `${origin}/api/v${API_VERSION}`
+}
+
+/**
+ * Backwards-compatible export. When VITE_API_BASE_URL is set (single-
+ * origin / gateway setup), this is the same string the old code used.
+ * When the per-service routing is active, `API_BASE` is just the
+ * `/api/v1` suffix and the per-request interceptor injects the right
+ * origin onto each call.
+ */
 export const API_BASE = `${API_BASE_URL}/api/v${API_VERSION}`
 
 // ----------------------------------------------------------------
@@ -78,9 +154,15 @@ export function setTenantRefresher(refresher: () => Promise<boolean>): void {
 
 // ----------------------------------------------------------------
 // Axios instance
+//
+// `baseURL` is intentionally NOT set on the instance: the request
+// interceptor below resolves it per-request via `resolveApiBase()`
+// based on the request path's microservice prefix. This is what
+// lets the same bundle talk to three independent backend hosts
+// (users./fleet./booking.*) without each service file having to
+// know which origin it belongs to.
 // ----------------------------------------------------------------
 export const apiClient = axios.create({
-  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -89,10 +171,20 @@ export const apiClient = axios.create({
 })
 
 // ----------------------------------------------------------------
-// Request interceptor — inject Bearer token + tenant context
+// Request interceptor — inject Bearer token + tenant context +
+// per-microservice baseURL
 // ----------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Resolve the correct microservice origin for this path.
+    // Falls back to the legacy single-origin API_BASE when neither a
+    // per-service URL nor VITE_API_BASE_URL is configured (in which
+    // case the bundle issues a relative request and the Vite dev
+    // proxy / nginx serves it).
+    if (!config.baseURL) {
+      config.baseURL = resolveApiBase(config.url)
+    }
+
     if (getAccessToken) {
       const token = getAccessToken()
       if (token) {
@@ -205,9 +297,12 @@ apiClient.interceptors.response.use(
         refreshToken,
       }
 
-      // Call refresh directly (no interceptors — avoids recursion)
+      // Call refresh directly (no interceptors — avoids recursion).
+      // Use `resolveApiBase('/identity/...')` so the request hits the
+      // Users microservice in per-service routing mode.
+      const refreshBase = resolveApiBase('/identity/account/refreshtokendata')
       const response = await axios.post<JWTResponse>(
-        `${API_BASE}/identity/account/refreshtokendata`,
+        `${refreshBase}/identity/account/refreshtokendata`,
         refreshPayload,
         { headers: { 'Content-Type': 'application/json' } },
       )

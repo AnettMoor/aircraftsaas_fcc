@@ -108,10 +108,32 @@ builder.Services.AddScoped<Shared.Contracts.Common.ICurrentUserProvider,
 builder.Services.AddScoped<Shared.Contracts.Common.IRequestContextProvider,
     Booking.WebHost.Providers.HttpContextRequestContextProvider>();
 
+// ── CORS ─────────────────────────────────────────────────────────────
+// See `Users.WebHost/Program.cs` for the full rationale. Allowed
+// origins are pulled from `Cors:AllowedOrigins` so each environment
+// (compose / lab / OpenNebula prod) can set its own SPA host(s).
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins =
+        builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     options.AddPolicy("CorsAllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .SetIsOriginAllowedToAllowWildcardSubdomains()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+    });
 });
 
 var app = builder.Build();

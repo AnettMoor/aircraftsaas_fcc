@@ -104,11 +104,46 @@ builder.Services.AddScoped<Shared.Contracts.Common.ICurrentUserProvider,
 builder.Services.AddScoped<Shared.Contracts.Common.IRequestContextProvider,
     Users.WebHost.Providers.HttpContextRequestContextProvider>();
 
+// ── CORS ─────────────────────────────────────────────────────────────
+// In K8s/Docker each microservice is reached on its own subdomain
+// (users.* / fleet.* / booking.*) while the Vue SPA lives on
+// app.*. Every API call from the browser is therefore cross-origin
+// and requires the OPTIONS preflight to allow the SPA host.
+//
+// Allowed origins are read from configuration so they can be patched
+// per-environment (compose / lab / OpenNebula prod) without
+// rebuilding the image. The config key is `Cors:AllowedOrigins`
+// which maps to env var `Cors__AllowedOrigins__0`, `__1`, … (one per
+// origin), or alternatively a single comma-separated string under
+// `Cors__AllowedOrigins`.
+//
+// When the config key is missing or empty (e.g. local dev with
+// `dotnet run`) we fall back to allowing any origin so developers
+// don't need to hand-type the SPA host. This fallback is INSECURE
+// and is only intended for local development.
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins =
+        builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     options.AddPolicy("CorsAllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .SetIsOriginAllowedToAllowWildcardSubdomains()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Local-dev fallback. Browsers will refuse `*` together with
+            // credentials, so this is wide-open but bearer-token only.
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
     });
 });
 

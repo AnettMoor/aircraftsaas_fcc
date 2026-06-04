@@ -9,6 +9,9 @@ data:
   RabbitMQ__Port:                               "5672"
   JWT__Issuer:                                  "itcollege.taltech.ee"
   JWT__Audience:                                "itcollege.taltech.ee"
+  # CORS allow-list for the Vue SPA origin. See `k8s/users/configmap.yaml`
+  # for full rationale. Each overlay overrides with its real edge host.
+  Cors__AllowedOrigins:                         "https://app.aircraft.localtest.me"
   # Schema migrations + seeding are owned by the one-shot Migration Job
   # (k8s/fleet/migration-job.yaml) so that the two runtime Pod replicas do
   # not race each other on EF Core Migrate() on cold start.

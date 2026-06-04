@@ -169,3 +169,51 @@ patches:
         value:
           requests: { cpu: 50m, memory: 192Mi }
           limits:   { cpu: 500m, memory: 384Mi }
+
+  # -----------------------------------------------------------------
+  # 7. CORS allow-list overrides per backend service.
+  #
+  # The base ConfigMaps set `Cors__AllowedOrigins` to
+  # `https://app.aircraft.localtest.me` (no port). On this lab the
+  # ingress-nginx Service is exposed via a NodePort (`:31857`) instead
+  # of a real LoadBalancer / :443, so the browser hits
+  # `https://app.aircraft.localtest.me:31857` and the `Origin` header
+  # carries the port too — which is a DIFFERENT CORS origin than the
+  # port-less host. We therefore list BOTH variants so the same
+  # bundle works when the NodePort is later replaced with a proper
+  # :443 LoadBalancer without another rebuild.
+  # -----------------------------------------------------------------
+  - target: { kind: ConfigMap, name: users-config, namespace: ns-users }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.localtest.me:31857,https://app.aircraft.localtest.me"
+  - target: { kind: ConfigMap, name: fleet-config, namespace: ns-fleet }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.localtest.me:31857,https://app.aircraft.localtest.me"
+  - target: { kind: ConfigMap, name: booking-config, namespace: ns-booking }
+    patch: |-
+      - op: replace
+        path: /data/Cors__AllowedOrigins
+        value: "https://app.aircraft.localtest.me:31857,https://app.aircraft.localtest.me"
+
+  # -----------------------------------------------------------------
+  # 8. CSP `connect-src` on the frontend Ingress must include the
+  # `:31857` variants of every API subdomain. Browsers treat
+  # `https://users.aircraft.localtest.me` and
+  # `https://users.aircraft.localtest.me:31857` as distinct origins
+  # for CSP enforcement, so leaving the port off would silently block
+  # every XHR even after CORS is satisfied. We replace the full
+  # `configuration-snippet` annotation in one shot.
+  # -----------------------------------------------------------------
+  - target: { kind: Ingress, name: frontend-ingress }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1configuration-snippet
+        value: |
+          more_set_headers "X-Frame-Options: DENY";
+          more_set_headers "X-Content-Type-Options: nosniff";
+          more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+          more_set_headers "Content-Security-Policy: default-src 'self'; connect-src 'self' https://users.aircraft.localtest.me:31857 https://fleet.aircraft.localtest.me:31857 https://booking.aircraft.localtest.me:31857 https://users.aircraft.localtest.me https://fleet.aircraft.localtest.me https://booking.aircraft.localtest.me; frame-ancestors 'none'";

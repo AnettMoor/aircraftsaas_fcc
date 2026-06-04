@@ -3,20 +3,25 @@
 //
 // Photo URLs returned by the API are relative paths served from
 // the backend's wwwroot (e.g. "/uploads/aircraft/{id}/{file}").
-// Since the Vue frontend runs on a different origin and the
-// reverse proxy only forwards /api/ routes, we route photo
-// requests through a dedicated API file-serving endpoint:
+// Since the Vue frontend runs on a different origin (and even on
+// a different microservice subdomain) we route photo requests
+// through a dedicated API file-serving endpoint:
 //   GET /api/v1/aircraft/{aircraftId}/photos/file?path=...
+//
+// In per-service routing mode (Option B), aircraft photos live
+// on the Fleet microservice subdomain, so we use `resolveApiBase`
+// to compute the absolute base URL for the request rather than
+// the legacy single-origin `API_BASE`.
 // ============================================================
 
-import { API_BASE } from '@/api/client'
+import { resolveApiBase } from '@/api/client'
 
 /**
  * Resolve a photo URL from the API to an absolute URL served
  * through the API file endpoint.
  *
  * Input:  "/uploads/aircraft/{aircraftId}/{filename}.png"
- * Output: "{API_BASE}/aircraft/{aircraftId}/photos/file?path=/uploads/aircraft/{aircraftId}/{filename}.png"
+ * Output: "{fleet-base}/aircraft/{aircraftId}/photos/file?path=/uploads/aircraft/{aircraftId}/{filename}.png"
  *
  * If the URL is already absolute (http/https), returns it as-is.
  */
@@ -28,14 +33,15 @@ export function resolvePhotoUrl(url: string | undefined | null): string {
   const match = url.match(/\/uploads\/aircraft\/([^/]+)\//)
   if (match) {
     const aircraftId = match[1]
-    return `${API_BASE}/aircraft/${aircraftId}/photos/file?path=${encodeURIComponent(url)}`
+    // `/aircraft/...` routes to the Fleet microservice in per-service mode.
+    const base = resolveApiBase('/aircraft')
+    return `${base}/aircraft/${aircraftId}/photos/file?path=${encodeURIComponent(url)}`
   }
 
-  // Fallback: prepend base URL directly (for non-standard paths)
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5219'
-  const base = API_BASE_URL.replace(/\/+$/, '')
+  // Fallback: prepend Fleet origin directly (for non-standard paths).
+  const fallbackBase = resolveApiBase('/aircraft').replace(/\/api\/v\d+$/, '')
   const path = url.startsWith('/') ? url : `/${url}`
-  return `${base}${path}`
+  return `${fallbackBase}${path}`
 }
 
 /**

@@ -5,12 +5,26 @@ kind: Kustomization
 # is optional if you don't have a public hostname yet. Skip it on the lab
 # to save ~150–200m CPU and ~200Mi RAM.
 resources:
-  - ../../base
+  - ../../../base
   # - ../../cert-manager       # uncomment only if you really need TLS via LE
   # - ../../sealed-secrets     # keep if you already sealed the secrets
 
 # Keep the base 2-replica defaults for everything (do NOT bump to 3 like
 # the OpenNebula overlay does). Then shrink resource requests.
+
+images:
+  - name: users-service
+    newName: registry.ns-registry.svc.cluster.local:5000/users-service
+    newTag: latest
+  - name: fleet-service
+    newName: registry.ns-registry.svc.cluster.local:5000/fleet-service
+    newTag: latest
+  - name: booking-service
+    newName: registry.ns-registry.svc.cluster.local:5000/booking-service
+    newTag: latest
+  - name: vue-frontend
+    newName: registry.ns-registry.svc.cluster.local:5000/vue-frontend
+    newTag: k8s
 
 patches:
   # -----------------------------------------------------------------

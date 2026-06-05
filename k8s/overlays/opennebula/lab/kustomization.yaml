@@ -231,3 +231,27 @@ patches:
           more_set_headers "X-Content-Type-Options: nosniff";
           more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
           more_set_headers "Content-Security-Policy: default-src 'self'; connect-src 'self' https://users.aircraft.localtest.me:31857 https://fleet.aircraft.localtest.me:31857 https://booking.aircraft.localtest.me:31857 https://users.aircraft.localtest.me https://fleet.aircraft.localtest.me https://booking.aircraft.localtest.me; frame-ancestors 'none'";
+# -----------------------------------------------------------------
+  # 9. Force `imagePullPolicy: Always` on all deployments under lab.
+  #    This prevents the nodes from using old cached container images.
+  # -----------------------------------------------------------------
+  - target: { kind: Deployment, name: users-service }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: fleet-service }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: booking-service }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Deployment, name: vue-frontend }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always

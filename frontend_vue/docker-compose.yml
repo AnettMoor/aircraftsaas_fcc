@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_USERS_URL: http://localhost:5001
+        VITE_FLEET_URL: http://localhost:5002
+        VITE_BOOKING_URL: http://localhost:5003
+    image: aircraftsaas-frontend:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - aircraftsaas_default
+
+networks:
+  aircraftsaas_default:
+    external: true

@@ -15,6 +15,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Accept build-time environment variables for microservice URLs
+ARG VITE_USERS_URL=http://localhost:5001
+ARG VITE_FLEET_URL=http://localhost:5002
+ARG VITE_BOOKING_URL=http://localhost:5003
+
 # Restore dependency layer first so it's cached as long as the lockfile
 # is unchanged.
 COPY package.json package-lock.json ./
@@ -22,7 +27,10 @@ RUN npm ci
 
 # Copy the rest of the source and produce the static bundle.
 COPY . .
-RUN npm run build
+RUN VITE_USERS_URL=${VITE_USERS_URL} \
+    VITE_FLEET_URL=${VITE_FLEET_URL} \
+    VITE_BOOKING_URL=${VITE_BOOKING_URL} \
+    npm run build
 
 # --- Stage 2: Serve with a hardened, non-root nginx --------------------
 FROM nginx:alpine AS production
@@ -47,7 +55,8 @@ RUN set -eux ; \
     chown -R 1000:1000 /var/cache/nginx /var/run /var/log/nginx \
                        /usr/share/nginx/html /etc/nginx/conf.d /tmp/nginx ; \
     sed -i 's|^user  nginx;|# user directive removed: container already runs as UID 1000|' /etc/nginx/nginx.conf ; \
-    sed -i 's|/var/run/nginx.pid|/tmp/nginx/nginx.pid|'                                    /etc/nginx/nginx.conf
+    sed -i 's|/var/run/nginx.pid|/tmp/nginx/nginx.pid|'                                    /etc/nginx/nginx.conf ; \
+    sed -i 's|/run/nginx.pid|/tmp/nginx/nginx.pid|'                                        /etc/nginx/nginx.conf
 
 # Run as the unprivileged user. Kubernetes PodSecurityContext enforces
 # runAsNonRoot:true; this directive lets that admission check pass.

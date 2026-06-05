@@ -88,6 +88,10 @@ jobs:
           dockerfile:    Dockerfile
           registry-user: ${{ secrets.REGISTRY_USERNAME }}
           registry-pass: ${{ secrets.REGISTRY_PASSWORD }}
+          build-args: |
+            VITE_USERS_URL=https://users.aircraft.localtest.me
+            VITE_FLEET_URL=https://fleet.aircraft.localtest.me
+            VITE_BOOKING_URL=https://booking.aircraft.localtest.me
 
   # -------------------------------------------------------------------
   # Stage 3 — rolling update + smoke. The frontend serves static assets

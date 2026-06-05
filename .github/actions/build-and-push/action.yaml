@@ -70,6 +70,10 @@ inputs:
     description: "Set to 'true' to skip the trivy scan (emergency override)."
     required: false
     default: "false"
+  build-args:
+    description: "Newline-separated build args (e.g. `ARG1=value1\nARG2=value2`)."
+    required: false
+    default: ""
 
 outputs:
   image:
@@ -145,9 +149,16 @@ runs:
       shell: bash
       env:
         TAG_ARGS: ${{ steps.compute-tags.outputs.tag_args }}
+        BUILD_ARGS: ${{ inputs.build-args }}
       run: |
         set -euo pipefail
         cd "${{ inputs.context }}"
+        # Construct --build-arg flags from newline-separated BUILD_ARGS
+        BUILD_ARG_FLAGS=""
+        while IFS= read -r arg; do
+          [ -z "$arg" ] && continue
+          BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+        done <<< "${BUILD_ARGS}"
         # shellcheck disable=SC2086
         docker buildx build \
           --file "${{ inputs.dockerfile }}" \
@@ -156,6 +167,7 @@ runs:
           --provenance=false \
           --cache-from type=registry,ref=${{ steps.compute-tags.outputs.repo }}:cache \
           --cache-to   type=registry,ref=${{ steps.compute-tags.outputs.repo }}:cache,mode=max \
+          ${BUILD_ARG_FLAGS} \
           ${TAG_ARGS} \
           .
 

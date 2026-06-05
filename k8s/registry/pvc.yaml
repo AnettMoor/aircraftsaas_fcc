@@ -13,6 +13,8 @@ metadata:
   namespace: ns-registry
 spec:
   accessModes: [ReadWriteOnce]
+  volumeName: registry-pv
+  storageClassName: ""
   resources:
     requests:
       storage: 20Gi

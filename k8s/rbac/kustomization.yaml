@@ -25,4 +25,7 @@ kind: Component
 resources:
   - runtime-serviceaccounts.yaml
 patches:
-  - path: deployment-hardening-patch.yaml
+  - path: patch-users.yaml
+  - path: patch-fleet.yaml
+  - path: patch-booking.yaml
+  - path: patch-frontend.yaml

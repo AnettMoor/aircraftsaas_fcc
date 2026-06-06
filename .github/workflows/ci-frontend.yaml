@@ -85,7 +85,7 @@ jobs:
           registry-pass: ${{ secrets.REGISTRY_PASSWORD }}
           build-args: |
             VITE_USERS_URL=https://users.aircraft.localtest.me:31857
-            VITE_FLEET_URL=https://fleet.aircraft.localtest.me_31857
+            VITE_FLEET_URL=https://fleet.aircraft.localtest.me:31857
             VITE_BOOKING_URL=https://booking.aircraft.localtest.me:31857
 
   # -------------------------------------------------------------------

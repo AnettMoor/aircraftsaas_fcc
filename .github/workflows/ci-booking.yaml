@@ -14,7 +14,7 @@ on:
       - "AircraftSaaS/Modules/Booking/**"
       - "AircraftSaaS/Shared/**"
       - "AircraftSaaS/Tests/Booking.Tests/**"
-      - "AircraftSaaS/Directory.Build.props"
+      - "Directory.Build.props"
       - "AircraftSaaS/AircraftSaaS.sln"
       - ".github/workflows/ci-booking.yaml"
       - ".github/actions/build-and-push/**"

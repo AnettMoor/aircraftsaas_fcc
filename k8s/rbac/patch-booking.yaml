@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: ns-booking
+spec:
+  template:
+    spec:
+      serviceAccountName: booking-runtime
+      automountServiceAccountToken: false
+      containers:
+        - name: booking-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp,      mountPath: /tmp }
+            - { name: var-tmp,  mountPath: /var/tmp }
+            - { name: dotnet,   mountPath: /home/app/.dotnet }
+      volumes:
+        - { name: tmp,     emptyDir: {} }
+        - { name: var-tmp, emptyDir: {} }
+        - { name: dotnet,  emptyDir: {} }

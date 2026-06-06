@@ -154,7 +154,7 @@ public class BookingServiceTests
         // Act & Assert
         var act = () => _sut.RequestBookingAsync(dto, _userId);
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*not available*");
+            .WithMessage("*blocked by an existing Fleet availability row*");
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public class BookingServiceTests
         // Act & Assert
         var act = () => _sut.RequestBookingAsync(dto, _userId);
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*not available*");
+            .WithMessage("*overlaps this window*");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class BookingServiceTests
         // Act & Assert
         var act = () => _sut.RequestBookingAsync(dto, _userId);
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*valid pilot license*");
+            .WithMessage("*valid *pilot license*");
     }
 
     #endregion

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-service
+  namespace: ns-fleet
+spec:
+  template:
+    spec:
+      serviceAccountName: fleet-runtime
+      automountServiceAccountToken: false
+      containers:
+        - name: fleet-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp,      mountPath: /tmp }
+            - { name: var-tmp,  mountPath: /var/tmp }
+            - { name: dotnet,   mountPath: /home/app/.dotnet }
+      volumes:
+        - { name: tmp,     emptyDir: {} }
+        - { name: var-tmp, emptyDir: {} }
+        - { name: dotnet,  emptyDir: {} }

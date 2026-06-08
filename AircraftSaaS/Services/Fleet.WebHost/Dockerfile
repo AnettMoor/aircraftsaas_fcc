@@ -21,7 +21,10 @@ COPY Modules/Fleet/Fleet.Api/Fleet.Api.csproj                        Modules/Fle
 COPY Modules/Fleet/Fleet.Infrastructure/Fleet.Infrastructure.csproj  Modules/Fleet/Fleet.Infrastructure/
 COPY Services/Fleet.WebHost/Fleet.WebHost.csproj                     Services/Fleet.WebHost/
 
-RUN dotnet restore Services/Fleet.WebHost/Fleet.WebHost.csproj
+# Cache the NuGet package store across builds so packages are only downloaded
+# once. The cache mount is keyed per-runner and is never pushed to the image.
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore Services/Fleet.WebHost/Fleet.WebHost.csproj
 
 # Copy everything and publish
 COPY . .

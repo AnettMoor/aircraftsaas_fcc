@@ -116,9 +116,15 @@ runs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
+        # network=host ensures the BuildKit daemon (and the containers it
+        # spawns for RUN steps) share the runner pod's network namespace.
+        # Without this, `dotnet restore` inside the build container goes
+        # through the DinD bridge which may not have the same NAT/routing
+        # rules as the runner pod, causing nuget.org requests to hang.
+        driver-opts: network=host
         buildkitd-config-inline: |
           [registry."registry.ns-registry.svc.cluster.local:5000"]
-          http = true
+            http = true
 
     # -----------------------------------------------------------------
     # Authenticate against the in-cluster registry. The runner's DinD

@@ -1,31 +1,3 @@
-# =====================================================================
-# Self-hosted GitHub Actions runner.
-#
-#   * The cluster lives behind OpenNebula's edge — GitHub-hosted runners
-#     cannot reach `kubectl` or the in-cluster registry. A self-hosted
-#     runner Deployment in ns-ci is the bridge.
-#   * Runs under the `ci-deployer` ServiceAccount (k8s/ci/rbac.yaml),
-#     so kubectl inside the runner Pod authenticates via the projected
-#     SA token and is namespaced-scoped to ns-{users,fleet,booking,frontend}.
-#   * Uses myoung34/github-runner — a community image that wraps
-#     `actions/runner` with auto-registration via env vars.
-#   * Persists the runner identity on an emptyDir (Pod lifetime). For
-#     production a PVC could be substituted so re-creates skip the
-#     registration round-trip; for Phase B's "automate what now works
-#     manually" goal, ephemeral identity is intentional — every pod
-#     restart re-registers with a fresh registration token, which means
-#     the GitHub side never holds stale runner records.
-#   * Docker-in-Docker is provided by a sidecar `dind` container so the
-#     workflow can run `docker buildx build --push` without needing the
-#     node's container runtime. The runner connects to it over the
-#     shared Pod network at tcp://localhost:2375.
-#
-# This deployment is intentionally a single replica: GitHub Actions
-# concurrency control lives on the GitHub side (`concurrency:` keys in
-# each workflow), and a single in-cluster runner is enough to serialize
-# the per-service pipelines without head-of-line blocking unrelated
-# services (each workflow declares a per-service concurrency group).
-# =====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,7 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate   # only one runner at a time owns the registration
+    type: Recreate
   selector:
     matchLabels:
       app: github-runner
@@ -46,80 +18,120 @@ spec:
         app: github-runner
     spec:
       serviceAccountName: ci-deployer
-      # The runner Pod itself needs to talk to the kube-apiserver via its
-      # projected SA token, so automounting is REQUIRED (unlike app pods,
-      # which set this to false in Phase C).
       automountServiceAccountToken: true
+
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: OnRootMismatch
+
+      initContainers:
+        - name: seed-runner-home
+          image: myoung34/github-runner:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -lc
+            - |
+              set -e
+              cp -a /actions-runner/. /runner-home/
+              mkdir -p /runner-home/_diag /runner-home/_work
+              chown -R 1001:121 /runner-home /_work /tmp
+              chmod -R ug+rwX /runner-home /_work /tmp
+          volumeMounts:
+            - name: runner-home
+              mountPath: /runner-home
+            - name: work
+              mountPath: /_work
+            - name: tmp
+              mountPath: /tmp
+
       containers:
-        # -----------------------------------------------------------------
-        # Runner container — long-running agent that polls GitHub for jobs.
-        # -----------------------------------------------------------------
         - name: runner
           image: myoung34/github-runner:latest
           imagePullPolicy: IfNotPresent
+          workingDir: /actions-runner
           env:
             - name: REPO_URL
               valueFrom:
-                secretKeyRef: { name: github-runner, key: RUNNER_REPO_URL }
+                secretKeyRef:
+                  name: github-runner
+                  key: RUNNER_REPO_URL
             - name: RUNNER_TOKEN
               valueFrom:
-                secretKeyRef: { name: github-runner, key: RUNNER_TOKEN }
+                secretKeyRef:
+                  name: github-runner
+                  key: RUNNER_TOKEN
             - name: LABELS
               valueFrom:
-                secretKeyRef: { name: github-runner, key: RUNNER_LABELS }
+                secretKeyRef:
+                  name: github-runner
+                  key: RUNNER_LABELS
             - name: RUNNER_NAME_PREFIX
               valueFrom:
-                secretKeyRef: { name: github-runner, key: RUNNER_NAME_PREFIX }
-            # The runner shells out to `docker` for buildx; point it at
-            # the DinD sidecar instead of the node's socket. This means
-            # the runner container itself does NOT need /var/run/docker.sock,
-            # which keeps the node's container runtime out of reach.
-            - { name: DOCKER_HOST, value: "tcp://localhost:2375" }
-            # Ephemeral: deregisters after each job. Keeps GitHub's runner
-            # list clean and means a compromised runner can't keep polling.
-            - { name: EPHEMERAL, value: "true" }
-            # The image installs kubectl on demand if asked; we bake the
-            # path here so the workflows can rely on it.
-            - { name: ADDITIONAL_PACKAGES, value: "kubectl curl jq" }
+                secretKeyRef:
+                  name: github-runner
+                  key: RUNNER_NAME_PREFIX
+            - name: DOCKER_HOST
+              value: tcp://localhost:2375
+            - name: EPHEMERAL
+              value: "true"
+            - name: ADDITIONAL_PACKAGES
+              value: kubectl curl jq
+            - name: RUN_AS_ROOT
+              value: "false"
+            - name: RUNNER_WORKDIR
+              value: /_work
           resources:
-            requests: { cpu: 200m, memory: 512Mi }
-            limits:   { cpu: 2,    memory: 4Gi }
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 2
+              memory: 4Gi
           volumeMounts:
-            - { name: work,   mountPath: /actions-runner/_work }
-            - { name: tmp,    mountPath: /tmp }
+            - name: runner-home
+              mountPath: /actions-runner
+            - name: work
+              mountPath: /_work
+            - name: tmp
+              mountPath: /tmp
           securityContext:
-            # The runner image needs to install packages on first boot;
-            # full non-root is enforced on app Pods in Phase C but is
-            # intentionally relaxed for the CI bootstrap container here.
+            runAsUser: 1001
+            runAsGroup: 121
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-        # -----------------------------------------------------------------
-        # Docker-in-Docker sidecar — exposes a Docker daemon on :2375 for
-        # the runner to push images to the in-cluster registry.
-        # -----------------------------------------------------------------
+
         - name: dind
           image: docker:24-dind
           imagePullPolicy: IfNotPresent
           args:
-            - "--host=tcp://0.0.0.0:2375"
-            # The in-cluster registry runs over plain HTTP (TLS is added
-            # only in Phase C). Trust it explicitly here so `docker push`
-            # does not refuse the connection.
-            - "--insecure-registry=registry.ns-registry.svc.cluster.local:5000"
+            - --host=tcp://0.0.0.0:2375
+            - --insecure-registry=registry.ns-registry.svc.cluster.local:5000
           env:
-            - { name: DOCKER_TLS_CERTDIR, value: "" }
+            - name: DOCKER_TLS_CERTDIR
+              value: ""
           securityContext:
-            # DinD requires privileged to mount overlay/devicemapper.
-            # Quarantined to ns-ci by NetworkPolicy in Phase C.
             privileged: true
           resources:
-            requests: { cpu: 200m, memory: 512Mi }
-            limits:   { cpu: 2,    memory: 4Gi }
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 2
+              memory: 4Gi
           volumeMounts:
-            - { name: docker-graph, mountPath: /var/lib/docker }
-            - { name: work,         mountPath: /actions-runner/_work }
+            - name: docker-graph
+              mountPath: /var/lib/docker
+            - name: work
+              mountPath: /_work
+
       volumes:
-        - { name: work,         emptyDir: {} }
-        - { name: tmp,          emptyDir: {} }
-        - { name: docker-graph, emptyDir: {} }
+        - name: runner-home
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: docker-graph
+          emptyDir: {}

@@ -116,9 +116,9 @@ runs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
-        # The DinD sidecar in k8s/ci/runner-deployment.yaml exposes a
-        # plain HTTP daemon — no TLS material to wire in.
-        driver-opts: network=host
+        buildkitd-config-inline: |
+          [registry."registry.ns-registry.svc.cluster.local:5000"]
+          http = true
 
     # -----------------------------------------------------------------
     # Authenticate against the in-cluster registry. The runner's DinD

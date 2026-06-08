@@ -37,14 +37,18 @@ env:
 
 jobs:
   test:
-    name: dotnet test (Fleet.Tests)
     runs-on: [self-hosted, Linux, X64, k8s, aircraft]
+    env:
+      DOTNET_INSTALL_DIR: /actions-runner/.dotnet
+      DOTNET_ROOT: /actions-runner/.dotnet
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Restore
         working-directory: AircraftSaaS
         run: dotnet restore Tests/Fleet.Tests/Fleet.Tests.csproj
@@ -66,7 +70,7 @@ jobs:
   build:
     name: docker build & push
     needs: test
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     outputs:
       image: ${{ steps.bp.outputs.image }}
       tag:   ${{ steps.bp.outputs.tag }}
@@ -85,7 +89,7 @@ jobs:
   deploy:
     name: rollout + smoke
     needs: build
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
       - name: kubectl set image
         run: |

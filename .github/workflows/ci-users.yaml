@@ -21,19 +21,19 @@
 name: ci-users
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "AircraftSaaS/Services/Users.WebHost/**"
-      - "AircraftSaaS/Modules/Users/**"
-      - "AircraftSaaS/Shared/**"
-      - "AircraftSaaS/Tests/Users.Tests/**"
-      - "Directory.Build.props"
-      - "AircraftSaaS/AircraftSaaS.sln"
-      - ".github/workflows/ci-users.yaml"
-      - ".github/actions/build-and-push/**"
   workflow_dispatch:
   workflow_call:    # invoked by ci-shared.yaml when Shared/** changes
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "AircraftSaaS/Services/Users.WebHost/**"
+  #     - "AircraftSaaS/Modules/Users/**"
+  #     - "AircraftSaaS/Shared/**"
+  #     - "AircraftSaaS/Tests/Users.Tests/**"
+  #     - "Directory.Build.props"
+  #     - "AircraftSaaS/AircraftSaaS.sln"
+  #     - ".github/workflows/ci-users.yaml"
+  #     - ".github/actions/build-and-push/**"
 
 concurrency:
   group: ci-users-${{ github.ref }}

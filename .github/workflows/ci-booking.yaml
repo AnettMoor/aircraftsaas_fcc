@@ -7,18 +7,18 @@
 name: ci-booking
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "AircraftSaaS/Services/Booking.WebHost/**"
-      - "AircraftSaaS/Modules/Booking/**"
-      - "AircraftSaaS/Shared/**"
-      - "AircraftSaaS/Tests/Booking.Tests/**"
-      - "Directory.Build.props"
-      - "AircraftSaaS/AircraftSaaS.sln"
-      - ".github/workflows/ci-booking.yaml"
-      - ".github/actions/build-and-push/**"
   workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "AircraftSaaS/Services/Booking.WebHost/**"
+  #     - "AircraftSaaS/Modules/Booking/**"
+  #     - "AircraftSaaS/Shared/**"
+  #     - "AircraftSaaS/Tests/Booking.Tests/**"
+  #     - "Directory.Build.props"
+  #     - "AircraftSaaS/AircraftSaaS.sln"
+  #     - ".github/workflows/ci-booking.yaml"
+  #     - ".github/actions/build-and-push/**"
   workflow_call:
 
 concurrency:

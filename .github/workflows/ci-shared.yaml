@@ -25,12 +25,12 @@
 name: ci-shared
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "AircraftSaaS/Shared/**"
-      - ".github/workflows/ci-shared.yaml"
   workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "AircraftSaaS/Shared/**"
+  #     - ".github/workflows/ci-shared.yaml"
 
 concurrency:
   group: ci-shared-${{ github.ref }}

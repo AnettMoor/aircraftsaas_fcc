@@ -38,7 +38,7 @@ env:
 jobs:
   test:
     name: dotnet test (Fleet.Tests)
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
       - uses: actions/checkout@v4
       - name: Set up .NET ${{ env.DOTNET_VERSION }}

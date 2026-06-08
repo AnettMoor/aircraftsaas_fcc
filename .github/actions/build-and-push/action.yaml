@@ -153,6 +153,7 @@ runs:
         done <<< "${BUILD_ARGS}"
         # shellcheck disable=SC2086
         docker buildx build \
+          --progress=plain \
           --file "${{ inputs.dockerfile }}" \
           --platform linux/amd64 \
           --push \

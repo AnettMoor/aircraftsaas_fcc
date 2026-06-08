@@ -42,6 +42,7 @@ COPY AircraftSaaS/Tests/Integration.Tests/Integration.Tests.csproj ./Tests/Integ
 COPY AircraftSaaS/Tests/WebApp.Tests/WebApp.Tests.csproj ./Tests/WebApp.Tests/
 
 # Restore NuGet packages
+#debug
 RUN dotnet restore -v diag --disable-parallel
 
 # Copy all source code

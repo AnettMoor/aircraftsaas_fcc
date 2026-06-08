@@ -11,7 +11,7 @@ COPY AircraftSaaS/WebApp/WebApp.csproj ./WebApp/
 
 # Copy project files — Shared modules
 COPY AircraftSaaS/Shared/Shared.Kernel/Shared.Kernel.csproj ./Shared/Shared.Kernel/
-COPY AircraftSaaS/Shared/Shared.Contracts/Shared.Contracts.csproj ./Shared/Shared.Contracts/
+COPY AircraftSaaS/Shaairred/Shared.Contracts/Shared.Contracts.csproj ./Shared/Shared.Contracts/
 
 # Copy project files — Users module
 COPY AircraftSaaS/Modules/Users/Users.Domain/Users.Domain.csproj ./Modules/Users/Users.Domain/
@@ -42,7 +42,7 @@ COPY AircraftSaaS/Tests/Integration.Tests/Integration.Tests.csproj ./Tests/Integ
 COPY AircraftSaaS/Tests/WebApp.Tests/WebApp.Tests.csproj ./Tests/WebApp.Tests/
 
 # Restore NuGet packages
-RUN dotnet restore
+RUN dotnet restore -v normal
 
 # Copy all source code
 COPY AircraftSaaS/App.Resources/. ./App.Resources/

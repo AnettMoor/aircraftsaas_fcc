@@ -23,8 +23,3 @@ services:
     volumes:
       - ./Services/Booking.WebHost:/src/Services/Booking.WebHost:ro
 
-  webapp:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      - ./WebApp:/src/WebApp:ro

@@ -139,7 +139,7 @@ docker build --no-cache \
   --build-arg VITE_USERS_URL=https://users.aircraft.localtest.me:31857 \
   --build-arg VITE_FLEET_URL=https://fleet.aircraft.localtest.me:31857 \
   --build-arg VITE_BOOKING_URL=https://booking.aircraft.localtest.me:31857 \
-  -t localhost:5000/vue-frontend:k8s-http -f WebApp/Dockerfile .
+  -t localhost:5000/vue-frontend:k8s-http -f frontend_vue/Dockerfile .
 
 docker push localhost:5000/vue-frontend:k8s-http
 ```

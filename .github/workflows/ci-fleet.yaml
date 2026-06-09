@@ -1,5 +1,10 @@
 # CI/CD — Fleet service
-
+#   * Path-filtered: only runs when something the Fleet service depends
+#     on actually changes 
+#   * `dotnet test` for Fleet.Tests.
+#   * Builds + pushes the image via the shared composite action.
+#   * Rolls the Deployment in ns-fleet to the new tag.
+#   * Runs an in-cluster smoke test against /health.
 
 name: ci-fleet
 
@@ -109,9 +114,7 @@ jobs:
             curl -fsS --max-time 10 \
               "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local:8080/health"
 
-      # Roll back to the previous revision if the smoke test (or any
-      # earlier deploy step) fails, so the cluster is never left running
-      # a broken image.
+      # Roll back to the previous revision if something fails, cluster never left running on a broken image.
       - name: Rollback on failure
         if: failure()
         run: |

@@ -1,23 +1,12 @@
-# =====================================================================
-# CI/CD — Users service
-#
-# Implements deploy.md §B.10 for the Users.WebHost slice:
+#CI/CD — Users service
+
 #   * Path-filtered: only runs when something the Users service depends
-#     on actually changes (its WebHost, its module sources, or the
-#     shared libraries it links against).
+#     on actually changes 
 #   * `dotnet test` for Users.Tests.
 #   * Builds + pushes the image via the shared composite action.
 #   * Rolls the Deployment in ns-users to the new tag.
 #   * Runs an in-cluster smoke test against /health.
-#
-# Runs on the self-hosted runner (deploy.md §4.4) so kubectl reaches
-# the apiserver via the projected ci-deployer SA token and `docker
-# push` reaches registry.ns-registry.svc.cluster.local:5000.
-#
-# concurrency: per-service group + `cancel-in-progress: false` — a
-# new commit during a deploy is queued, not pre-empted, so we never
-# leave a half-rolled Deployment.
-# =====================================================================
+
 name: ci-users
 
 on:

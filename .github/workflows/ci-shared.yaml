@@ -1,13 +1,13 @@
-# =====================================================================
 # CI/CD — Shared libraries fan-out
-#
-#   * Provides a single explicit trigger surface — humans browsing
-#     Actions see "ci-shared" instead of three parallel ci-users /
-#     ci-fleet / ci-booking runs and wonder if they're coordinated.
+
+
+# Provides a single explicit trigger surface — 
+# "ci-shared" instead of three parallel ci-users /
+# ci-fleet / ci-booking runs and wonder if they're coordinated.
 #
 # The actual builds happen inside the per-service workflows via
 # `workflow_call`; this file's `jobs` are just declarative invocations.
-# =====================================================================
+
 name: ci-shared
 
 on:

@@ -1,8 +1,6 @@
-# =====================================================================
 # Composite action — build + push a service image to the in-cluster
 # Docker Registry v2.
 #
-# Implements deploy.md §B.9:
 #   Reusable composite action `.github/actions/build-and-push/`
 #   encapsulating: login to local registry, `docker buildx build --push`,
 #   image tag = `${git_sha}` + `latest`.
@@ -29,10 +27,8 @@
 #     image            - the `<registry>/<service>:<sha>` reference that
 #                        the workflow then feeds into `kubectl set image`.
 #
-# All tags are pushed: the SHA-pinned tag (immutable, used by the
-# rolling update) AND `latest` (mutable, used by humans poking around
-# with `kubectl describe`).
-# =====================================================================
+# All tags are pushed: the SHA-pinned tag 
+
 name: build-and-push
 description: Build a service Docker image and push it to the in-cluster registry under both `<sha>` and `latest` tags.
 
@@ -78,13 +74,10 @@ outputs:
 runs:
   using: composite
   steps:
-    # -----------------------------------------------------------------
     # Pin the short SHA as the primary tag. Using ${{ github.sha }}
     # rather than ${{ github.run_id }} so the same commit always
     # produces the same image reference — rebuilds are idempotent and
-    # the rollback runbook can `kubectl set image ...:<previous-sha>`
-    # deterministically.
-    # -----------------------------------------------------------------
+    # the rollback runbook can `kubectl set image ...:<previous-sha>` deterministically.
     - id: compute-tags
       shell: bash
       run: |
@@ -107,12 +100,7 @@ runs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
-    # -----------------------------------------------------------------
-    # `docker buildx` needs a builder instance — the default one is
-    # absent in fresh self-hosted runners. `docker/setup-buildx-action`
-    # creates one and selects it; it's a no-op if a buildx instance is
-    # already present, so re-running this step is safe.
-    # -----------------------------------------------------------------
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
@@ -126,12 +114,8 @@ runs:
           [registry."registry.ns-registry.svc.cluster.local:5000"]
             http = true
 
-    # -----------------------------------------------------------------
-    # Authenticate against the in-cluster registry. The runner's DinD
-    # daemon already trusts the registry as an insecure registry (see
-    # the `--insecure-registry` flag on the dind sidecar args), so we
-    # only need credentials here.
-    # -----------------------------------------------------------------
+
+    # Authenticate against the in-cluster registry.
     - name: Log in to the in-cluster registry
       uses: docker/login-action@v3
       with:
@@ -139,10 +123,8 @@ runs:
         username: ${{ inputs.registry-user }}
         password: ${{ inputs.registry-pass }}
 
-    # -----------------------------------------------------------------
+  
     # Build + push both tags in a single `docker buildx build` so the
-    # registry only sees one upload session (deduplicates layers).
-    # -----------------------------------------------------------------
     - name: Build & push image
       shell: bash
       env:

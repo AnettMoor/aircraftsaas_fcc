@@ -110,9 +110,7 @@ jobs:
             curl -fsS --max-time 10 \
               "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local/"
 
-      # Roll back to the previous revision if the smoke test (or any
-      # earlier deploy step) fails, so the cluster is never left running
-      # a broken image.
+      # Roll back to the previous revision if something fails, cluster never left running on a broken image.
       - name: Rollback on failure
         if: failure()
         run: |

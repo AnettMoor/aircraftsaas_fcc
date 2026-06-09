@@ -1,5 +1,10 @@
 # CI/CD — Booking service
-
+#   * Path-filtered: only runs when something the Booking service depends
+#     on actually changes 
+#   * `dotnet test` for Booking.Tests.
+#   * Builds + pushes the image via the shared composite action.
+#   * Rolls the Deployment in ns-booking to the new tag.
+#   * Runs an in-cluster smoke test against /health.
 
 name: ci-booking
 
@@ -108,9 +113,7 @@ jobs:
             curl -fsS --max-time 10 \
               "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local:8080/health"
 
-      # Roll back to the previous revision if the smoke test (or any
-      # earlier deploy step) fails, so the cluster is never left running
-      # a broken image.
+      # Roll back to the previous revision if something fails, cluster never left running on a broken image.
       - name: Rollback on failure
         if: failure()
         run: |

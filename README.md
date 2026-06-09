@@ -226,7 +226,7 @@ Since the OpenNebula private network sits behind the Azure VM Host, configure a 
 
 #### 5. Open Your Browser
 Navigate to:
-👉 **`https://app.aircraft.localtest.me:31857`**
+**`https://app.aircraft.localtest.me:31857`**
 
 The entire application will now load securely over HTTPS with a **valid green padlock** and no warning screens.
 

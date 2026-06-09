@@ -1,10 +1,9 @@
 # =====================================================================
 # Persistent storage for the in-cluster Docker Registry v2.
 #
-# 20 GiB matches deploy.md §3.2. ReadWriteOnce is fine because the
+# ReadWriteOnce is fine because the
 # registry runs as a single-replica Deployment (storage layout is not
-# crash-safe across concurrent writers — high-availability registry is
-# out of scope per deploy.md §10).
+# crash-safe across concurrent writers)
 # =====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim

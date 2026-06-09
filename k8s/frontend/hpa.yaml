@@ -1,11 +1,7 @@
-# =====================================================================
-# vue-frontend HPA.
+#vue-frontend HPA.
 #
 # Static-asset serving is cheap; the HPA is mostly here to honour the
-# "scale on demand" requirement of the project brief, not because nginx
-# realistically saturates CPU at 70 %. min 2 keeps us in the rolling-
-# update safety margin (maxUnavailable: 0).
-# =====================================================================
+# "scale on demand" requirement 
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

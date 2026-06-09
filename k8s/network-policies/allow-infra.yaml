@@ -1,22 +1,6 @@
-# =====================================================================
 # ns-infra ingress/egress policies.
+# Allows only the explicit ns-infra service-to-service paths required for Postgres, RabbitMQ, and DNS.
 
-# "explicit allow rules are defined only for the specific inter-service communication paths required."
-#
-# IMPORTANT: the EF Core migration Jobs reuse the same image as the
-# runtime Deployment but have their own Pod template. We label those
-# Pods with the same `app: <svc>-service` label so they pass this
-# policy. See:
-#   * k8s/users/migration-job.yaml   spec.template.metadata.labels
-#   * k8s/fleet/migration-job.yaml   spec.template.metadata.labels
-#   * k8s/booking/migration-job.yaml spec.template.metadata.labels
-#
-# The RabbitMQ management UI :15672 is NOT exposed via NetworkPolicy.
-# It is only reachable via `kubectl port-forward` (which bypasses
-# NetworkPolicy because the connection is proxied through the
-# apiserver). This keeps the data-plane attack surface limited to the
-# AMQP port that the apps actually use.
-# =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: allow-postgres-ingress, namespace: ns-infra }

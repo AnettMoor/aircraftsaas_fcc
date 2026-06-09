@@ -1,34 +1,4 @@
-# =====================================================================
-# Adopts the ingress-nginx namespace as `ns-gateway`.
-#
-# Why this exists:
-#   Every allow-*-ingress NetworkPolicy in k8s/network-policies/ matches
-#   the gateway via `namespaceSelector: { matchLabels: { name: ns-gateway } }`.
-#   The ingress-nginx controller is installed by an external manifest
-#   (upstream ingress-nginx YAML / Helm chart) into the FIXED
-#   namespace `ingress-nginx`, so we cannot create that namespace
-#   ourselves — but we MUST label it, otherwise default-deny
-#   silently breaks every public route and the symptom is "404/timeout
-#   on every host" with no obvious cause.
-#
-#   Shipping the label as a Namespace stub via the regular kustomize
-#   apply pipeline (`kubectl apply -k k8s/base`) makes the label part of
-#   the deploy procedure rather than a manual, easily-forgotten step.
-#
-# Idempotency:
-#   `kubectl apply` patches the existing `ingress-nginx` namespace —
-#   it never wipes upstream metadata (annotations, finalizers, labels
-#   set by Helm). The order of operations is therefore tolerant:
-#     a) install ingress-nginx upstream, then apply this manifest → label added.
-#     b) apply this manifest before ingress-nginx installs → namespace
-#        pre-created with the label; upstream install patches the rest
-#        in place.
-#
-# Out-of-band fallback (for clusters that bypass kustomize):
-#   kubectl label namespace ingress-nginx name=ns-gateway --overwrite
-#   (see the OpenNebula cloud-init step in
-#    opennebula/context/cloud-init.cp.yaml.)
-# =====================================================================
+# Marks ingress-nginx as the NetworkPolicy gateway namespace (ns-gateway).
 apiVersion: v1
 kind: Namespace
 metadata:

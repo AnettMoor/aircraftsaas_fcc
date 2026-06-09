@@ -1,14 +1,4 @@
-# =====================================================================
-# RabbitMQ (ns-infra) — single-replica StatefulSet with persistent data.
-#
-# Phase A additions on top of the original scaffold:
-#   * Plain Deployment promoted to a StatefulSet + PVC so message
-#     queues survive a Pod restart (deploy.md §3.5).
-#   * Credentials moved out of plaintext env into the `rabbitmq-secret`
-#     Secret (Phase C swaps it for a SealedSecret).
-#   * Erlang cookie pinned via the same Secret so a future cluster
-#     expansion doesn't reshuffle node identity on restart.
-# =====================================================================
+# Runs RabbitMQ as a persistent StatefulSet so broker identity and queued messages survive Pod restarts.
 # pre-commit:allow-plaintext-secret
 apiVersion: v1
 kind: Secret

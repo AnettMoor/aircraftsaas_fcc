@@ -1,20 +1,6 @@
-# =====================================================================
 # allow-registry
-#
-# The in-cluster Docker Registry v2 receives image pulls from the app
-# namespaces (kubelet → registry over the Pod network, sourced from the
-# Pod's namespace) and image pushes from the CI runner in ns-ci.
-#
-# Ingress: :5000 from ns-{users,fleet,booking,frontend,ci}.
-# Egress:  DNS only. The registry's storage is a PVC mounted into the
-#          Pod — it doesn't reach any other service.
-#
-# Note: ns-ci is intentionally allowed here even though it is itself
-# NOT default-denied (see default-deny.yaml comment). The allow rule
-# below is what authorises *reverse* traffic landing on the registry
-# Pod from the runner — without it the default-deny on ns-registry
-# would drop the push.
-# =====================================================================
+# Allows only registry pulls/pushes from the approved namespaces and DNS egress; no other traffic is permitted.
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: allow-registry-ingress, namespace: ns-registry }

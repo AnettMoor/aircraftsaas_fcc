@@ -1,7 +1,6 @@
 # =====================================================================
 # In-cluster Docker Registry v2.
 #
-# Implements deploy.md §3.2:
 #   * Single-replica Deployment (HA registry is out of scope).
 #   * htpasswd basic-auth (Secret: registry-auth).
 #   * 20 GiB PVC mounted at /var/lib/registry.

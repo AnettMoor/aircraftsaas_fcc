@@ -18,17 +18,10 @@
 # Each Ingress object lives in the SAME namespace as its backend
 # Service, because Kubernetes Ingress backends cannot reference a
 # Service in another namespace.
+
+# Additions on every Ingress below:
 #
-# =====================================================================
-# Phase C §C.15 additions on every Ingress below:
-#
-#   * `cert-manager.io/cluster-issuer: letsencrypt-staging` —
-#     promote to `letsencrypt-prod` once the edge DNS is stable.
-#     cert-manager populates the `<host>-tls` Secret named in
-#     `spec.tls[*].secretName`.
 #   * `nginx.ingress.kubernetes.io/ssl-redirect: "true"` — force HTTPS.
-#   * `nginx.ingress.kubernetes.io/hsts: "true"` + `hsts-max-age` —
-#     browsers refuse plain-HTTP for the host for a year.
 #   * `nginx.ingress.kubernetes.io/configuration-snippet:` —
 #     X-Frame-Options DENY, nosniff, Referrer-Policy, CSP.
 # =====================================================================
@@ -143,8 +136,7 @@ spec:
 #
 # The Vue bundle calls the backend services on their own subdomains
 # (users.* / fleet.* / booking.*) — there is intentionally no /api/*
-# path rule here, because the in-pod nginx no longer proxies API
-# traffic (frontend_vue/nginx.conf was reworked in Phase A).
+# path rule here, because the in-pod nginx doesnt proxy api traffic
 #
 # The CSP for the SPA host is slightly relaxed compared to the API
 # hosts (allows `connect-src` to the sibling api subdomains) so the

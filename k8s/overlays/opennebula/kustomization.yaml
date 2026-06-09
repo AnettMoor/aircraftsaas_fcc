@@ -124,7 +124,7 @@ patches:
         path: /spec/tls/0/hosts/0
         value: app.aircraft.example.com
 
-  # --- Phase C §C.15: every Ingress carries a placeholder
+  # every Ingress carries a placeholder
   # `cert-manager.io/cluster-issuer` annotation in the base; the
   # overlay points it at `letsencrypt-staging`. Promote to
   # `letsencrypt-prod` by editing this overlay once staging succeeds.
@@ -158,9 +158,8 @@ patches:
         path: /metadata/annotations/cert-manager.io~1cluster-issuer
         value: letsencrypt-staging
 
-  # ---------------------------------------------------------------------
-  # functional patches applied on the OpenNebula overlay.
-  # ---------------------------------------------------------------------
+
+  # functional patches 
 
   # 1. Force `imagePullPolicy: Always` on every app container. The
   #    in-cluster registry tag is `latest` by default (and overridden to

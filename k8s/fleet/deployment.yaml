@@ -1,8 +1,5 @@
-# =====================================================================
-# fleet-service Deployment. See k8s/users/deployment.yaml for the full
-# rationale of every directive — this file mirrors that template with
-# the fleet-specific names.
-# =====================================================================
+# fleet-service Deployment
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

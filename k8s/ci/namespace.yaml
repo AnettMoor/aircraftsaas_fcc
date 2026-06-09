@@ -1,16 +1,12 @@
-# =====================================================================
+
 # ns-ci — home of the self-hosted GitHub Actions runner and any other
 # in-cluster automation that needs to call `kubectl` and `docker push`
 # against the local registry.
-#
-# Implements deploy.md §B.8 ("Self-hosted runner — Deployment + RBAC in
-# a new ns-ci namespace; runner registered to the GitHub repo.").
-#
+
 # The `name: ns-ci` label is mandatory: every NetworkPolicy in
 # k8s/network-policies/ selects peers by `matchLabels: { name: ns-xxx }`.
-# Without it, default-deny in Phase C would silently isolate the runner
+# Without it, default-deny silently isolate the runner
 # from the registry and the kube-apiserver.
-# =====================================================================
 apiVersion: v1
 kind: Namespace
 metadata:

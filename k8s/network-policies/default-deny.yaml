@@ -1,21 +1,11 @@
-# =====================================================================
-# default-deny
-#
-# A NetworkPolicy with an empty podSelector and both Ingress + Egress
-# policyTypes silently isolates every pod in the namespace from every
-# other peer. The matching `allow-*.yaml` files then re-open exactly
-# the flows the architecture allows.
-#
-# Coverage:
-#   * ns-users, ns-fleet, ns-booking, ns-infra
-#   * ns-frontend              
-#   * ns-registry
-#
+# Default-deny NetworkPolicies enforcing namespace isolation, with explicit allow rules defining all permitted service communication paths
+# * ns-users, ns-fleet, ns-booking, ns-infra, ns-frontend, ns-registry
+
 # ns-ci is intentionally NOT default-denied: the GitHub Actions runner
 # needs broad egress (GitHub Actions service, public NuGet/npm mirrors,
 # in-cluster apiserver + registry). It is quarantined by RBAC instead
 # (k8s/ci/rbac.yaml), not by NetworkPolicy.
-# =====================================================================
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: default-deny, namespace: ns-users }

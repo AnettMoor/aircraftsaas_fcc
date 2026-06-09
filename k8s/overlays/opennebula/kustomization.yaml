@@ -1,23 +1,6 @@
-# =====================================================================
 # OpenNebula overlay
-#
-# Production preset targeted at the 1 control-plane + 2 worker cluster
-# running on the OpenNebula IaaS substrate (see plans/deploy.md §2).
-#
-# Differences from the base:
-#   1. Replicas bumped 2 -> 3 so a single node loss still leaves quorum.
-#   2. Anti-affinity spreads replicas across the two worker nodes.
-#   3. Hostnames swapped from *.aircraft.localtest.me to
-#      *.aircraft.example.com (real edge DNS provided by OpenNebula NAT).
-#   4. Images pulled from the in-cluster registry by FQDN
-#      (registry.ns-registry.svc.cluster.local:5000/<svc>:<sha>).
-#      The actual `<sha>` is patched in by the CI pipeline at deploy time
-#      via `kubectl set image`; this overlay only fixes the *prefix*.
-#
-# The infra services (Postgres / RabbitMQ) intentionally stay 1-replica
-# StatefulSets here. Multi-node infra is out of scope.
-# =====================================================================
-apiVersion: kustomize.config.k8s.io/v1beta1
+# Production-specific Kustomize overlay for deploying the Aircraft Rental Marketplace microservices platform on the OpenNebula Kubernetes cluster.apiVersion: kustomize.config.k8s.io/v1beta1
+
 kind: Kustomization
 
 resources:

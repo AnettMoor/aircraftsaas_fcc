@@ -1,12 +1,10 @@
-# =====================================================================
 # allow-frontend
-#
 # The Vue SPA pod is a static-asset server: the browser, not the pod,
 # talks to the backend APIs. So the pod's surface is intentionally tiny.
 #
 # Ingress: only ingress-nginx (labeled name: ns-gateway) reaches :8080.
 # Egress:  only DNS (kube-dns) — no upstream calls leave the pod.
-# =====================================================================
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: allow-frontend-ingress, namespace: ns-frontend }

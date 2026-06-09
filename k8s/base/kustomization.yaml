@@ -1,27 +1,5 @@
-# =====================================================================
-# Base Kustomization
-#
-# This base holds the structural defaults shared across every
-# environment: namespace declarations, raw manifest references, and
-# wiring of the per-component kustomizations. It is NOT applied
-# directly — the OpenNebula overlay is the only production deploy
-# path and it patches replica counts, hostnames, image registry
-# rewrites, and `imagePullPolicy: Always`.
-#
-# Overlay under k8s/overlays/*:
-#   * overlays/opennebula — production: real edge hostnames, in-cluster
-#                           registry images, replicas=3, anti-affinity,
-#                           imagePullPolicy=Always.
-#
-# Resources are pulled in via per-component `kustomization.yaml` files
-# (not raw paths) so that Kustomize's "no traversal outside root" rule
-# is satisfied — every referenced directory IS a Kustomization root.
-#
-# Apply order matters but Kustomize itself does NOT order resources by
-# the `resources:` list. The order below is documentary; runtime
-# ordering on the cluster is guaranteed by readiness probes
-# (services wait for Postgres/RabbitMQ DNS to resolve and respond).
-# =====================================================================
+# Base Kustomize layout defining shared namespaces, component wiring, and environment-agnostic manifests for the Aircraft Rental Marketplace deployment
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -54,9 +32,3 @@ resources:
   #    ns-frontend and ns-registry policies
   - ../network-policies
 
-  # 8. Phase C §C.14 — RBAC ships as a Kustomize *Component* under
-  #    k8s/rbac/, layered in by each overlay (`components:` section)
-  #    so the strategic-merge hardening patch can reach the Deployments
-  #    pulled in via this base. Wiring it as a plain `resources:` here
-  #    would force the patch to live under k8s/base/ to satisfy
-  #    kustomize's path-traversal rule.

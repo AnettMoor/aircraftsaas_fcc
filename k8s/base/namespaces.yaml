@@ -1,19 +1,6 @@
-# =====================================================================
-# Application namespaces.
-#
-# Every namespace carries a `name: ns-xxx` label. This is NOT cosmetic:
-# every NetworkPolicy in k8s/network-policies/ selects peer namespaces
-# by `namespaceSelector: matchLabels: { name: ns-xxx }`. Without this
-# label, default-deny silently isolates the namespace.
-#
-# NOTE — ns-gateway is intentionally NOT declared here.
-#   The "gateway" namespace is the upstream `ingress-nginx` namespace,
-#   which is created by the ingress-nginx install (Helm chart or
-#   upstream YAML). We adopt it by applying the `name: ns-gateway`
-#   label via k8s/gateway/namespace-label.yaml, wired into
-#   k8s/gateway/kustomization.yaml. See the comment header in that
-#   file for the full rationale and out-of-band fallback.
-# =====================================================================
+# Namespace declarations for the application and infrastructure components, 
+# with labels that NetworkPolicies use to enforce namespace-level isolation
+
 apiVersion: v1
 kind: Namespace
 metadata: { name: ns-users,    labels: { name: ns-users } }

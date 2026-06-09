@@ -1,4 +1,3 @@
-# =====================================================================
 # booking-service HPA.
 #
 # Booking does the most work per request (calls Fleet + Users + RabbitMQ
@@ -6,9 +5,7 @@
 #   * CPU 70 %      — primary signal
 #   * Memory 75 %   — fallback metric for query-bound workloads where
 #                     CPU alone underestimates load.
-#   * behavior.scaleDown.stabilizationWindowSeconds: 300 — prevents
-#     HPA flapping when the k6 load drops abruptly (deploy.md §9 risks).
-# =====================================================================
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

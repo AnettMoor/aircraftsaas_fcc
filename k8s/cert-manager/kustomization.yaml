@@ -1,9 +1,5 @@
 # cert-manager component kustomization.
-#
-# Resources here are the install-marker plus the production
-# letsencrypt ClusterIssuer. The OpenNebula overlay wires the
-# Ingress annotations to `letsencrypt-staging`; promote to
-# `letsencrypt-prod` once the edge DNS is stable.
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

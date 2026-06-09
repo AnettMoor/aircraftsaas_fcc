@@ -11,13 +11,13 @@
 name: ci-frontend
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend_vue/**"
+      - ".github/workflows/ci-frontend.yaml"
+      - ".github/actions/build-and-push/**"
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "frontend_vue/**"
-  #     - ".github/workflows/ci-frontend.yaml"
-  #     - ".github/actions/build-and-push/**"
 
 concurrency:
   group: ci-frontend-${{ github.ref }}
@@ -37,7 +37,7 @@ jobs:
   # -------------------------------------------------------------------
   test:
     name: vue lint + typecheck + build
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
       - uses: actions/checkout@v4
 
@@ -68,7 +68,7 @@ jobs:
   build:
     name: docker build & push
     needs: test
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     outputs:
       image: ${{ steps.bp.outputs.image }}
       tag:   ${{ steps.bp.outputs.tag }}
@@ -96,7 +96,7 @@ jobs:
   deploy:
     name: rollout + smoke
     needs: build
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
       - name: kubectl set image
         run: |

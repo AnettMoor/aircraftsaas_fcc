@@ -1,34 +1,6 @@
 #!/usr/bin/env bash
-# =====================================================================
-# scripts/deploy-apps.sh — per-release application deploy
-#
-# Mirrors clusterrun.md §3, §6, §7, §8 in a single idempotent script.
-# Run this on EVERY release after scripts/bootstrap-cluster.sh has
-# established the in-cluster registry, controllers, and SealedSecrets.
-#
-# Stages:
-#   1. Sanity: kubectl/docker/kustomize present, cluster reachable
-#   2. Build + push 4 images to the in-cluster registry via port-forward
-#   3. kubectl apply -k k8s/overlays/opennebula
-#   4. Pin Deployments to the freshly-built image tag (kubectl set image)
-#   5. Re-run EF Core migration Jobs at the new tag
-#   6. Smoke test: wait for rollouts + optional curl of /healthz
-#
-# Required environment / flags:
-#   --tag <git-sha>      Image tag (defaults: short git HEAD)
-#   --edge-host <fqdn>   Public hostname for the smoke test
-#                        (defaults: $EDGE_HOST or aircraft.example.com)
-#   --registry <host>    Registry host visible to your docker daemon
-#                        (defaults: localhost:5000 via port-forward)
-#   --skip-build         Skip stage 2 (use already-pushed images)
-#   --skip-apply         Skip stage 3 (overlay already applied)
-#   --skip-pin           Skip stage 4 (no image tag override)
-#   --skip-migrate       Skip stage 5 (no migration Job re-run)
-#   --skip-smoke         Skip stage 6
-#   --dry-run            Print every command without executing
-#
-# Expects to run from anywhere; resolves paths relative to repo root.
-# =====================================================================
+# Deploys the release by building, pushing, applying, pinning, migrating, and smoke-testing all app images against the cluster.
+
 set -euo pipefail
 
 # --- Defaults & Configuration -----------------------------------------

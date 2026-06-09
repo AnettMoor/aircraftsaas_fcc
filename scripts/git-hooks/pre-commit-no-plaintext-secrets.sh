@@ -1,28 +1,6 @@
 #!/usr/bin/env bash
-# =====================================================================
-# pre-commit hook — block commits that introduce plaintext Kubernetes
-# Secrets.
-#
-# Phase C §C.13:
-#   > Pre-commit hook scanning for `kind: Secret`
-#
-# What it accepts:
-#   * `kind: SealedSecret`            — encrypted at rest (Bitnami).
-#   * `kind: Secret` with `metadata.namespace: ns-infra` AND a
-#     `# pre-commit:allow-plaintext-secret` opt-in marker in the same
-#     file — used only for bootstrap baselines under controlled review.
-#
-# What it rejects:
-#   * Any *new or modified* tracked file under k8s/** with a top-level
-#     `kind: Secret` carrying `stringData:` or `data:` keys.
-#
-# Activation:
-#   ln -s ../../scripts/git-hooks/pre-commit-no-plaintext-secrets.sh \
-#         .git/hooks/pre-commit
-#
-# Override (single commit):
-#   git commit --no-verify     # use sparingly; CI runs the same check.
-# =====================================================================
+# Pre-commit hook that blocks plaintext Kubernetes Secrets in staged k8s manifests, allowing only SealedSecrets or explicitly approved bootstrap exceptions.
+
 set -euo pipefail
 
 # Files staged for this commit, filtered to k8s manifests only.

@@ -1,10 +1,7 @@
-# =====================================================================
 # users-service Deployment.
-#
-# The `users-service:dev` image reference is a placeholder; the
-# OpenNebula overlay rewrites it to the in-cluster registry FQDN at
-# deploy time (k8s/overlays/opennebula/kustomization.yaml).
-# =====================================================================
+# Users service Deployment with rolling updates, health probes, hardened security settings, and configuration sourced from ConfigMaps and Secrets.
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,9 +20,6 @@ spec:
     metadata:
       labels: { app: users-service }
     spec:
-      # Phase C will flip this to false and ship a dedicated runtime SA;
-      # for Phase A we keep the default SA so the manifests apply cleanly
-      # on a fresh cluster without RBAC prep.
       automountServiceAccountToken: true
       containers:
         - name: users-service
@@ -50,11 +44,6 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
-            # readOnlyRootFilesystem is added in Phase C together with
-            # the matching emptyDir mounts for /tmp + dotnet diagnostics.
-      # Spread replicas across nodes so a single worker loss doesn't
-      # take the service offline. Soft constraint (ScheduleAnyway) so
-      # smaller clusters still schedule.
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

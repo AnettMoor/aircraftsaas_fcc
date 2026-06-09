@@ -1,4 +1,3 @@
-# =====================================================================
 # In-cluster Docker Registry v2.
 #
 #   * Single-replica Deployment (HA registry is out of scope).
@@ -8,7 +7,7 @@
 #   * No public Ingress: only the in-cluster Service exposes :5000;
 #     the corresponding NetworkPolicy (allow-registry.yaml) permits
 #     ingress only from app namespaces.
-# =====================================================================
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

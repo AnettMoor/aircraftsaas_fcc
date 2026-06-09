@@ -1,20 +1,5 @@
-# =====================================================================
 # Postgres (ns-infra) — single-replica StatefulSet.
-#
-# Production-grade Postgres (HA, PITR, managed backups) is explicitly
-# out of scope (deploy.md §10). This StatefulSet is the validation
-# substrate for Phases A–E; replace with a managed DB before going
-# live with real traffic.
-#
-# Phase A additions on top of the original scaffold:
-#   * Credentials moved out of plaintext env into the `postgres-secret`
-#     Secret (Phase C swaps it for a SealedSecret, deploy.md §5.2).
-#   * PodDisruptionBudget with `minAvailable: 1` so node drains don't
-#     take the database offline.
-#   * Init databases (`aircraft-users`, `aircraft-fleet`,
-#     `aircraft-booking`) still created via the `pg-init` ConfigMap
-#     mounted into /docker-entrypoint-initdb.d.
-# =====================================================================
+
 # pre-commit:allow-plaintext-secret
 apiVersion: v1
 kind: Secret
@@ -26,7 +11,6 @@ stringData:
   POSTGRES_USER:     postgres
   POSTGRES_PASSWORD: postgres
   # The connection strings consumed by the app Secrets reference the same
-  # password; Phase C rotates them in lock-step via SealedSecrets.
 ---
 apiVersion: v1
 kind: ConfigMap

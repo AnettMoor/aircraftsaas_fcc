@@ -6,15 +6,12 @@
 # wiring of the per-component kustomizations. It is NOT applied
 # directly — the OpenNebula overlay is the only production deploy
 # path and it patches replica counts, hostnames, image registry
-# rewrites, `imagePullPolicy: Always`, and the SealedSecret-only
-# credential model.
+# rewrites, and `imagePullPolicy: Always`.
 #
 # Overlay under k8s/overlays/*:
 #   * overlays/opennebula — production: real edge hostnames, in-cluster
 #                           registry images, replicas=3, anti-affinity,
-#                           imagePullPolicy=Always, plaintext registry
-#                           credentials removed in favour of the
-#                           SealedSecret.
+#                           imagePullPolicy=Always.
 #
 # Resources are pulled in via per-component `kustomization.yaml` files
 # (not raw paths) so that Kustomize's "no traversal outside root" rule

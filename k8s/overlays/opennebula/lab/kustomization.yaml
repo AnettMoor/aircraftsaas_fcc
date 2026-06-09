@@ -7,7 +7,6 @@ kind: Kustomization
 resources:
   - ../../../base
   # - ../../cert-manager       # uncomment only if you really need TLS via LE
-  # - ../../sealed-secrets     # keep if you already sealed the secrets
 
 # Keep the base 2-replica defaults for everything (do NOT bump to 3 like
 # the OpenNebula overlay does). Then shrink resource requests.

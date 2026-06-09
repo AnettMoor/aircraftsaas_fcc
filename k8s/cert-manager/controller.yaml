@@ -22,10 +22,8 @@
 #      reproducible install command.
 #
 # Rationale for not vendoring the full manifest: upgrades become a
-# rebase nightmare, and Phase A already established the pattern of
-# "controller blob installed by the operator, app manifests in Git"
-# for the Bitnami sealed-secrets controller (k8s/sealed-secrets/
-# controller.yaml is the exception that proves the rule — it's small).
+# rebase nightmare. The pattern is "controller blob installed by the
+# operator, app manifests in Git".
 # =====================================================================
 apiVersion: v1
 kind: Namespace

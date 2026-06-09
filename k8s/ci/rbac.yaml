@@ -23,6 +23,39 @@ metadata:
   namespace: ns-ci
 ---
 # ---------------------------------------------------------------------
+# Role in ns-ci: allows the runner to restart its own Deployment after
+# the runner image is rebuilt by ci-runner-image.yaml.
+# Scoped to the single Deployment name to minimise blast radius.
+# ---------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer-self-restart
+  namespace: ns-ci
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["github-runner"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer-self-restart
+  namespace: ns-ci
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: ns-ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer-self-restart
+---
+# ---------------------------------------------------------------------
 # Role definition (one copy per target namespace because Roles are
 # namespaced; ClusterRole would over-grant).
 # ---------------------------------------------------------------------

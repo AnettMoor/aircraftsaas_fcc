@@ -47,8 +47,12 @@ spec:
 
       containers:
         - name: runner
-          image: myoung34/github-runner:latest
-          imagePullPolicy: IfNotPresent
+          # Custom image built by ci-runner-image.yaml; extends
+          # myoung34/github-runner with kubectl pre-installed from the
+          # official Kubernetes APT repo (fixes "kubectl: command not found"
+          # in the rollout + smoke deploy jobs).
+          image: registry.ns-registry.svc.cluster.local:5000/github-runner:latest
+          imagePullPolicy: Always
           workingDir: /actions-runner
           env:
             - name: REPO_URL
@@ -75,8 +79,6 @@ spec:
               value: tcp://localhost:2375
             - name: EPHEMERAL
               value: "true"
-            - name: ADDITIONAL_PACKAGES
-              value: kubectl curl jq
             - name: RUN_AS_ROOT
               value: "false"
             - name: RUNNER_WORKDIR

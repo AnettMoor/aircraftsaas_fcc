@@ -84,6 +84,9 @@ jobs:
     needs: build
     runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
       - name: kubectl set image
         run: |
           set -euo pipefail
@@ -99,10 +102,21 @@ jobs:
       - name: Smoke / (in-cluster)
         run: |
           set -euo pipefail
-          kubectl run smoke-frontend-${GITHUB_RUN_ID} \
+          kubectl run smoke-frontend-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT} \
             --rm -i --restart=Never \
             --namespace "${NAMESPACE}" \
             --image=curlimages/curl:8.10.1 \
             --command -- \
             curl -fsS --max-time 10 \
               "http://${DEPLOYMENT}.${NAMESPACE}.svc.cluster.local/"
+
+      # Roll back to the previous revision if the smoke test (or any
+      # earlier deploy step) fails, so the cluster is never left running
+      # a broken image.
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          set -euo pipefail
+          kubectl -n "${NAMESPACE}" rollout undo deployment/"${DEPLOYMENT}"
+          kubectl -n "${NAMESPACE}" rollout status \
+            deployment/"${DEPLOYMENT}" --timeout=120s

@@ -1,17 +1,6 @@
-# =====================================================================
 # vue-frontend Deployment (ns-frontend).
-#
-# Static SPA, served by the hardened nginx image built from
-# frontend_vue/Dockerfile (runs as UID 1000, listens on :8080).
-#
-# Key Phase A constraints:
-#   * runAsNonRoot:true (matches the Dockerfile USER 1000:1000).
-#   * readOnlyRootFilesystem:true — nginx needs writable scratch space,
-#     so the Dockerfile relocates cache/pid/tmp under /tmp/nginx and an
-#     emptyDir is mounted at /tmp/nginx and /var/cache/nginx.
-#   * automountServiceAccountToken:false — the SPA pod never calls the
-#     Kubernetes API.
-# =====================================================================
+# Hardened deployment for the Vue frontend SPA, running the nginx-based static site as a non-root container with read-only filesystem settings
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

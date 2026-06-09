@@ -1,11 +1,6 @@
-# =====================================================================
-# vue-frontend Service.
-#
-# The pod listens on :8080 (unprivileged) because nginx runs as
-# non-root inside the container. The Service exposes the conventional
-# :80 to the Ingress so consumers (the Ingress controller, intra-cluster
-# probes) speak the standard port.
-# =====================================================================
+# vue-frontend Service
+# exposing the Vue frontend to the cluster and Ingress layer, mapping standard HTTP port 80 to the application's unprivileged container port 8080.
+
 apiVersion: v1
 kind: Service
 metadata:

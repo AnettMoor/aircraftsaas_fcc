@@ -1,30 +1,7 @@
-# =====================================================================
 # Aircraft SaaS — Ingress routing.
-#
-# Each service gets its own subdomain instead of a path prefix.
-# Rationale:
-#   * The previous design used `path: /api/users(/|$)(.*)` with
-#     `nginx.ingress.kubernetes.io/rewrite-target: /$2`, but the .NET
-#     controllers are mounted at `api/v{version}/...`, so a request to
-#     `/api/users/v1/identity/account/login` was being rewritten to
-#     `/v1/identity/account/login` and returned 404 from the upstream.
-#   * Host-based routing requires zero rewrites: the request that
-#     arrives at the upstream is byte-for-byte the request the .NET
-#     app already knows how to route.
-#   * Hostnames use placeholder `*.aircraft.localtest.me` in the base
-#     and are rewritten to `*.aircraft.example.com` by the OpenNebula
-#     overlay (k8s/overlays/opennebula/kustomization.yaml).
-#
-# Each Ingress object lives in the SAME namespace as its backend
-# Service, because Kubernetes Ingress backends cannot reference a
-# Service in another namespace.
+# Host-based Ingress routing for the Aircraft SaaS services, 
+# using separate subdomains per component to avoid path rewrites and keep .NET API routing intact.
 
-# Additions on every Ingress below:
-#
-#   * `nginx.ingress.kubernetes.io/ssl-redirect: "true"` — force HTTPS.
-#   * `nginx.ingress.kubernetes.io/configuration-snippet:` —
-#     X-Frame-Options DENY, nosniff, Referrer-Policy, CSP.
-# =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

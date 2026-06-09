@@ -1,10 +1,10 @@
-# =====================================================================
-# Persistent storage for the in-cluster Docker Registry v2.
-#
+# Persistent storage claim for the internal Docker registry, providing durable image storage for the single-instance registry deployment.
+
 # ReadWriteOnce is fine because the
 # registry runs as a single-replica Deployment (storage layout is not
 # crash-safe across concurrent writers - scope!)
-# =====================================================================
+
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

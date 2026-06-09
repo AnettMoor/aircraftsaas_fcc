@@ -21,19 +21,19 @@
 name: ci-users
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "AircraftSaaS/Services/Users.WebHost/**"
+      - "AircraftSaaS/Modules/Users/**"
+      - "AircraftSaaS/Shared/**"
+      - "AircraftSaaS/Tests/Users.Tests/**"
+      - "Directory.Build.props"
+      - "AircraftSaaS/AircraftSaaS.sln"
+      - ".github/workflows/ci-users.yaml"
+      - ".github/actions/build-and-push/**"
   workflow_dispatch:
   workflow_call:    # invoked by ci-shared.yaml when Shared/** changes
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "AircraftSaaS/Services/Users.WebHost/**"
-  #     - "AircraftSaaS/Modules/Users/**"
-  #     - "AircraftSaaS/Shared/**"
-  #     - "AircraftSaaS/Tests/Users.Tests/**"
-  #     - "Directory.Build.props"
-  #     - "AircraftSaaS/AircraftSaaS.sln"
-  #     - ".github/workflows/ci-users.yaml"
-  #     - ".github/actions/build-and-push/**"
 
 concurrency:
   group: ci-users-${{ github.ref }}
@@ -53,7 +53,10 @@ jobs:
   # -------------------------------------------------------------------
   test:
     name: dotnet test (Users.Tests)
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
+    env:
+      DOTNET_INSTALL_DIR: /actions-runner/.dotnet
+      DOTNET_ROOT: /actions-runner/.dotnet
     steps:
       - uses: actions/checkout@v4
 
@@ -90,7 +93,7 @@ jobs:
   build:
     name: docker build & push
     needs: test
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     outputs:
       image: ${{ steps.bp.outputs.image }}
       tag:   ${{ steps.bp.outputs.tag }}
@@ -113,8 +116,11 @@ jobs:
   deploy:
     name: rollout + smoke
     needs: build
-    runs-on: [self-hosted, linux, k8s, aircraft]
+    runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
       - name: kubectl set image
         run: |
           set -euo pipefail

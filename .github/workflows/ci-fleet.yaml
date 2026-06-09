@@ -92,6 +92,9 @@ jobs:
     needs: build
     runs-on: [self-hosted, Linux, X64, k8s, aircraft]
     steps:
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
       - name: kubectl set image
         run: |
           set -euo pipefail

@@ -1,23 +1,9 @@
 # =====================================================================
-# CI/CD — Shared libraries fan-out.
-#
-#   "ci-shared.yaml — runs on changes to Shared/* and triggers all three
-#    backend pipelines."
-#
-# Rationale: every backend WebHost's Dockerfile copies Shared/Shared.*
-# csprojs into its build stage (see e.g. Users.WebHost/Dockerfile). A
-# shared library change therefore invalidates all three image layers
-# and could regress any of the three test suites. The path-filtered
-# per-service workflows already cover this (each lists `Shared/**`
-# explicitly), but this fan-out workflow:
+# CI/CD — Shared libraries fan-out
 #
 #   * Provides a single explicit trigger surface — humans browsing
 #     Actions see "ci-shared" instead of three parallel ci-users /
 #     ci-fleet / ci-booking runs and wonder if they're coordinated.
-#   * Allows manual `workflow_dispatch` of "rebuild everything" from
-#     the GitHub UI without committing.
-#   * Allows future Shared-library-specific test stages to be added
-#     here without touching the per-service files.
 #
 # The actual builds happen inside the per-service workflows via
 # `workflow_call`; this file's `jobs` are just declarative invocations.

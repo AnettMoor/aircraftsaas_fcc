@@ -1,13 +1,6 @@
-# =====================================================================
 # CI/CD — Vue frontend
-#
-# Implements deploy.md §B.10 for the frontend_vue/ slice:
-#   * Lint + type-check (the Vue project's `vue-tsc --noEmit` runs as
-#     part of `npm run build`, but we surface it as a separate step so
-#     CI fails fast on type errors before invoking docker).
-#   * Build + push image via the shared composite action.
-#   * Roll `vue-frontend` Deployment in ns-frontend; smoke-test :80.
-# =====================================================================
+
+
 name: ci-frontend
 
 on:
@@ -31,10 +24,7 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  # -------------------------------------------------------------------
-  # Stage 1 — lint + type-check + build (build catches type errors via
-  # `vue-tsc --noEmit && vite build` in package.json).
-  # -------------------------------------------------------------------
+  # (lint) + type-check + build (build catches type errors via `vue-tsc --noEmit && vite build` in package.json).
   test:
     name: vue lint + typecheck + build
     runs-on: [self-hosted, Linux, X64, k8s, aircraft]
@@ -62,9 +52,7 @@ jobs:
         working-directory: frontend_vue
         run: npm run build
 
-  # -------------------------------------------------------------------
   # Stage 2 — Docker build + push.
-  # -------------------------------------------------------------------
   build:
     name: docker build & push
     needs: test
@@ -88,11 +76,9 @@ jobs:
             VITE_FLEET_URL=https://fleet.aircraft.localtest.me:31857
             VITE_BOOKING_URL=https://booking.aircraft.localtest.me:31857
 
-  # -------------------------------------------------------------------
-  # Stage 3 — rolling update + smoke. The frontend serves static assets
-  # on container :8080 behind a ClusterIP Service on :80 (see
-  # k8s/frontend/service.yaml), so the smoke probe targets / on :80.
-  # -------------------------------------------------------------------
+  # Stage 3 — rolling update + healthcheck. The frontend serves static assets
+  # on container :8080 behind a ClusterIP Service on :80 
+  # (k8s/frontend/service.yaml), so the smoke probe targets / on :80.
   deploy:
     name: rollout + smoke
     needs: build

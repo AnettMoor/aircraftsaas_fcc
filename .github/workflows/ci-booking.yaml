@@ -1,9 +1,6 @@
-# =====================================================================
 # CI/CD — Booking service
-#
-# Implements deploy.md §B.10 for the Booking.WebHost slice. Mirrors
-# ci-users.yaml; see that file for inline rationale.
-# =====================================================================
+
+
 name: ci-booking
 
 on:

@@ -3,7 +3,7 @@
 #
 # ReadWriteOnce is fine because the
 # registry runs as a single-replica Deployment (storage layout is not
-# crash-safe across concurrent writers)
+# crash-safe across concurrent writers - scope!)
 # =====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
